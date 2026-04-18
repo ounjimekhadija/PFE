@@ -1,10 +1,11 @@
-import React from "react";
+import React from 'react';
 
 interface CommentModalProps {
   isOpen: boolean;
   onClose: () => void;
   comment: string;
 }
+
 
 
 const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, comment }) => {
