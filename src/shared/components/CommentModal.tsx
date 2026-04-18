@@ -6,6 +6,7 @@ interface CommentModalProps {
   comment: string;
 }
 
+
 const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, comment }) => {
   if (!isOpen) return null;
   return (
