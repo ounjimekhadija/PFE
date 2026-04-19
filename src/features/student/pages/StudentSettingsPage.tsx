@@ -159,7 +159,7 @@ const StudentSettingsPage: React.FC = () => {
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
 
   if (loading) {
-    return <div className="flex-1 bg-white text-gray-900 p-8 flex items-center justify-center font-semibold text-gray-500">Chargement des données...</div>;
+    return <div className="flex-1 bg-white p-8 flex items-center justify-center font-semibold text-gray-500">Chargement des données...</div>;
   }
 
   return (

@@ -67,58 +67,70 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Blur background */}
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}></div>
-      
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden relative z-10 flex flex-col max-h-[80vh]">
-        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-          <h3 className="font-bold text-gray-800">Commentaires de la tâche</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-            <X size={20} />
-          </button>
-        </div>
+      <button
+        className="absolute top-6 right-8 text-gray-400 hover:text-gray-200 transition-colors text-3xl z-10 font-light"
+        onClick={onClose}
+        aria-label="Fermer"
+      >
+        &#10005;
+      </button>
 
-        <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-4 bg-gray-50/50 min-h-[200px]">
-          {comments.length === 0 ? (
-            <p className="text-center text-sm text-gray-400 italic py-8">Aucun commentaire pour l'instant.</p>
-          ) : (
-            comments.map(c => (
-              <div key={c.id} className="flex gap-3">
-                <img
-                  src={`https://ui-avatars.com/api/?name=${c.auteur?.prenom || 'U'}&background=c7d2fe&color=3730a3`}
-                  alt="Avatar"
-                  className="w-8 h-8 rounded-full object-cover border border-gray-200"
-                />
-                <div className="flex flex-col flex-1">
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-xs font-bold text-gray-700">{c.auteur?.prenom} {c.auteur?.nom}</span>
-                    <span className="text-[10px] text-gray-400">{new Date(c.created_at).toLocaleString()}</span>
-                  </div>
-                  <div className="bg-white border rounded-xl rounded-tl-none p-3 text-sm text-gray-700 shadow-sm">
-                    {c.contenu}
-                  </div>
+      <div className="relative z-10 flex flex-col gap-6 w-full max-w-3xl px-4 max-h-[85vh] overflow-y-auto style-scroll">
+        {comments.length === 0 ? (
+          <div className="flex items-center gap-4 justify-center">
+            <div className="bg-indigo-50/90 rounded-2xl p-6 text-gray-600 font-medium italic text-base shadow-lg shadow-black/10 backdrop-blur-md">
+              Aucun commentaire pour l'instant.
+            </div>
+          </div>
+        ) : (
+          comments.map(c => (
+            <div key={c.id} className="flex items-center gap-4">
+              <img
+                src={`https://ui-avatars.com/api/?name=${c.auteur?.prenom || 'U'}&background=c7d2fe&color=3730a3`}
+                alt="Avatar"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-indigo-200/50 object-cover shadow-lg flex-shrink-0 bg-white"
+              />
+              <div className="bg-indigo-50 rounded-2xl p-4 sm:p-5 text-gray-800 text-sm sm:text-base shadow-lg shadow-black/10">
+                <div className="text-xs text-indigo-400/80 font-bold mb-1.5 uppercase tracking-wider flex justify-between items-center gap-6">
+                  <span>{c.auteur?.prenom} {c.auteur?.nom}</span>
+                  <span className="text-[10px] font-normal opacity-70 lowercase">
+                    {new Date(c.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                  </span>
+                </div>
+                <div className="leading-relaxed">
+                  {c.contenu}
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
 
         {!readOnly && (
-          <form onSubmit={handleSend} className="p-4 border-t bg-white flex gap-2">
-            <input 
-              type="text"
-              className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Ajouter un commentaire..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              disabled={loading}
-            />
-            <button 
-              type="submit" 
-              disabled={loading || !newComment.trim()}
-              className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center w-10 h-10"
-            >
-              <Send size={18} />
-            </button>
+          <form onSubmit={handleSend} className="mt-4 flex gap-4 items-center">
+            {/* Espace vide pour s'aligner avec les bulles (sur desktop) */}
+            <div className="w-16 h-16 rounded-full flex-shrink-0 hidden sm:block opacity-0"></div>
+            
+            <div className="flex-1 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl shadow-black/10 border border-white/20 flex overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
+              <input 
+                type="text"
+                className="flex-1 px-5 py-4 text-base bg-transparent focus:outline-none placeholder:text-gray-400 text-gray-800"
+                placeholder="Rédiger une réponse..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                disabled={loading}
+                autoFocus
+              />
+              <button 
+                type="submit" 
+                disabled={loading || !newComment.trim()}
+                className="bg-indigo-600 text-white px-3 sm:px-6 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:hover:bg-indigo-600 flex items-center justify-center font-medium"
+              >
+                <span className="hidden sm:inline mr-2">Envoyer</span>
+                <Send size={18} />
+              </button>
+            </div>
           </form>
         )}
       </div>

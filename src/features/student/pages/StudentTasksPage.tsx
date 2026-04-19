@@ -97,7 +97,8 @@ const StudentTasks: React.FC = () => {
           .from('taches')
           .select(`
             *,
-            assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom)
+            assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom),
+            tache_commentaires ( id )
           `)
           .eq('iteration_id', iteration.id);
 
@@ -171,7 +172,8 @@ const StudentTasks: React.FC = () => {
         })
         .select(`
           *,
-          assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom)
+          assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom),
+          tache_commentaires ( id )
         `)
         .single();
 
