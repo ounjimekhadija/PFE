@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './shared/components/Sidebar';
 import LoginPage from './features/auth/pages/LoginPage';
-import SettingsPage from './features/auth/pages/SettingsPage';
 import StudentSettingsPage from './features/student/pages/StudentSettingsPage';
 import ProfessorSettingsPage from './features/professor/pages/ProfessorSettingsPage';
 import AdminSettingsPage from './features/admin/pages/AdminSettingsPage';
@@ -25,10 +24,15 @@ import { useAppController } from './shared/hooks/useAppController';
 const App: React.FC = () => {
   const { 
     isAuthenticated, 
+    isInitializing,
     userRole, 
     login, 
     logout
   } = useAppController();
+
+  if (isInitializing) {
+    return <div className="h-screen w-full flex items-center justify-center bg-blue-900 text-white font-bold text-xl">Chargement de la session...</div>;
+  }
 
   if (!isAuthenticated) {
     return <LoginPage onLogin={login} />;

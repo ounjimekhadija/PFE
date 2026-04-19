@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Search, UserPlus, Mail, Github, Linkedin, MoreVertical, Filter, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { supabase } from '../../../lib/supabase';
 
 interface Student {
   id: string;
@@ -11,27 +12,89 @@ interface Student {
   status: 'Available' | 'In Group';
   skills: string[];
   groupName?: string;
+  projet_id?: string | null;
+  githubUrl?: string | null;
+  linkedinUrl?: string | null;
 }
 
 const StudentGroups: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([
-    { id: '1', name: 'Hira R', role: 'UI/UX Designer', email: 'hira@student.hub', avatar: 'https://picsum.photos/seed/hira/100/100', status: 'In Group', skills: ['Figma', 'React', 'Tailwind'] },
-    { id: '2', name: 'Anas M', role: 'Backend Developer', email: 'anas@student.hub', avatar: 'https://picsum.photos/seed/anas/100/100', status: 'In Group', skills: ['Node.js', 'Firebase', 'SQL'] },
-    { id: '3', name: 'Sara K', role: 'Frontend Developer', email: 'sara@student.hub', avatar: 'https://picsum.photos/seed/sara/100/100', status: 'Available', skills: ['React', 'TypeScript', 'CSS'] },
-    { id: '4', name: 'Yassine B', role: 'DevOps Engineer', email: 'yassine@student.hub', avatar: 'https://picsum.photos/seed/yassine/100/100', status: 'Available', skills: ['Docker', 'AWS', 'CI/CD'] },
-    { id: '5', name: 'Lina T', role: 'Mobile Developer', email: 'lina@student.hub', avatar: 'https://picsum.photos/seed/lina/100/100', status: 'Available', skills: ['Flutter', 'Firebase', 'Dart'] },
-    { id: '6', name: 'Omar J', role: 'Data Scientist', email: 'omar@student.hub', avatar: 'https://picsum.photos/seed/omar/100/100', status: 'Available', skills: ['Python', 'R', 'TensorFlow'] },
-  ]);
-
+  const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<Student[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
 
-  const filteredStudents = students.filter(s => 
+  // Fetch tous les étudiants disponibles depuis Supabase
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('etudiants')
+          .select(`
+            id, 
+            projet_id,
+            filiere,
+            github_url,
+            linkedin_url,
+            utilisateurs (
+              nom, 
+              prenom, 
+              email
+            )
+          `);
+
+        if (error) throw error;
+
+        // Récupérer la liste des projets pour connaître les noms de groupes assignés
+        const { data: projects } = await supabase.from('projets').select('id, titre');
+        const projectMap: Record<string, string> = {};
+        projects?.forEach(p => projectMap[p.id] = p.titre);
+
+        if (data) {
+          const formattedStudents: Student[] = data.map((student: any) => ({
+            id: student.id,
+            name: student.utilisateurs ? `${student.utilisateurs.prenom} ${student.utilisateurs.nom}` : student.id,
+            role: student.filiere || 'Étudiant',
+            email: student.utilisateurs?.email || '',
+            avatar: `https://ui-avatars.com/api/?name=${student.utilisateurs?.prenom}+${student.utilisateurs?.nom}&background=random`,
+            status: student.projet_id ? 'In Group' : 'Available',
+            skills: ['React', 'Node.js', 'SQL'], // Les skills sont statiques pour le moment
+            groupName: student.projet_id ? projectMap[student.projet_id] || `Projet #${student.projet_id}` : undefined,
+            projet_id: student.projet_id,
+            githubUrl: student.github_url,
+            linkedinUrl: student.linkedin_url
+          }));
+          setStudents(formattedStudents);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des étudiants:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  let filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     s.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (sortOrder === 'asc') {
+    filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortOrder === 'desc') {
+    filteredStudents.sort((a, b) => b.name.localeCompare(a.name));
+  }
+
+  const handleFilterClick = () => {
+    if (sortOrder === 'none') setSortOrder('asc');
+    else if (sortOrder === 'asc') setSortOrder('desc');
+    else setSortOrder('none');
+  };
 
   // Ajoute ou retire un étudiant de la sélection
   const toggleSelect = (student: Student) => {
@@ -48,23 +111,71 @@ const StudentGroups: React.FC = () => {
   };
 
   // Handler pour valider la création du groupe
-  const handleCreateGroup = () => {
-    // Ajoute le nom du groupe aux étudiants sélectionnés
-    setStudents(prev => prev.map(s =>
-      selected.find(sel => sel.id === s.id)
-        ? { ...s, status: 'In Group', groupName: groupName.trim() }
-        : s
-    ));
-    setShowGroupModal(false);
-    setGroupName('');
-    setSelected([]);
-    // Optionnel: afficher une notification de succès
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) return;
+    
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const currentUserId = user?.id;
+
+        // 1. Créer le projet dans la base de données
+        const dateDebut = new Date().toISOString().split('T')[0];
+        const deadlineDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        const deadlineGlobale = deadlineDate.toISOString().split('T')[0];
+
+        const { data: newProject, error: projectError } = await supabase
+          .from('projets')
+          .insert({
+            titre: `Projet - ${groupName.trim()}`,
+            nom_groupe: groupName.trim(),
+            description: "Nouveau groupe créé par un étudiant",
+            date_debut: dateDebut,
+            deadline_globale: deadlineGlobale,
+            statut: 'EN_ATTENTE'
+          })
+          .select()
+          .single();
+
+        if (projectError) throw projectError;
+        
+        const projectId = newProject.id;
+        
+        // 2. Mettre à jour les id des étudiants avec l'ID du projet créé
+        const studentIdsToUpdate = selected.map(s => s.id);
+        if (currentUserId && !studentIdsToUpdate.includes(currentUserId)) {
+          studentIdsToUpdate.push(currentUserId);
+        }
+        
+        const { error: studentUpdateError } = await supabase
+          .from('etudiants')
+          .update({ projet_id: projectId })
+          .in('id', studentIdsToUpdate);
+          
+        if (studentUpdateError) throw studentUpdateError;
+  
+        // 3. Mettre à jour l'interface locale
+        setStudents(prev => prev.map(s =>
+          studentIdsToUpdate.includes(s.id)
+            ? { ...s, status: 'In Group', groupName: groupName.trim(), projet_id: projectId }
+            : s
+        ));
+        
+        setShowGroupModal(false);
+        setGroupName('');
+      setSelected([]);
+      alert("Groupe créé avec succès !");
+
+} catch (error: any) {
+        console.error('Erreur lors de la création du projet et liaison des étudiants:', error);
+        alert(`Une erreur s'est produite: ${error?.message || error?.details || JSON.stringify(error)}`);
+    }
   };
 
   return (
-    <div className="flex-1 bg-white p-8 flex flex-col overflow-hidden">
-      {/* BARRE DE SÉLECTION EN HAUT */}
-      {selected.length > 0 && (
+    <div className="flex-1 bg-white overflow-hidden flex justify-center items-center h-screen">
+      <div className="w-full h-full p-8 flex flex-col relative" style={{ zoom: "0.90" }}>
+        {/* BARRE DE SÉLECTION EN HAUT */}
+        {selected.length > 0 && (
         <div className="mb-6 flex items-center gap-4 bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-3 shadow-sm">
           <span className="font-bold text-indigo-700 text-sm">Selected:</span>
           <div className="flex gap-2 flex-wrap">
@@ -123,17 +234,27 @@ const StudentGroups: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} strokeWidth={2} />
             <input 
               type="text" 
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-indigo-300 w-64 transition-all"
+              className="bg-gray-50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 w-64 transition-all text-gray-700"
             />
           </div>
-          <button className="p-3 bg-gray-50 border border-gray-100 rounded-2xl text-gray-500 hover:bg-gray-100 transition-all">
-            <Filter size={20} />
+          <button 
+            onClick={handleFilterClick}
+            className={`p-3 rounded-2xl transition-all flex items-center justify-center ${
+              sortOrder !== 'none' 
+                ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' 
+                : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+            title="Trier par nom (A-Z / Z-A)"
+          >
+            <Filter size={18} strokeWidth={2} />
+            {sortOrder === 'asc' && <span className="ml-1 text-[10px] font-bold">A-Z</span>}
+            {sortOrder === 'desc' && <span className="ml-1 text-[10px] font-bold">Z-A</span>}
           </button>
           {/* Bouton 'Create Group' supprimé */}
         </div>
@@ -146,9 +267,9 @@ const StudentGroups: React.FC = () => {
               key={student.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-50 rounded-[32px] p-8 border border-gray-100 hover:border-indigo-200 hover:bg-white transition-all group"
+              className="bg-gray-50 rounded-[32px] p-6 border border-gray-100 hover:border-indigo-200 hover:bg-white transition-all flex flex-col group h-full"
             >
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-start mb-4">
                 <div className="relative">
                   <img 
                     src={student.avatar} 
@@ -167,13 +288,11 @@ const StudentGroups: React.FC = () => {
               </div>
 
 
-              <h3 className="text-xl font-bold text-gray-900 mb-1">{student.name}</h3>
-              <p className="text-sm font-bold text-indigo-600 mb-1">{student.role}</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">{student.name}</h3>
               {student.groupName && (
-                <div className="mb-3">
-                  <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold rounded px-3 py-1">{student.groupName}</span>
-                </div>
+                <p className="text-sm font-medium text-gray-500 mb-1 truncate">Groupe: {student.groupName}</p>
               )}
+              <p className="text-sm font-bold text-indigo-600 mb-4 truncate">{student.role}</p>
 
               <div className="flex flex-wrap gap-2 mb-8">
                 {student.skills.map((skill, i) => (
@@ -183,17 +302,29 @@ const StudentGroups: React.FC = () => {
                 ))}
               </div>
 
-              <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                <div className="flex gap-3">
-                  <button className="p-2 text-gray-400 hover:text-indigo-600 transition-all">
-                    <Mail size={18} />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-black transition-all">
-                    <Github size={18} />
-                  </button>
-                  <button className="p-2 text-gray-400 hover:text-blue-600 transition-all">
-                    <Linkedin size={18} />
-                  </button>
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                <div className="flex gap-4">
+                  <a href={`mailto:${student.email}`} className="text-gray-400 hover:text-indigo-500 transition-colors">
+                    <Mail size={20} strokeWidth={2} />
+                  </a>
+                  {student.githubUrl ? (
+                    <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-900 transition-colors">
+                      <Github size={20} strokeWidth={2} />
+                    </a>
+                  ) : (
+                    <button disabled className="text-gray-200 cursor-not-allowed" title="Pas de lien GitHub">
+                      <Github size={20} strokeWidth={2} />
+                    </button>
+                  )}
+                  {student.linkedinUrl ? (
+                    <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-600 transition-colors">
+                      <Linkedin size={20} strokeWidth={2} />
+                    </a>
+                  ) : (
+                    <button disabled className="text-gray-200 cursor-not-allowed" title="Pas de lien LinkedIn">
+                      <Linkedin size={20} strokeWidth={2} />
+                    </button>
+                  )}
                 </div>
                 <button
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
@@ -201,22 +332,21 @@ const StudentGroups: React.FC = () => {
                       ? selected.find(s => s.id === student.id)
                         ? 'bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-600/20'
                         : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20'
-                      : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-100 text-gray-500 cursor-not-allowed'
                   }`}
                   disabled={student.status !== 'Available'}
                   onClick={() => toggleSelect(student)}
                 >
                   <UserPlus size={14} />
-                  {student.status === 'Available'
-                    ? selected.find(s => s.id === student.id)
-                      ? 'Selected'
-                      : 'Invite'
-                    : 'In Group'}
+                  {student.status === 'In Group' 
+                    ? 'In Group' 
+                    : selected.find(s => s.id === student.id) ? 'Selected' : 'Invite'}
                 </button>
               </div>
             </motion.div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

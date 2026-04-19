@@ -1,28 +1,166 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Phone, Globe, Camera, Shield, Bell, Lock, Save, Github, Linkedin } from 'lucide-react';
 import { motion } from 'motion/react';
+import { supabase } from '../../../lib/supabase';
 
 const StudentSettingsPage: React.FC = () => {
   const [profile, setProfile] = useState({
-    name: 'Hira R',
-    email: 'hira.r@student.hub',
-    phone: '+212 6 00 00 00 00',
-    website: 'portfolio.hira.com',
-    github: 'github.com/hira',
-    linkedin: 'linkedin.com/in/hira',
-    bio: 'UI/UX Designer & Frontend Developer. Passionate about creating beautiful and functional user interfaces.',
-    avatar: 'https://picsum.photos/seed/hira/150/150'
+    name: 'Chargement...',
+    email: 'chargement@hub.student',
+    phone: '',
+    website: '',
+    github: '',
+    linkedin: '',
+    bio: '',
+    avatar: 'https://ui-avatars.com/api/?name=User&background=random'
   });
 
+  const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
-  const handleSave = (e: React.FormEvent) => {
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!event.target.files || event.target.files.length === 0) return;
+      setUploadingAvatar(true);
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      
+      const userId = session.user.id;
+      const fileName = `${userId}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // 1. Upload au bucket avatars
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Récupérer l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // 3. Mettre à jour l'utilisateur
+      const { error: updateError } = await supabase
+        .from('utilisateurs')
+        .update({ avatar_url: publicUrl })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
+
+      // 4. Mettre à jour l'interface
+      setProfile(prev => ({ ...prev, avatar: publicUrl }));
+
+    } catch (error: any) {
+      console.error('Erreur upload avatar:', error);
+      alert('Erreur lors du téléchargement de la photo : ' + error.message);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      
+      const { data: user } = await supabase
+        .from('utilisateurs')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      const { data: student } = await supabase
+        .from('etudiants')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (user) {
+        setProfile({
+          name: `${user.prenom} ${user.nom}`,
+          email: user.email,
+          phone: user.telephone || '',
+          website: student?.portfolio_url || '',
+          github: student?.github_url || '',
+          linkedin: student?.linkedin_url || '',
+          bio: user.bio || '',
+          avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${user.prenom}+${user.nom}&background=random`
+        });
+      }
+      setLoading(false);
+    };
+    
+    fetchProfile();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 2500);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    try {
+      const { error: userError } = await supabase
+        .from('utilisateurs')
+        .update({ telephone: profile.phone })
+        .eq('id', session.user.id);
+      
+      if (userError) throw userError;
+        
+      const { error: studentError } = await supabase
+        .from('etudiants')
+        .update({
+          portfolio_url: profile.website,
+          github_url: profile.github,
+          linkedin_url: profile.linkedin
+        })
+        .eq('id', session.user.id);
+
+      if (studentError) throw studentError;
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde:", error);
+      alert("Erreur lors de la sauvegarde: " + error.message);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwords.new !== passwords.confirm) {
+      alert("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwords.new
+      });
+      
+      if (error) throw error;
+      
+      setPasswords({ current: '', new: '', confirm: '' });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 2500);
+    } catch (error: any) {
+      alert("Erreur lors du changement de mot de passe: " + error.message);
+    }
   };
 
   const [activeTab, setActiveTab] = useState('profile');
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+
+  if (loading) {
+    return <div className="flex-1 bg-white text-gray-900 p-8 flex items-center justify-center font-semibold text-gray-500">Chargement des données...</div>;
+  }
 
   return (
     <div className="flex-1 bg-white text-gray-900 p-8 overflow-y-auto">
@@ -66,11 +204,26 @@ const StudentSettingsPage: React.FC = () => {
               <form onSubmit={handleSave} className="space-y-10">
                 {/* Profile Header Modern */}
                 <div className="flex flex-col sm:flex-row items-center gap-6 p-8">
-                  <div className="relative">
+                  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <img
                       src={profile.avatar}
                       alt="Profile"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl"
+                      className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl transition-all ${uploadingAvatar ? 'opacity-50' : 'group-hover:opacity-75'}`}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                      <Camera className="text-white w-8 h-8" />
+                    </div>
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleAvatarUpload} 
+                      accept="image/*" 
+                      className="hidden" 
                     />
                   </div>
                   <div className="flex flex-col items-center sm:items-start gap-1">
@@ -133,7 +286,7 @@ const StudentSettingsPage: React.FC = () => {
               </form>
             )}
             {activeTab === 'security' && (
-              <form className="space-y-8 max-w-lg mx-auto mt-8 p-0">
+              <form onSubmit={handlePasswordChange} className="space-y-8 max-w-lg mx-auto mt-8 p-0">
                 <h2 className="text-xl font-bold mb-6">Change Password</h2>
                 <div className="space-y-4">
                   <div>

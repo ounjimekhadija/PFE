@@ -1,25 +1,230 @@
-import React, { useState } from 'react';
-import { Send, Paperclip, Video, Search, Smile, CheckCheck, MoreHorizontal } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Paperclip, Video, Search, Smile, CheckCheck, MoreHorizontal, Users, Crown } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
+
+interface Message {
+  id: string;
+  senderName: string;
+  senderId: string;
+  text: string;
+  time: string;
+  isMe: boolean;
+  avatar: string;
+  created_at: string;
+}
+
+interface Member {
+  id: string;
+  nom: string;
+  prenom: string;
+  avatar_url: string | null;
+  role?: string;
+  email?: string;
+}
 
 const StudentChat: React.FC = () => {
-  const [messages] = useState([
-    { id: 1, sender: 'Prof. Ahmed', text: 'Bonjour l\'équipe, comment avance l\'itération 1 ?', time: '09:41', isMe: false, avatar: 'https://picsum.photos/seed/prof/100/100' },
-    { id: 2, sender: 'Me', text: 'Bonjour Monsieur, nous avons presque terminé le module d\'authentification.', time: '09:45', isMe: true, avatar: 'https://picsum.photos/seed/hira/100/100' },
-    { id: 3, sender: 'Anas M', text: 'J\'ai configuré Firebase ce matin, tout fonctionne bien.', time: '09:47', isMe: false, avatar: 'https://picsum.photos/seed/anas/100/100' },
-    { id: 4, sender: 'Prof. Ahmed', text: 'Excellent. N\'oubliez pas de mettre à jour le Kanban et de déposer le rapport.', time: '09:50', isMe: false, avatar: 'https://picsum.photos/seed/prof/100/100' },
-  ]);
-
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectTitle, setProjectTitle] = useState('Mon Groupe');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleJoinVideo = () => {
-    window.open('https://meet.jit.si/StudentHub_Iteration1_GroupA', '_blank');
+  const [members, setMembers] = useState<Member[]>([]);
+  const [supervisor, setSupervisor] = useState<Member | null>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    const initChat = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        
+        setCurrentUserId(session.user.id);
+
+        const { data: etudiant } = await supabase
+          .from('etudiants')
+          .select('projet_id')
+          .eq('id', session.user.id)
+          .single();
+
+        if (etudiant?.projet_id) {
+          setProjectId(etudiant.projet_id);
+          
+          const { data: projet } = await supabase
+            .from('projets')
+            .select('titre, encadrant_id')
+            .eq('id', etudiant.projet_id)
+            .single();
+            
+          if (projet) {
+            setProjectTitle(projet.titre);
+            
+            if (projet.encadrant_id) {
+              const { data: supData } = await supabase
+                .from('utilisateurs')
+                .select('id, nom, prenom, avatar_url, role, email')
+                .eq('id', projet.encadrant_id)
+                .single();
+                
+              if (supData) {
+                setSupervisor(supData as Member);
+              }
+            }
+          }
+
+          const { data: etudiantList } = await supabase
+            .from('etudiants')
+            .select('id, utilisateurs(id, nom, prenom, avatar_url, role, email)')
+            .eq('projet_id', etudiant.projet_id);
+
+          if (etudiantList) {
+            const formattedMembers = etudiantList
+              .map((e: any) => {
+                 let u = Array.isArray(e.utilisateurs) ? e.utilisateurs[0] : e.utilisateurs;
+                 if (!u) return null;
+                 return { ...u, id: e.id };
+              })
+              .filter(Boolean) as Member[];
+            setMembers(formattedMembers);
+          }
+
+          fetchMessages(etudiant.projet_id, session.user.id);
+          setupRealtimeSubscription(etudiant.projet_id, session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error init chat:', err);
+        setLoading(false);
+      }
+    };
+
+    initChat();
+
+    return () => {
+      supabase.removeAllChannels();
+    };
+  }, []);
+
+  const formatTime = (isoString: string) => {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const fetchMessages = async (projId: string, currentUserId: string) => {
+    const { data: msgs, error } = await supabase
+      .from('messages')
+      .select('*, utilisateurs(nom, prenom, avatar_url)')
+      .eq('projet_id', projId)
+      .order('created_at', { ascending: true });
+
+    if (msgs) {
+      const formattedMsgs = msgs.map((m: any) => ({
+        id: m.id,
+        senderId: m.auteur_id,
+        senderName: m.utilisateurs ? `${m.utilisateurs.prenom} ${m.utilisateurs.nom}` : 'Inconnu',
+        text: m.contenu,
+        time: formatTime(m.created_at),
+        isMe: m.auteur_id === currentUserId,
+        avatar: m.utilisateurs?.avatar_url || `https://ui-avatars.com/api/?name=${m.utilisateurs?.prenom}+${m.utilisateurs?.nom}&background=random`,
+        created_at: m.created_at
+      }));
+      setMessages(formattedMsgs);
+    }
+    setLoading(false);
+  };
+
+  const setupRealtimeSubscription = (projId: string, myUserId: string) => {
+    supabase
+      .channel(`chat_${projId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `projet_id=eq.${projId}`
+        },
+        async (payload) => {
+          const { data: newMsgData } = await supabase
+            .from('messages')
+            .select('*, utilisateurs(nom, prenom, avatar_url)')
+            .eq('id', payload.new.id)
+            .single();
+
+          if (newMsgData) {
+            setMessages((prev) => {
+              if (prev.some(p => p.id === newMsgData.id)) return prev;
+              const formatted = {
+                id: newMsgData.id,
+                senderId: newMsgData.auteur_id,
+                senderName: newMsgData.utilisateurs ? `${newMsgData.utilisateurs.prenom} ${newMsgData.utilisateurs.nom}` : 'Inconnu',
+                text: newMsgData.contenu,
+                time: formatTime(newMsgData.created_at),
+                isMe: newMsgData.auteur_id === myUserId,
+                avatar: newMsgData.utilisateurs?.avatar_url || `https://ui-avatars.com/api/?name=${newMsgData.utilisateurs?.prenom}+${newMsgData.utilisateurs?.nom}&background=random`,
+                created_at: newMsgData.created_at
+              };
+              return [...prev, formatted];
+            });
+          }
+        }
+      )
+      .subscribe();
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!newMessage.trim() || !projectId || !currentUserId) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage(''); 
+
+    const { error } = await supabase.from('messages').insert({
+      projet_id: projectId,
+      auteur_id: currentUserId,
+      contenu: messageText,
+      type: 'TEXTE'
+    });
+
+    if (error) {
+      console.error('Error sending message:', error);
+      setNewMessage(messageText); 
+    }
+  };
+
+  const handleJoinVideo = () => {
+    if (projectId) {
+      window.open(`https://meet.jit.si/StudentHub_Project_${projectId}`, '_blank');
+    }
+  };
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center bg-[#F8F9FD]">Chargement du chat...</div>;
+  }
+
+  if (!projectId) {
+    return (
+      <div className="flex h-screen bg-[#F8F9FD] items-center justify-center p-8 text-center text-slate-500 font-bold">
+        Vous n'êtes assigné à aucun projet. Veuillez d'abord rejoindre ou créer un groupe.
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-[#F8F9FD] font-sans antialiased text-slate-900 overflow-hidden">
+    <div className="flex h-full bg-[#F8F9FD] font-sans antialiased text-slate-900 overflow-hidden w-full">
       
-      {/* --- Sidebar Contacts --- */}
-      <div className="w-80 border-r border-slate-200 bg-white flex flex-col shadow-sm">
+      {/* Left Sidebar */}
+      <div className="shrink-0 w-80 border-r border-slate-200 bg-white shadow-sm hidden md:flex md:flex-col h-full">
         <div className="p-8 pb-6">
           <h2 className="text-2xl font-extrabold tracking-tight mb-6">Messages</h2>
           <div className="relative">
@@ -32,117 +237,135 @@ const StudentChat: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-1 px-3">
-          {[
-            { name: 'Group A - Project', lastMsg: 'Anas: J\'ai configuré Firebase...', time: '09:47', active: true, unread: 0, initial: 'G' },
-            { name: 'Prof. Ahmed Alami', lastMsg: 'Excellent. N\'oubliez pas...', time: '09:50', active: false, unread: 2, initial: 'A' },
-            { name: 'Sara K (Frontend)', lastMsg: 'Je termine les styles...', time: 'Hier', active: false, unread: 0, initial: 'S' },
-            { name: 'Yassine B (DevOps)', lastMsg: 'Le CI/CD est prêt.', time: 'Hier', active: false, unread: 0, initial: 'Y' },
-          ].map((chat, i) => (
-            <div key={i} className={`p-4 flex items-center gap-4 cursor-pointer transition-all duration-200 rounded-2xl ${
-              chat.active ? 'bg-indigo-50 shadow-sm border border-indigo-100' : 'hover:bg-slate-50 border border-transparent'
-            }`}>
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold shadow-sm ${
-                chat.active ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-indigo-600'
-              }`}>
-                {chat.initial}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-0.5">
-                  <h4 className="font-bold text-[14px] text-slate-900 truncate">{chat.name}</h4>
-                  <span className="text-[10px] font-bold text-slate-400">{chat.time}</span>
+        <div className="flex-1 overflow-y-auto px-3 pb-6 custom-scrollbar space-y-8">
+
+          <div>
+             <h3 className="px-7 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="bg-amber-100 p-1.5 rounded-lg text-amber-500"><Crown size={14} /></span>
+              Encadrant
+            </h3>
+            {supervisor ? (
+              <div className="mx-4 px-3 py-2 flex items-center gap-3 bg-white rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 cursor-pointer group">
+                <img 
+                  src={supervisor.avatar_url || `https://ui-avatars.com/api/?name=${supervisor.prenom}+${supervisor.nom}&background=random`} 
+                  alt="Encadrant" 
+                  className="w-10 h-10 rounded-xl object-cover shadow-sm border border-slate-100 bg-white group-hover:scale-105 transition-transform"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-slate-800 truncate">{supervisor.prenom} {supervisor.nom}</p>
+                  <p className="text-xs text-amber-600 font-bold truncate">Superviseur</p>
                 </div>
-                <p className="text-xs text-slate-500 truncate font-medium">{chat.lastMsg}</p>
               </div>
-              {chat.unread > 0 && (
-                <div className="w-5 h-5 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-indigo-200">
-                  {chat.unread}
+            ) : (
+                <div className="mx-7 py-2 text-xs text-slate-400 font-medium italic">Aucun encadrant assigné</div>
+            )}
+          </div>
+
+          <div>
+             <h3 className="px-7 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="bg-indigo-100 p-1.5 rounded-lg text-indigo-500"><Users size={14} /></span>
+              Membres ({members.length})
+            </h3>
+            <div className="space-y-1 mx-4">
+              {members.map(member => (
+                <div key={member.id} className="px-3 py-2.5 flex items-center gap-3 bg-white rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 cursor-pointer group">
+                  <img 
+                    src={member.avatar_url || `https://ui-avatars.com/api/?name=${member.prenom}+${member.nom}&background=random`} 
+                    alt="Membre" 
+                    className="w-10 h-10 rounded-xl object-cover shadow-sm border border-slate-100 bg-white group-hover:scale-105 transition-transform"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate flex items-center gap-2">
+                      {member.prenom} {member.nom}
+                      {member.id === currentUserId && (
+                        <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded tracking-wide uppercase">Moi</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium truncate">Étudiant(e)</p>
+                  </div>
                 </div>
+              ))}
+              {members.length === 0 && (
+                <div className="px-3 py-2 text-xs text-slate-400 font-medium italic">Aucun membre trouvé</div>
               )}
             </div>
-          ))}
+          </div>
+
         </div>
       </div>
 
-      {/* --- Main Chat Area --- */}
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white">
         
-        {/* Chat Header (Glassmorphism) */}
-        <header className="h-24 border-b border-slate-100 px-10 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-200">
-              G
+        <header className="h-24 border-b border-slate-100 px-6 md:px-10 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 w-full">
+          <div className="flex items-center gap-4 cursor-pointer md:cursor-default">
+            <div className="w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-200">
+              {projectTitle.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-lg">Group A - Project</h3>
+              <h3 className="font-bold text-slate-900 text-base md:text-lg truncate max-w-[200px] md:max-w-xs">{projectTitle}</h3>
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                <span className="text-xs font-bold text-slate-400 tracking-wide">4 Membres en ligne</span>
+                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">En ligne</span>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <button 
               onClick={handleJoinVideo}
-              className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-sm font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
+              className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 bg-slate-900 text-white rounded-2xl text-xs md:text-sm font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
             >
               <Video size={18} />
-              Appel Vidéo
+              <span className="hidden md:inline">Appel Vidéo</span>
             </button>
           </div>
         </header>
 
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-10 space-y-10 bg-[#F8F9FD]/50">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-4 ${msg.isMe ? 'flex-row-reverse' : ''}`}>
-              <img src={msg.avatar} alt="" className="w-10 h-10 rounded-2xl object-cover shadow-sm ring-2 ring-white" />
-              <div className={`max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{msg.isMe ? 'Moi' : msg.sender}</span>
-                  <span className="text-[11px] font-medium text-slate-300">{msg.time}</span>
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 space-y-6 md:space-y-10 bg-[#F8F9FD]/50 custom-scrollbar">
+          {messages.map((msg, index) => (
+            <div key={msg.id} className={`flex gap-3 md:gap-4 ${msg.isMe ? 'flex-row-reverse' : ''}`}>
+              <img src={msg.avatar} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-2xl object-cover shadow-sm ring-white ring-2" />
+              <div className={`max-w-[85%] md:max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
+                <div className="flex items-center gap-2 mb-1.5 px-1">
+                  <span className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest">{msg.isMe ? 'Moi' : msg.senderName}</span>
+                  <span className="text-[10px] md:text-[11px] font-medium text-slate-300">{msg.time}</span>
                 </div>
-                <div className={`px-6 py-4 shadow-sm transition-all text-[15px] leading-relaxed font-medium ${
+                <div className={`px-5 py-3 md:px-6 md:py-4 shadow-sm transition-all text-[14px] md:text-[15px] leading-relaxed font-medium break-words ${
                   msg.isMe 
                     ? 'bg-indigo-600 text-white rounded-3xl rounded-tr-none shadow-indigo-100' 
                     : 'bg-white text-slate-700 border border-slate-100 rounded-3xl rounded-tl-none'
                 }`}>
                   {msg.text}
                 </div>
-                {msg.isMe && (
-                  <div className="mt-1.5 flex gap-1 items-center">
-                    <CheckCheck size={14} className="text-indigo-500" />
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Lu</span>
-                  </div>
-                )}
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-8 bg-white border-t border-slate-100">
-          <div className="max-w-4xl mx-auto relative flex items-center gap-4 bg-slate-50 p-2 rounded-[2rem] border border-slate-200/50 shadow-inner">
-            <button className="p-3 text-slate-400 hover:text-indigo-600 transition-colors">
+        <div className="p-4 md:p-8 bg-white border-t border-slate-100 w-full">
+          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative flex items-center gap-2 md:gap-4 bg-slate-50 p-2 rounded-[2rem] border border-slate-200/50 shadow-inner">
+            <button type="button" className="p-2 md:p-3 text-slate-400 hover:text-indigo-600 transition-colors hidden md:block">
               <Smile size={24} />
-            </button>
-            <button className="p-3 text-slate-400 hover:text-indigo-600 transition-colors">
-              <Paperclip size={24} />
             </button>
             <input 
               type="text" 
               placeholder="Écrivez votre message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1 bg-transparent border-none focus:outline-none text-slate-700 font-medium px-2"
+              className="flex-1 bg-transparent border-none focus:outline-none text-slate-700 font-medium px-4 text-sm md:text-base"
             />
-            <button className="bg-indigo-600 text-white p-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-90">
-              <Send size={20} />
+            <button 
+              type="submit" 
+              disabled={!newMessage.trim()}
+              className="bg-indigo-600 text-white p-3 md:p-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send size={18} className="md:w-5 md:h-5" />
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>

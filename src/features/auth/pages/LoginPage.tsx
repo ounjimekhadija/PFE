@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Github, Facebook, Chrome, GraduationCap, UserCog, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserRole } from '../../../shared/types';
+import { supabase } from '../../../lib/supabase';
 
 interface LoginProps {
   onLogin: (role: UserRole) => void;
@@ -11,10 +12,49 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(role);
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Connexion via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // 2. Récupérer le rôle de l'utilisateur depuis la table utilisateurs
+        const { data: userData, error: userError } = await supabase
+          .from('utilisateurs')
+          .select('role')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (userError) throw userError;
+
+        // Mapper le rôle Supabase (ADMINISTRATEUR, ENCADRANT, ETUDIANT) vers nos UserRoles internes
+        let userRole: UserRole = 'student';
+        if (userData.role === 'ADMINISTRATEUR') userRole = 'admin';
+        else if (userData.role === 'ENCADRANT') userRole = 'professor';
+        
+        // 3. Déclencher onLogin avec le vrai rôle
+        onLogin(userRole);
+      }
+    } catch (err: any) {
+      console.error('Erreur de connexion:', err);
+      // Fallback: pour le développement si Supabase n'a pas encore de données
+      // onLogin(role); 
+      setError(err.message || 'Identifiants incorrects');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,12 +116,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
+          {error && <div className="text-red-300 text-sm text-center font-semibold bg-red-900/40 p-2 border border-red-500/50 rounded-lg">{error}</div>}
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full bg-transparent rounded-none py-4 px-2 text-white placeholder-white/80 text-base font-medium focus:outline-none focus:ring-0 shadow-none border-b border-white/40 focus:border-white transition-all"
-            placeholder="User name"
+            placeholder="Adresse email"
             required
           />
           <input
@@ -89,14 +130,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-transparent rounded-none py-4 px-2 text-white placeholder-white/80 text-base font-medium focus:outline-none focus:ring-0 shadow-none border-b border-white/40 focus:border-white transition-all"
-            placeholder="Password"
+            placeholder="Mot de passe"
             required
           />
           <button
             type="submit"
-            className="w-1/2 mx-auto bg-white text-black font-bold py-3 rounded-full text-lg shadow-lg hover:bg-pink-100 transition-all"
+            disabled={loading}
+            className="w-1/2 mx-auto bg-white text-black font-bold py-3 px-6 rounded-full text-lg shadow-lg hover:bg-pink-100 transition-all disabled:opacity-50"
           >
-            Login
+            {loading ? 'Connexion...' : 'Login'}
           </button>
         </form>
         <div className="w-full flex flex-col items-center mt-6 gap-2">

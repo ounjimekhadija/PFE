@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, MoreHorizontal, User, MessageSquare, Paperclip, CheckSquare, Clock } from 'lucide-react';
 import CommentModal from '../../../shared/components/CommentModal';
 import { motion } from 'motion/react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { supabase } from '../../../lib/supabase';
 
 interface TaskS {
   id: string;
@@ -12,6 +13,7 @@ interface TaskS {
   assignee: string;
   comments: number;
   attachments: number;
+  db_id?: string; // Garder l'id supabase
 }
 
 interface Column {
@@ -25,99 +27,189 @@ const DroppableComponent = Droppable as any;
 
 const StudentTasks: React.FC = () => {
   const [isCommentOpen, setIsCommentOpen] = useState(false);
-  const [selectedComment, setSelectedComment] = useState<string>('');
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  // Modal création de tâche (hooks et handler AVANT le useState des colonnes)
+  // Modal création de tâche
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', assignee: '', description: '' });
-  const assigneeOptions = ['Hira R', 'Anas M', 'Sara K'];
-
-  const handleCreateTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTask.title || !newTask.assignee) return;
-    setColumns(cols => cols.map(col =>
-      col.id === 'todo'
-        ? { ...col, tasks: [
-            ...col.tasks,
-            {
-              id: Date.now().toString(),
-              title: newTask.title,
-              description: newTask.description,
-              priority: 'Low',
-              assignee: newTask.assignee,
-              comments: 0,
-              attachments: 0,
-            },
-          ] }
-        : col
-    ));
-    setShowCreateTask(false);
-    setNewTask({ title: '', assignee: '', description: '' });
-  };
+  const [assigneeOptions, setAssigneeOptions] = useState<{id: string, name: string}[]>([]);
+  const [currentIterationId, setCurrentIterationId] = useState<string | null>(null);
 
   const [columns, setColumns] = useState<Column[]>([
-    {
-      id: 'todo',
-      title: 'À faire',
-      tasks: [
-        {
-          id: '1',
-          title: 'Design Authentication Flow',
-          description: 'Create wireframes and sequence diagrams for the login/signup process.',
-          priority: 'High',
-          assignee: 'Hira R',
-          comments: 3,
-          attachments: 2,
-        },
-      ],
-    },
-    {
-      id: 'inprogress',
-      title: 'En cours',
-      tasks: [
-        {
-          id: '2',
-          title: 'Setup Firebase Auth',
-          description: 'Configure Firebase project and implement Google Sign-in.',
-          priority: 'Medium',
-          assignee: 'Anas M',
-          comments: 5,
-          attachments: 1,
-        },
-      ],
-    },
-    {
-      id: 'done',
-      title: 'Terminé',
-      tasks: [
-        {
-          id: '3',
-          title: 'Project Initialization',
-          description: 'Setup Vite + React + Tailwind CSS boilerplate.',
-          priority: 'Low',
-          assignee: 'Sara K',
-          comments: 2,
-          attachments: 0,
-        },
-      ],
-    },
+    { id: 'todo', title: 'À faire', tasks: [] },
+    { id: 'inprogress', title: 'En cours', tasks: [] },
+    { id: 'done', title: 'Terminé', tasks: [] },
   ]);
 
-  const onDragEnd = (result: DropResult) => {
+  useEffect(() => {
+    const fetchTasksAndStudents = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // 1. Get student's project
+        const { data: studentData, error: studentError } = await supabase
+          .from('etudiants')
+          .select('projet_id')
+          .eq('id', user.id)
+          .single();
+
+        if (studentError || !studentData?.projet_id) return;
+        const projectId = studentData.projet_id;
+
+        // 2. Fetch all members of this project to assign tasks
+        const { data: projectMembers, error: membersError } = await supabase
+          .from('etudiants')
+          .select('id, utilisateurs!inner(nom, prenom)')
+          .eq('projet_id', projectId);
+
+        if (membersError) {
+          console.error("Erreur récupération membres:", membersError);
+        }
+
+        if (projectMembers) {
+          const formattedMembers = projectMembers.map((m: any) => {
+            const userObj = Array.isArray(m.utilisateurs) ? m.utilisateurs[0] : m.utilisateurs;
+            const isMe = m.id === user.id;
+            return {
+              id: m.id,
+              name: userObj 
+                ? `${userObj.prenom} ${userObj.nom} ${isMe ? '(Moi)' : ''}` 
+                : (isMe ? 'Moi' : 'Membre Inconnu')
+            };
+          });
+          setAssigneeOptions(formattedMembers);
+        }
+
+        // 3. Fetch active iteration
+        const { data: iteration } = await supabase
+          .from('iterations')
+          .select('id')
+          .eq('projet_id', projectId)
+          .eq('statut', 'EN_COURS')
+          .single();
+
+        if (!iteration) return;
+        setCurrentIterationId(iteration.id);
+
+        // 4. Fetch tasks
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('taches')
+          .select(`
+            *,
+            assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom)
+          `)
+          .eq('iteration_id', iteration.id);
+
+        if (tasksError) {
+          console.error("Error fetching tasks:", tasksError);
+          // If the relation or columns like 'description' / 'assigne_id' don't exist yet, this query will fail.
+        }
+
+        const taskRows = tasksData || [];
+
+        // Distribute in columns based on status
+        const todo: TaskS[] = [];
+        const inprogress: TaskS[] = [];
+        const done: TaskS[] = [];
+
+        taskRows.forEach((t: any) => {
+          // Format task
+          const taskObj: TaskS = {
+            id: t.id.toString(),
+            db_id: t.id,
+            title: t.titre,
+            description: t.description || 'Aucune description',
+            priority: t.prioritie || 'Medium',
+            assignee: t.assigne ? `${t.assigne.prenom} ${t.assigne.nom}` : 'Non assigné',
+            comments: t.tache_commentaires ? t.tache_commentaires.length : 0,
+            attachments: 0,
+          };
+
+          if (t.etat === 'A_FAIRE') todo.push(taskObj);
+          else if (t.etat === 'EN_COURS') inprogress.push(taskObj);
+          else if (t.etat === 'TERMINE' || t.etat === 'VALIDE') done.push(taskObj);
+          else todo.push(taskObj); // Default to 'todo'
+        });
+
+        setColumns([
+          { id: 'todo', title: 'À faire', tasks: todo },
+          { id: 'inprogress', title: 'En cours', tasks: inprogress },
+          { id: 'done', title: 'Terminé', tasks: done },
+        ]);
+
+      } catch (err) {
+        console.error('Failed to load tasks', err);
+      }
+    };
+    fetchTasksAndStudents();
+  }, []);
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTask.title) return;
+
+    if (!currentIterationId) {
+      alert("Impossible de créer la tâche : Il n'y a pas d'itération (Sprint) active 'EN_COURS' pour votre projet.");
+      return;
+    }
+
+    try {
+      // Si la colonne 'description' ou 'assigne_id' manque en base, ce code crashera. 
+      // Dans ce cas côté base de données il faudrait les rajouter : 
+      // alter table taches add column description text;
+      // alter table taches add column assigne_id uuid references utilisateurs(id);
+      
+      const { data: newDbTask, error } = await supabase
+        .from('taches')
+        .insert({
+          iteration_id: currentIterationId,
+          titre: newTask.title,
+          description: newTask.description,
+          assigne_id: newTask.assignee || null, // it's expecting a UUID
+          etat: 'A_FAIRE'
+        })
+        .select(`
+          *,
+          assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom)
+        `)
+        .single();
+
+      if (error) {
+        console.error("Erreur lors de la création", error);
+        alert("Erreur de création de tâche. Vérifiez que les colonnes 'description' et 'assigne_id' existent dans Supabase.");
+        return;
+      }
+
+      const assigneeName = newDbTask.assigne ? `${newDbTask.assigne.prenom} ${newDbTask.assigne.nom}` : 'Non assigné';
+
+      const taskObj: TaskS = {
+        id: newDbTask.id.toString(),
+        db_id: newDbTask.id,
+        title: newDbTask.titre,
+        description: newDbTask.description || 'Aucune description',
+        priority: 'Medium',
+        assignee: assigneeName,
+        comments: 0,
+        attachments: 0,
+      };
+
+      setColumns(cols => cols.map(col =>
+        col.id === 'todo' ? { ...col, tasks: [...col.tasks, taskObj] } : col
+      ));
+      
+      setShowCreateTask(false);
+      setNewTask({ title: '', assignee: '', description: '' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const onDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
 
-    // Dropped outside the list
-    if (!destination) {
-      return;
-    }
-
-    // Dropped in the same position
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      return;
-    }
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     const sourceColIndex = columns.findIndex(col => col.id === source.droppableId);
     const destColIndex = columns.findIndex(col => col.id === destination.droppableId);
@@ -126,9 +218,7 @@ const StudentTasks: React.FC = () => {
     const destCol = columns[destColIndex];
 
     const sourceTasks = [...sourceCol.tasks];
-    const destTasks = source.droppableId === destination.droppableId 
-      ? sourceTasks 
-      : [...destCol.tasks];
+    const destTasks = source.droppableId === destination.droppableId ? sourceTasks : [...destCol.tasks];
 
     const [removed] = sourceTasks.splice(source.index, 1);
     destTasks.splice(destination.index, 0, removed);
@@ -137,7 +227,32 @@ const StudentTasks: React.FC = () => {
     newColumns[sourceColIndex] = { ...sourceCol, tasks: sourceTasks };
     newColumns[destColIndex] = { ...destCol, tasks: destTasks };
 
+    // Sauvegarde en cas d'erreur pour rollback
+    const previousColumns = [...columns];
+    
+    // Update UI optimistic
     setColumns(newColumns);
+
+    // Update via Supabase
+    if (source.droppableId !== destination.droppableId && removed.db_id) {
+      let newState = 'A_FAIRE';
+      if (destination.droppableId === 'inprogress') newState = 'EN_COURS';
+      if (destination.droppableId === 'done') newState = 'TERMINE';
+
+      try {
+        const { error } = await supabase
+          .from('taches')
+          .update({ etat: newState })
+          .eq('id', removed.db_id);
+        
+        if (error) throw error;
+      } catch (error: any) {
+        console.error("Update task status failed", error);
+        alert("Erreur de sauvegarde: impossible de déplacer la tâche (Avez-vous configuré les Policies Supabase ?)");
+        // Rollback de l'interface en cas d'erreur
+        setColumns(previousColumns);
+      }
+    }
   };
 
 
@@ -201,7 +316,7 @@ const StudentTasks: React.FC = () => {
                 >
                   <option value="" disabled>Choisir un membre</option>
                   {assigneeOptions.map(opt => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt.id} value={opt.id}>{opt.name}</option>
                   ))}
                 </select>
               </div>
@@ -270,7 +385,7 @@ const StudentTasks: React.FC = () => {
                                   <button
                                     className="flex items-center gap-1 text-xs font-bold focus:outline-none"
                                     onClick={() => {
-                                      setSelectedComment('Très bon début, pensez à détailler les cas d\'erreur et à valider le flow avec l\'équipe.');
+                                        setSelectedTaskId(task.db_id || null);
                                       setIsCommentOpen(true);
                                     }}
                                     type="button"
@@ -295,7 +410,8 @@ const StudentTasks: React.FC = () => {
       <CommentModal
         isOpen={isCommentOpen}
         onClose={() => setIsCommentOpen(false)}
-        comment={selectedComment}
+        taskId={selectedTaskId}
+        readOnly={true}
       />
     </div>
   );
