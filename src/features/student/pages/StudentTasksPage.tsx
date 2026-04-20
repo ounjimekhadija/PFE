@@ -11,6 +11,7 @@ interface TaskS {
   description: string;
   priority: 'High' | 'Medium' | 'Low';
   assignee: string;
+  assigneeStudentId?: string;
   comments: number;
   attachments: number;
   db_id?: string; // Garder l'id supabase
@@ -97,7 +98,12 @@ const StudentTasks: React.FC = () => {
           .from('taches')
           .select(`
             *,
-            assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom),
+            tache_assignations (
+              etudiant_id,
+              etudiants (
+                utilisateurs(nom, prenom)
+              )
+            ),
             tache_commentaires ( id )
           `)
           .eq('iteration_id', iteration.id);
@@ -115,21 +121,31 @@ const StudentTasks: React.FC = () => {
         const done: TaskS[] = [];
 
         taskRows.forEach((t: any) => {
+          const firstAssignation = t.tache_assignations?.[0] ?? null;
+          const assignedStudentId = firstAssignation?.etudiant_id ?? undefined;
+          const assignedUser = firstAssignation?.etudiants?.utilisateurs;
+          const dbPriority = (t.priorite || 'MEDIUM') as string;
+
+          let uiPriority: TaskS['priority'] = 'Medium';
+          if (dbPriority === 'HIGH') uiPriority = 'High';
+          if (dbPriority === 'LOW') uiPriority = 'Low';
+
           // Format task
           const taskObj: TaskS = {
             id: t.id.toString(),
             db_id: t.id,
             title: t.titre,
             description: t.description || 'Aucune description',
-            priority: t.prioritie || 'Medium',
-            assignee: t.assigne ? `${t.assigne.prenom} ${t.assigne.nom}` : 'Non assigné',
+            priority: uiPriority,
+            assigneeStudentId: assignedStudentId,
+            assignee: assignedUser ? `${assignedUser.prenom} ${assignedUser.nom}` : 'Non assigné',
             comments: t.tache_commentaires ? t.tache_commentaires.length : 0,
             attachments: 0,
           };
 
           if (t.etat === 'A_FAIRE') todo.push(taskObj);
           else if (t.etat === 'EN_COURS') inprogress.push(taskObj);
-          else if (t.etat === 'TERMINE' || t.etat === 'VALIDE') done.push(taskObj);
+          else if (t.etat === 'TERMINE') done.push(taskObj);
           else todo.push(taskObj); // Default to 'todo'
         });
 
@@ -156,40 +172,47 @@ const StudentTasks: React.FC = () => {
     }
 
     try {
-      // Si la colonne 'description' ou 'assigne_id' manque en base, ce code crashera. 
-      // Dans ce cas côté base de données il faudrait les rajouter : 
-      // alter table taches add column description text;
-      // alter table taches add column assigne_id uuid references utilisateurs(id);
-      
       const { data: newDbTask, error } = await supabase
         .from('taches')
         .insert({
           iteration_id: currentIterationId,
           titre: newTask.title,
           description: newTask.description,
-          assigne_id: newTask.assignee || null, // it's expecting a UUID
+          priorite: 'MEDIUM',
           etat: 'A_FAIRE'
         })
-        .select(`
-          *,
-          assigne:utilisateurs!taches_assigne_id_fkey(nom, prenom),
-          tache_commentaires ( id )
-        `)
+        .select('*')
         .single();
 
       if (error) {
         console.error("Erreur lors de la création", error);
-        alert("Erreur de création de tâche. Vérifiez que les colonnes 'description' et 'assigne_id' existent dans Supabase.");
+        alert("Erreur de création de tâche.");
         return;
       }
 
-      const assigneeName = newDbTask.assigne ? `${newDbTask.assigne.prenom} ${newDbTask.assigne.nom}` : 'Non assigné';
+      if (newTask.assignee) {
+        const { error: assignError } = await supabase
+          .from('tache_assignations')
+          .insert({
+            tache_id: newDbTask.id,
+            etudiant_id: newTask.assignee,
+          });
+
+        if (assignError) {
+          console.error("Erreur lors de l'assignation", assignError);
+        }
+      }
+
+      const selectedAssignee = assigneeOptions.find((opt) => opt.id === newTask.assignee);
+
+      const assigneeName = selectedAssignee?.name || 'Non assigné';
 
       const taskObj: TaskS = {
         id: newDbTask.id.toString(),
         db_id: newDbTask.id,
         title: newDbTask.titre,
         description: newDbTask.description || 'Aucune description',
+        assigneeStudentId: newTask.assignee || undefined,
         priority: 'Medium',
         assignee: assigneeName,
         comments: 0,
@@ -314,9 +337,8 @@ const StudentTasks: React.FC = () => {
                   className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-indigo-400"
                   value={newTask.assignee}
                   onChange={e => setNewTask({ ...newTask, assignee: e.target.value })}
-                  required
                 >
-                  <option value="" disabled>Choisir un membre</option>
+                  <option value="">Non assigné</option>
                   {assigneeOptions.map(opt => (
                     <option key={opt.id} value={opt.id}>{opt.name}</option>
                   ))}

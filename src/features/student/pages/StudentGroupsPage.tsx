@@ -98,6 +98,8 @@ const StudentGroups: React.FC = () => {
 
   // Ajoute ou retire un étudiant de la sélection
   const toggleSelect = (student: Student) => {
+    if (student.status === 'In Group') return;
+
     if (selected.find(s => s.id === student.id)) {
       setSelected(selected.filter(s => s.id !== student.id));
     } else {
@@ -117,6 +119,30 @@ const StudentGroups: React.FC = () => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         const currentUserId = user?.id;
+
+        if (selected.length === 0) {
+          alert('Sélectionnez au moins un étudiant disponible.');
+          return;
+        }
+
+        const selectedUnavailable = selected.filter((s) => s.projet_id);
+        if (selectedUnavailable.length > 0) {
+          alert('Un ou plusieurs étudiants sélectionnés sont déjà dans un groupe.');
+          return;
+        }
+
+        if (currentUserId) {
+          const { data: meRow } = await supabase
+            .from('etudiants')
+            .select('id, projet_id')
+            .eq('id', currentUserId)
+            .single();
+
+          if (meRow?.projet_id) {
+            alert('Vous êtes déjà assigné à un projet. Un étudiant ne peut appartenir qu’à un seul projet.');
+            return;
+          }
+        }
 
         // 1. Créer le projet dans la base de données
         const dateDebut = new Date().toISOString().split('T')[0];
@@ -146,12 +172,18 @@ const StudentGroups: React.FC = () => {
           studentIdsToUpdate.push(currentUserId);
         }
         
-        const { error: studentUpdateError } = await supabase
+        const { data: updatedRows, error: studentUpdateError } = await supabase
           .from('etudiants')
           .update({ projet_id: projectId })
+          .select('id')
+          .is('projet_id', null)
           .in('id', studentIdsToUpdate);
           
         if (studentUpdateError) throw studentUpdateError;
+
+        if ((updatedRows || []).length !== studentIdsToUpdate.length) {
+          throw new Error('Certains étudiants sont déjà assignés à un projet. Opération annulée.');
+        }
   
         // 3. Mettre à jour l'interface locale
         setStudents(prev => prev.map(s =>

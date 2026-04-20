@@ -71,8 +71,8 @@ const StudentDashboard: React.FC = () => {
             .eq('iteration_id', iteration.id);
 
           if (tasks) {
-            completedTasks = tasks.filter(t => t.etat === 'TERMINE' || t.etat === 'VALIDE');
-            pendingTasks = tasks.filter(t => t.etat !== 'TERMINE' && t.etat !== 'VALIDE');
+            completedTasks = tasks.filter(t => t.etat === 'TERMINE');
+            pendingTasks = tasks.filter(t => t.etat !== 'TERMINE');
             totalTasks = tasks.length;
           }
         }

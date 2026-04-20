@@ -1,9 +1,171 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mail, Phone, CreditCard, GraduationCap, Linkedin, Github, MoreHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
-import { members } from '../../../shared/data/mockData';
+import { supabase } from '../../../lib/supabase';
+
+interface MemberCard {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  cne: string;
+  cin: string;
+  linkedin: string;
+  github: string;
+  avatar: string;
+}
 
 const Members: React.FC = () => {
+  const [members, setMembers] = useState<MemberCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const resolveAvatarUrl = (value: string | null | undefined, fallbackName: string): string => {
+    const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=random`;
+    if (!value) return fallback;
+
+    let raw = value.trim();
+    if (!raw) return fallback;
+
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return raw;
+    }
+
+    raw = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
+    const { data } = supabase.storage.from('avatars').getPublicUrl(raw);
+    return data?.publicUrl || fallback;
+  };
+
+  const normalizeExternalUrl = (value: string | null | undefined): string => {
+    if (!value) return '#';
+    const trimmed = value.trim();
+    if (!trimmed) return '#';
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+    return `https://${trimmed}`;
+  };
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        setLoading(true);
+        setLoadError(null);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setMembers([]);
+          return;
+        }
+
+        const { data: directProjectRows, error: directProjectError } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('encadrant_id', user.id);
+
+        if (directProjectError) throw directProjectError;
+
+        const projectIdSet = new Set<string>((directProjectRows || []).map((p: any) => String(p.id)));
+
+        // Fallback: some schemas store projets.encadrant_id as encadrants.id (not auth.users.id).
+        if (projectIdSet.size === 0) {
+          const encadrantIdCandidates = new Set<string>();
+
+          const { data: encById, error: encByIdError } = await supabase
+            .from('encadrants')
+            .select('id')
+            .eq('id', user.id)
+            .limit(1);
+
+          if (!encByIdError && Array.isArray(encById)) {
+            encById.forEach((row: any) => {
+              if (row?.id) encadrantIdCandidates.add(String(row.id));
+            });
+          }
+
+          const mappingColumns = ['utilisateur_id', 'user_id', 'auth_user_id'];
+          for (const column of mappingColumns) {
+            const { data: mappedRows, error: mappedError } = await supabase
+              .from('encadrants')
+              .select('id')
+              .eq(column, user.id)
+              .limit(1);
+
+            if (!mappedError && Array.isArray(mappedRows)) {
+              mappedRows.forEach((row: any) => {
+                if (row?.id) encadrantIdCandidates.add(String(row.id));
+              });
+            }
+          }
+
+          if (encadrantIdCandidates.size > 0) {
+            const { data: fallbackProjects, error: fallbackProjectsError } = await supabase
+              .from('projets')
+              .select('id')
+              .in('encadrant_id', Array.from(encadrantIdCandidates));
+
+            if (!fallbackProjectsError && Array.isArray(fallbackProjects)) {
+              fallbackProjects.forEach((p: any) => {
+                if (p?.id) projectIdSet.add(String(p.id));
+              });
+            }
+          }
+        }
+
+        const projectIds = Array.from(projectIdSet);
+        if (projectIds.length === 0) {
+          setMembers([]);
+          return;
+        }
+
+        const { data: studentRows, error: studentError } = await supabase
+          .from('etudiants')
+          .select(`
+            id,
+            cne,
+            cin,
+            github_url,
+            linkedin_url,
+            utilisateurs (
+              nom,
+              prenom,
+              email,
+              telephone,
+              avatar_url
+            )
+          `)
+          .in('projet_id', projectIds);
+
+        if (studentError) throw studentError;
+
+        const formatted: MemberCard[] = (studentRows || []).map((row: any) => {
+          const u = Array.isArray(row.utilisateurs) ? row.utilisateurs[0] : row.utilisateurs;
+          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : `Étudiant ${row.id}`;
+
+          return {
+            id: row.id,
+            name: fullName || 'Étudiant',
+            email: u?.email || 'N/A',
+            phone: u?.telephone || 'N/A',
+            cne: row.cne || 'N/A',
+            cin: row.cin || 'N/A',
+            linkedin: row.linkedin_url || '',
+            github: row.github_url || '',
+            avatar: resolveAvatarUrl(u?.avatar_url, fullName || 'Student'),
+          };
+        });
+
+        setMembers(formatted);
+      } catch (error) {
+        console.error('Erreur chargement membres:', error);
+        setLoadError(error instanceof Error ? error.message : 'Erreur inconnue lors du chargement des membres.');
+        setMembers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, []);
+
   return (
     <div className="flex-1 bg-white text-gray-900 p-8 overflow-y-auto">
       <header className="flex justify-between items-center mb-12">
@@ -11,12 +173,11 @@ const Members: React.FC = () => {
           <h1 className="text-3xl font-bold">Team Members</h1>
           <p className="text-gray-400 mt-2">Manage and view information of all students in the group</p>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-md">
-            Add Member
-          </button>
-        </div>
       </header>
+
+      {loading && <p className="text-sm text-gray-500 mb-6">Chargement des membres...</p>}
+      {!loading && loadError && <p className="text-sm text-red-500 mb-6">Erreur de chargement: {loadError}</p>}
+      {!loading && members.length === 0 && <p className="text-sm text-gray-500 mb-6">Aucun membre trouvé pour vos groupes.</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {members.map((member) => (
@@ -81,7 +242,7 @@ const Members: React.FC = () => {
 
               <div className="w-full flex gap-3">
                 <a 
-                  href={`https://${member.linkedin}`} 
+                  href={normalizeExternalUrl(member.linkedin)} 
                   target="_blank" 
                   rel="noreferrer"
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all border border-gray-100"
@@ -90,7 +251,7 @@ const Members: React.FC = () => {
                   <span className="text-xs font-medium text-gray-700">LinkedIn</span>
                 </a>
                 <a 
-                  href={`https://${member.github}`} 
+                  href={normalizeExternalUrl(member.github)} 
                   target="_blank" 
                   rel="noreferrer"
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all border border-gray-100"

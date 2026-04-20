@@ -30,60 +30,62 @@ const App: React.FC = () => {
     logout
   } = useAppController();
 
-  if (isInitializing) {
-    return <div className="h-screen w-full flex items-center justify-center bg-blue-900 text-white font-bold text-xl">Chargement de la session...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={login} />;
-  }
-
   return (
     <Router>
-      <div className="flex h-screen bg-white">
-        <Sidebar role={userRole} onLogout={logout} />
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <Routes>
-            {/* Common */}
-            {/* Settings page by role */}
-            {userRole === 'student' && <Route path="/settings" element={<StudentSettingsPage />} />}
-            {userRole === 'professor' && <Route path="/settings" element={<ProfessorSettingsPage />} />}
-            {userRole === 'admin' && <Route path="/settings" element={<AdminSettingsPage />} />}
+      {isInitializing ? (
+        <div className="h-screen w-full flex items-center justify-center bg-blue-900 text-white font-bold text-xl">Chargement de la session...</div>
+      ) : !isAuthenticated ? (
+        <Routes>
+          <Route path="/login" element={<LoginPage onLogin={login} />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      ) : (
+        <div className="flex h-screen bg-white">
+          <Sidebar role={userRole} onLogout={logout} />
+          <main className="flex-1 flex flex-col overflow-hidden">
+            <Routes>
+              <Route path="/login" element={<Navigate to="/dashboard" replace />} />
 
-            {/* Student routes */}
-            {userRole === 'student' && <>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<StudentDashboardPage />} />
-              <Route path="/chat" element={<StudentChatPage />} />
-              <Route path="/deliverables" element={<StudentDeliverablesPage />} />
-              <Route path="/groups" element={<StudentGroupsPage />} />
-              <Route path="/tasks" element={<StudentTasksPage />} />
-            </>}
+              {/* Settings page by role */}
+              {userRole === 'student' && <Route path="/settings" element={<StudentSettingsPage />} />}
+              {userRole === 'professor' && <Route path="/settings" element={<ProfessorSettingsPage />} />}
+              {userRole === 'admin' && <Route path="/settings" element={<AdminSettingsPage />} />}
 
-            {/* Professor routes */}
-            {userRole === 'professor' && <>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<ProfessorDashboardPage />} />
-              <Route path="/chat" element={<ProfessorChatPage />} />
-              <Route path="/deliverables" element={<ProfessorDeliverablesPage />} />
-              <Route path="/members" element={<ProfessorMembersPage />} />
-              <Route path="/tasks" element={<ProfessorTasksPage />} />
-            </>}
+              {/* Student routes */}
+              {userRole === 'student' && <>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<StudentDashboardPage />} />
+                <Route path="/chat" element={<StudentChatPage />} />
+                <Route path="/deliverables" element={<StudentDeliverablesPage />} />
+                <Route path="/groups" element={<StudentGroupsPage />} />
+                <Route path="/tasks" element={<StudentTasksPage />} />
+              </>}
 
-            {/* Admin routes */}
-            {userRole === 'admin' && <>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<AdminDashboardPage />} />
-              <Route path="/members" element={<AdminMembersPage />} />
-              <Route path="/projects" element={<AdminProjectsPage />} />
-              <Route path="/users" element={<AdminUsersPage />} />
-            </>}
+              {/* Professor routes */}
+              {userRole === 'professor' && <>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<ProfessorDashboardPage />} />
+                <Route path="/chat" element={<ProfessorChatPage />} />
+                <Route path="/deliverables" element={<ProfessorDeliverablesPage />} />
+                <Route path="/members" element={<ProfessorMembersPage />} />
+                <Route path="/tasks" element={<ProfessorTasksPage />} />
+              </>}
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </main>
-      </div>
+              {/* Admin routes */}
+              {userRole === 'admin' && <>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/members" element={<AdminMembersPage />} />
+                <Route path="/projects" element={<AdminProjectsPage />} />
+                <Route path="/users" element={<AdminUsersPage />} />
+              </>}
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </main>
+        </div>
+      )}
     </Router>
   );
 };

@@ -14,17 +14,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [role, setRole] = useState<UserRole>('student');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  const mapDbRoleToUserRole = (dbRole: string): UserRole => {
+    if (dbRole === 'ADMINISTRATEUR') return 'admin';
+    if (dbRole === 'ENCADRANT') return 'professor';
+    return 'student';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setInfo(null);
+    const email = username.trim().toLowerCase();
 
     try {
+      const userPassword = password;
+
+      if (!email || !userPassword) {
+        throw new Error('Veuillez saisir un email et un mot de passe.');
+      }
+
       // 1. Connexion via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: username,
-        password: password,
+        email,
+        password: userPassword,
       });
 
       if (authError) throw authError;
@@ -40,20 +55,60 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         if (userError) throw userError;
 
         // Mapper le rôle Supabase (ADMINISTRATEUR, ENCADRANT, ETUDIANT) vers nos UserRoles internes
-        let userRole: UserRole = 'student';
-        if (userData.role === 'ADMINISTRATEUR') userRole = 'admin';
-        else if (userData.role === 'ENCADRANT') userRole = 'professor';
+        const userRole = mapDbRoleToUserRole(userData.role);
+
+        if (userRole !== role) {
+          await supabase.auth.signOut();
+          throw new Error("Le rôle sélectionné ne correspond pas à ce compte.");
+        }
         
         // 3. Déclencher onLogin avec le vrai rôle
         onLogin(userRole);
       }
     } catch (err: any) {
       console.error('Erreur de connexion:', err);
-      // Fallback: pour le développement si Supabase n'a pas encore de données
-      // onLogin(role); 
-      setError(err.message || 'Identifiants incorrects');
+      const message = err?.message || 'Identifiants incorrects';
+      if (message.toLowerCase().includes('invalid login credentials')) {
+        const { data: existingUser } = await supabase
+          .from('utilisateurs')
+          .select('id, role')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (existingUser) {
+          if (existingUser.role === 'ENCADRANT') {
+            setError("Compte encadrant trouvé. Mot de passe incorrect. Utilisez 'Forgot Password' pour réinitialiser.");
+          } else {
+            setError("Email trouvé. Mot de passe incorrect ou compte Auth non synchronisé. Utilisez 'Forgot Password'.");
+          }
+        } else {
+          setError("Compte introuvable dans Supabase Authentication. Créez d'abord ce compte puis connectez-vous.");
+        }
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const email = username.trim().toLowerCase();
+    setError(null);
+    setInfo(null);
+
+    if (!email) {
+      setError('Saisissez d\'abord votre email, puis cliquez sur Forgot Password.');
+      return;
+    }
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
+
+      if (resetError) throw resetError;
+      setInfo('Email de réinitialisation envoyé. Vérifiez votre boîte mail.');
+    } catch (err: any) {
+      setError(err?.message || 'Impossible d\'envoyer l\'email de réinitialisation.');
     }
   };
 
@@ -117,8 +172,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
           {error && <div className="text-red-300 text-sm text-center font-semibold bg-red-900/40 p-2 border border-red-500/50 rounded-lg">{error}</div>}
+          {info && <div className="text-green-200 text-sm text-center font-semibold bg-green-900/30 p-2 border border-green-500/40 rounded-lg">{info}</div>}
           <input
-            type="text"
+            type="email"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full bg-transparent rounded-none py-4 px-2 text-white placeholder-white/80 text-base font-medium focus:outline-none focus:ring-0 shadow-none border-b border-white/40 focus:border-white transition-all"
@@ -143,7 +199,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
         <div className="w-full flex flex-col items-center mt-6 gap-2">
           <span className="text-white/80 text-sm">
-            Forgot Password? <button className="underline hover:text-white ml-1">Click Here</button>
+            Forgot Password? <button type="button" onClick={handleForgotPassword} className="underline hover:text-white ml-1">Click Here</button>
           </span>
           <span className="text-white/80 text-sm">
             Don’t have an account ? <button className="underline hover:text-white ml-1">Sign up</button>

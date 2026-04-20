@@ -36,6 +36,32 @@ const StudentDeliverables: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [versionComment, setVersionComment] = useState('Nouvelle version');
 
+  const getCurrentStudentContext = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("Session utilisateur introuvable. Veuillez vous reconnecter.");
+    }
+
+    const { data: student, error } = await supabase
+      .from('etudiants')
+      .select('id, projet_id')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !student) {
+      throw new Error("Profil étudiant introuvable pour l'utilisateur connecté.");
+    }
+
+    if (!student.projet_id) {
+      throw new Error("Aucun projet associé à cet étudiant.");
+    }
+
+    return {
+      studentId: student.id,
+      projectId: student.projet_id,
+    };
+  };
+
   useEffect(() => {
     fetchDeliverables();
     
@@ -60,6 +86,7 @@ const StudentDeliverables: React.FC = () => {
   const fetchDeliverables = async () => {
     try {
       setLoading(true);
+      const { projectId } = await getCurrentStudentContext();
       
       const { data, error } = await supabase
         .from('livrables')
@@ -79,7 +106,8 @@ const StudentDeliverables: React.FC = () => {
               utilisateurs (nom, prenom)
             )
           )
-        `);
+        `)
+        .eq('projet_id', projectId);
 
       if (error) throw error;
 
@@ -138,20 +166,7 @@ const StudentDeliverables: React.FC = () => {
 
       // Calcul de la taille du fichier pour affichage (ex: "1.5 MB")
       const fileSizeInMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
-
-      // --- On récupère dynamiquement le premier étudiant et le premier projet ---
-      const { data: studentData, error: studentError } = await supabase.from('etudiants').select('id').limit(1).single();
-      const testUserId = studentData?.id;
-
-      if (!testUserId) {
-        throw new Error("Aucun Étudiant trouvé dans la table 'etudiants'. Veuillez en créer un.");
-      }
-
-      const { data: projData, error: projError } = await supabase.from('projets').select('id').limit(1).single();
-
-      if (!projData?.id) {
-        throw new Error("Il manque un 'projet' dans la base de données. Veuillez en créer un avant de déposer un livrable.");
-      }
+      const { studentId, projectId } = await getCurrentStudentContext();
 
       // 2. Créer le livrable parent en le rattachant au projet test
       const { data, error } = await supabase
@@ -160,7 +175,7 @@ const StudentDeliverables: React.FC = () => {
           titre: newTitle.trim(),
           type_document: newType,
           statut: 'PENDING',
-          projet_id: projData.id
+          projet_id: projectId
         })
         .select()
         .single();
@@ -175,7 +190,7 @@ const StudentDeliverables: React.FC = () => {
         chemin_fichier: filePath, // On sauvegarde le chemin réel dans le storage!
         url_externe: null, // Pas de lien public, c'est sécurisé
         taille_fichier: `${fileSizeInMB} MB`,
-        depose_par: testUserId
+        depose_par: studentId
       });
 
       if (vError) throw new Error(`Erreur Version: ${vError.message} - Détails: ${vError.details || ''}`);
@@ -214,11 +229,7 @@ const StudentDeliverables: React.FC = () => {
       }
 
       const fileSizeInMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
-
-      const { data: studentData } = await supabase.from('etudiants').select('id').limit(1).single();
-      const testUserId = studentData?.id;
-
-      if (!testUserId) throw new Error("Aucun Étudiant trouvé.");
+      const { studentId } = await getCurrentStudentContext();
 
       // Calculer le prochain numéro de version
       let nextVersion = "v1.0";
@@ -239,7 +250,7 @@ const StudentDeliverables: React.FC = () => {
         chemin_fichier: filePath,
         url_externe: null,
         taille_fichier: `${fileSizeInMB} MB`,
-        depose_par: testUserId
+        depose_par: studentId
       });
 
       if (vError) throw new Error(`Erreur insertion: ${vError.message}`);
