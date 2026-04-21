@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
     timeLeft: string;
     members: MemberCard[];
     description: string;
+    tasks: Task[];
   }
 
   interface NotificationItem {
@@ -36,6 +37,12 @@ const Dashboard: React.FC = () => {
     time: string;
     createdAt: string;
     avatar: string;
+  }
+
+  interface Task {
+    id: string;
+    title: string;
+    etat: 'TERMINE' | 'EN_COURS';
   }
 
   const toDaysLeft = (deadline: string | null): string => {
@@ -205,6 +212,7 @@ const Dashboard: React.FC = () => {
             timeLeft: toDaysLeft(p.deadline_globale),
             members: membersByProject[p.id] || [],
             description: p.description || 'Projet supervisé par cet encadrant.',
+            tasks: relatedTasks,
           };
         });
 
@@ -388,8 +396,10 @@ const Dashboard: React.FC = () => {
                   {/* Affichage selon le type de notification */}
                   {notif.type === 'deliverable' ? (
                     <p className="text-xs text-green-700 flex items-center gap-1">
-                      <span className="inline-block w-4 h-4 bg-green-100 text-green-600 rounded-full flex items-center justify-center mr-1">📄</span>
-                      <span className="min-w-0 break-words">{notif.name} {notif.content}</span>
+                      <span className="flex items-center justify-center text-xs font-semibold text-gray-600 bg-gray-200 rounded-full w-6 h-6">
+                        {notif.name}
+                      </span>
+                      <span className="min-w-0 break-words">{notif.content}</span>
                     </p>
                   ) : (
                     <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed break-words">{notif.content}</p>

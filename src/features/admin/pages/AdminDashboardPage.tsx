@@ -1,55 +1,278 @@
-import React, { useState } from 'react';
-import { projects, groupDeliverables, members } from '../../../shared/data/mockData';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Users, Layers, TrendingUp, Clock, PieChart as PieIcon, BarChart as BarIcon, Bell } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line 
+  Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
+import { supabase } from '../../../lib/supabase';
+
+interface ProjectRow {
+  id: string;
+  titre: string;
+  domaine: string | null;
+  encadrant_id: string | null;
+  deadline_globale: string | null;
+  created_at?: string;
+}
+
+interface IterationRow {
+  id: string;
+  projet_id: string;
+  statut: string | null;
+  date_debut: string | null;
+}
+
+interface TaskRow {
+  id: string;
+  iteration_id: string;
+  etat: string | null;
+}
+
+interface SupervisorRow {
+  id: string;
+  nom: string | null;
+  prenom: string | null;
+}
+
+interface DashboardProject {
+  id: string;
+  title: string;
+  category: string;
+  progress: number;
+  deadline: string | null;
+  supervisor: string;
+  studentCount: number;
+}
+
+interface NotificationItem {
+  id: number;
+  type: 'group' | 'project';
+  message: string;
+}
+
+const getErrorText = (error: unknown): string => {
+  if (!error) return '';
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object') {
+    const obj = error as { message?: string; details?: string; hint?: string };
+    return [obj.message, obj.details, obj.hint].filter(Boolean).join(' | ');
+  }
+  return '';
+};
+
+const extractMissingColumns = (error: unknown): string[] => {
+  const text = getErrorText(error);
+  if (!text) return [];
+
+  const matches = Array.from(text.matchAll(/column\s+([a-zA-Z0-9_.\"]+)\s+does not exist/gi));
+  const found = matches.map((m) => m[1]?.replace(/"/g, '')).filter(Boolean) as string[];
+  return Array.from(new Set(found));
+};
+
+const toDaysDelay = (deadlineIso: string | null): number => {
+  if (!deadlineIso) return 0;
+  const deadline = new Date(deadlineIso).getTime();
+  if (Number.isNaN(deadline)) return 0;
+  const now = Date.now();
+  const diff = now - deadline;
+  if (diff <= 0) return 0;
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+};
 
 const AdminDashboard: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [missingColumns, setMissingColumns] = useState<string[]>([]);
+  const [projects, setProjects] = useState<DashboardProject[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  // Extraire les filières (catégories) uniques
-  const filieres = Array.from(new Set(projects.map(p => p.category)));
+  const filieres = useMemo(() => Array.from(new Set(projects.map((p) => p.category))), [projects]);
   const [selectedFiliere, setSelectedFiliere] = useState<string>(filieres[0] || '');
+
+  useEffect(() => {
+    if (!selectedFiliere && filieres.length > 0) {
+      setSelectedFiliere(filieres[0]);
+    }
+  }, [filieres, selectedFiliere]);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setMissingColumns([]);
+
+        const [{ count: studentCount, error: studentsError }, { data: projectRows, error: projectsError }] = await Promise.all([
+          supabase
+            .from('etudiants')
+            .select('id', { count: 'exact', head: true }),
+          supabase
+            .from('projets')
+            .select('id, titre, domaine, encadrant_id, deadline_globale, created_at')
+            .order('created_at', { ascending: false }),
+        ]);
+
+        if (studentsError) throw studentsError;
+        if (projectsError) throw projectsError;
+
+        const safeProjects = (projectRows || []) as ProjectRow[];
+        if (safeProjects.length === 0) {
+          setTotalStudents(studentCount || 0);
+          setProjects([]);
+          return;
+        }
+
+        const projectIds = safeProjects.map((p) => p.id);
+        const encadrantIds = Array.from(new Set(safeProjects.map((p) => p.encadrant_id).filter(Boolean))) as string[];
+
+        const [studentsByProjectRes, iterationsRes, supervisorsRes] = await Promise.all([
+          supabase
+            .from('etudiants')
+            .select('id, projet_id')
+            .in('projet_id', projectIds),
+          supabase
+            .from('iterations')
+            .select('id, projet_id, statut, date_debut')
+            .in('projet_id', projectIds)
+            .order('date_debut', { ascending: false }),
+          encadrantIds.length > 0
+            ? supabase
+                .from('utilisateurs')
+                .select('id, nom, prenom')
+                .in('id', encadrantIds)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
+
+        if (studentsByProjectRes.error) throw studentsByProjectRes.error;
+        if (iterationsRes.error) throw iterationsRes.error;
+        if (supervisorsRes.error) throw supervisorsRes.error;
+
+        const iterations = (iterationsRes.data || []) as IterationRow[];
+        const chosenIterationByProject: Record<string, IterationRow> = {};
+        iterations.forEach((it) => {
+          if (!chosenIterationByProject[it.projet_id]) {
+            chosenIterationByProject[it.projet_id] = it;
+          }
+          if (it.statut === 'EN_COURS') {
+            chosenIterationByProject[it.projet_id] = it;
+          }
+        });
+
+        const iterationIds = Object.values(chosenIterationByProject).map((it) => it.id);
+        let tasks: TaskRow[] = [];
+        if (iterationIds.length > 0) {
+          const { data: taskRows, error: taskError } = await supabase
+            .from('taches')
+            .select('id, iteration_id, etat')
+            .in('iteration_id', iterationIds);
+
+          if (taskError) throw taskError;
+          tasks = (taskRows || []) as TaskRow[];
+        }
+
+        const tasksByIteration: Record<string, TaskRow[]> = {};
+        tasks.forEach((task) => {
+          if (!tasksByIteration[task.iteration_id]) tasksByIteration[task.iteration_id] = [];
+          tasksByIteration[task.iteration_id].push(task);
+        });
+
+        const studentsByProject: Record<string, number> = {};
+        (studentsByProjectRes.data || []).forEach((row: { projet_id: string | null }) => {
+          if (!row.projet_id) return;
+          studentsByProject[row.projet_id] = (studentsByProject[row.projet_id] || 0) + 1;
+        });
+
+        const supervisorsById: Record<string, string> = {};
+        ((supervisorsRes.data || []) as SupervisorRow[]).forEach((u) => {
+          const fullName = `${u.prenom || ''} ${u.nom || ''}`.trim();
+          supervisorsById[u.id] = fullName || 'N/A';
+        });
+
+        const mappedProjects: DashboardProject[] = safeProjects.map((p) => {
+          const selectedIteration = chosenIterationByProject[p.id];
+          const relatedTasks = selectedIteration ? (tasksByIteration[selectedIteration.id] || []) : [];
+          const completedTasks = relatedTasks.filter((t) => t.etat === 'TERMINE').length;
+          const progress = relatedTasks.length > 0 ? Math.round((completedTasks / relatedTasks.length) * 100) : 0;
+
+          return {
+            id: p.id,
+            title: p.titre || 'Untitled project',
+            category: p.domaine || 'General',
+            progress,
+            deadline: p.deadline_globale,
+            supervisor: p.encadrant_id ? (supervisorsById[p.encadrant_id] || 'N/A') : 'N/A',
+            studentCount: studentsByProject[p.id] || 0,
+          };
+        });
+
+        setTotalStudents(studentCount || 0);
+        setProjects(mappedProjects);
+      } catch (err) {
+        console.error('Erreur chargement admin dashboard:', err);
+        const missing = extractMissingColumns(err);
+        setMissingColumns(missing);
+        setError(getErrorText(err) || 'Failed to load dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  const projectsFiliere = projects.filter((p) => p.category === selectedFiliere);
+
+  const completionRate = useMemo(() => {
+    if (projects.length === 0) return 0;
+    const total = projects.reduce((sum, p) => sum + p.progress, 0);
+    return Math.round(total / projects.length);
+  }, [projects]);
+
+  const delayedProjects = useMemo(() => {
+    return projects.filter((p) => toDaysDelay(p.deadline) > 0 && p.progress < 80);
+  }, [projects]);
+
+  const avgDelay = useMemo(() => {
+    if (delayedProjects.length === 0) return 0;
+    const totalDelay = delayedProjects.reduce((sum, p) => sum + toDaysDelay(p.deadline), 0);
+    return Number((totalDelay / delayedProjects.length).toFixed(1));
+  }, [delayedProjects]);
+
   const stats = [
-    { label: 'Total Students', value: '450', icon: Users, color: 'bg-blue-500' },
-    { label: 'Active Projects', value: '120', icon: Layers, color: 'bg-purple-500' },
-    { label: 'Completion Rate', value: '85%', icon: TrendingUp, color: 'bg-green-500' },
-    { label: 'Avg. Delay', value: '2.4 days', icon: Clock, color: 'bg-red-500' },
+    { label: 'Total Students', value: String(totalStudents), icon: Users, color: 'bg-blue-500' },
+    { label: 'Active Projects', value: String(projects.length), icon: Layers, color: 'bg-purple-500' },
+    { label: 'Completion Rate', value: `${completionRate}%`, icon: TrendingUp, color: 'bg-green-500' },
+    { label: 'Avg. Delay', value: `${avgDelay} days`, icon: Clock, color: 'bg-red-500' },
   ];
 
-  // Calculer la distribution pour la filière sélectionnée
-  const projectsFiliere = projects.filter(p => p.category === selectedFiliere);
   const projectStatusData = [
     {
       name: 'Completed',
-      value: projectsFiliere.filter(p => p.progress >= 80).length,
+      value: projectsFiliere.filter((p) => p.progress >= 80).length,
       color: '#10b981',
     },
     {
       name: 'In Progress',
-      value: projectsFiliere.filter(p => p.progress > 0 && p.progress < 80).length,
+      value: projectsFiliere.filter((p) => p.progress > 0 && p.progress < 80).length,
       color: '#6366f1',
     },
     {
       name: 'Delayed',
-      value: projectsFiliere.filter(p => p.title.toLowerCase().includes('dashboard')).length,
+      value: projectsFiliere.filter((p) => toDaysDelay(p.deadline) > 0 && p.progress < 80).length,
       color: '#ef4444',
     },
     {
       name: 'Pending',
-      value: projectsFiliere.filter(p => p.progress === 0).length,
+      value: projectsFiliere.filter((p) => p.progress === 0).length,
       color: '#f59e0b',
     },
   ];
 
-
-  // Simuler une notification : 1 groupe créé, 1 projet terminé
-  const [notifications] = useState([
-    { id: 1, type: 'group', message: 'A new group has been created.' },
-    { id: 2, type: 'project', message: 'A project has been marked as done.' },
-  ]);
+  const notifications: NotificationItem[] = [
+    { id: 1, type: 'group', message: `${projects.length} projects loaded from database.` },
+    { id: 2, type: 'project', message: `${projectStatusData[0].value} projects are completed.` },
+  ];
   const [showNotif, setShowNotif] = useState(false);
 
   return (
@@ -101,6 +324,23 @@ const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
+      {loading && (
+        <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          Loading dashboard data from database...
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="font-semibold">Database error while loading dashboard.</p>
+          {missingColumns.length > 0 ? (
+            <p className="mt-1">Missing column(s): {missingColumns.join(', ')}</p>
+          ) : (
+            <p className="mt-1">{error}</p>
+          )}
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, index) => (
@@ -150,6 +390,7 @@ const AdminDashboard: React.FC = () => {
                       }}
                       style={{ minWidth: 0 }}
                     >
+                      {filieres.length === 0 && <option value="">No categories</option>}
                       {filieres.map(f => (
                         <option key={f} value={f}>{f}</option>
                       ))}
@@ -206,17 +447,15 @@ const AdminDashboard: React.FC = () => {
                   .filter(p => {
                     if (selectedStatus === 'Completed') return p.progress >= 80;
                     if (selectedStatus === 'In Progress') return p.progress > 0 && p.progress < 80;
-                    if (selectedStatus === 'Delayed') return p.title.toLowerCase().includes('dashboard');
+                    if (selectedStatus === 'Delayed') return toDaysDelay(p.deadline) > 0 && p.progress < 80;
                     if (selectedStatus === 'Pending') return p.progress === 0;
                     return false;
                   })
                   .map((p, idx) => {
-                    // Trouver le groupe (par titre du projet)
-                    const group = groupDeliverables.find(g => p.title.toLowerCase().includes(g.groupName.toLowerCase().split(' ')[0]))?.groupName || 'N/A';
-                    // Encadrant fictif (par index)
-                    const encadrant = members[idx % members.length]?.name || 'N/A';
+                    const group = p.studentCount > 0 ? `${p.studentCount} student(s)` : 'No group assigned';
+                    const encadrant = p.supervisor;
                     return (
-                      <div key={p.id} className="bg-white/90 rounded-2xl p-6 border border-gray-100 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-2 hover:shadow-lg transition-all">
+                      <div key={`${p.id}-${idx}`} className="bg-white/90 rounded-2xl p-6 border border-gray-100 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-2 hover:shadow-lg transition-all">
                         <div className="flex flex-col gap-1">
                           <div className="font-bold text-gray-800 text-lg tracking-wide">{p.title}</div>
                           <div className="text-xs text-blue-600 font-semibold">{group !== 'N/A' ? group : 'No group assigned'}</div>
@@ -231,7 +470,7 @@ const AdminDashboard: React.FC = () => {
                 {projectsFiliere.filter(p => {
                   if (selectedStatus === 'Completed') return p.progress >= 80;
                   if (selectedStatus === 'In Progress') return p.progress > 0 && p.progress < 80;
-                  if (selectedStatus === 'Delayed') return p.title.toLowerCase().includes('dashboard');
+                  if (selectedStatus === 'Delayed') return toDaysDelay(p.deadline) > 0 && p.progress < 80;
                   if (selectedStatus === 'Pending') return p.progress === 0;
                   return false;
                 }).length === 0 && (
