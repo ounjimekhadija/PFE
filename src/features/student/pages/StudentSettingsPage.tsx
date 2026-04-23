@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { User, Mail, Phone, Globe, Camera, Shield, Bell, Lock, Save, Github, Linkedin } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Camera, Lock, Save, Shield, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const StudentSettingsPage: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
+  const [success, setSuccess] = useState(false);
+  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [profile, setProfile] = useState({
     name: 'Chargement...',
     email: 'chargement@hub.student',
@@ -11,72 +15,27 @@ const StudentSettingsPage: React.FC = () => {
     website: '',
     github: '',
     linkedin: '',
-    bio: '',
-    avatar: 'https://ui-avatars.com/api/?name=User&background=random'
+    avatar: 'https://ui-avatars.com/api/?name=User&background=random',
   });
 
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!event.target.files || event.target.files.length === 0) return;
-      setUploadingAvatar(true);
-      
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      
-      const userId = session.user.id;
-      const fileName = `${userId}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // 1. Upload au bucket avatars
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // 2. Récupérer l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // 3. Mettre à jour l'utilisateur
-      const { error: updateError } = await supabase
-        .from('utilisateurs')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-
-      // 4. Mettre à jour l'interface
-      setProfile(prev => ({ ...prev, avatar: publicUrl }));
-
-    } catch (error: any) {
-      console.error('Erreur upload avatar:', error);
-      alert('Erreur lors du téléchargement de la photo : ' + error.message);
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
+
       const { data: user } = await supabase
         .from('utilisateurs')
         .select('*')
         .eq('id', session.user.id)
         .single();
-        
+
       const { data: student } = await supabase
         .from('etudiants')
         .select('*')
@@ -91,19 +50,58 @@ const StudentSettingsPage: React.FC = () => {
           website: student?.portfolio_url || '',
           github: student?.github_url || '',
           linkedin: student?.linkedin_url || '',
-          bio: user.bio || '',
-          avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${user.prenom}+${user.nom}&background=random`
+          avatar: user.avatar_url || `https://ui-avatars.com/api/?name=${user.prenom}+${user.nom}&background=random`,
         });
       }
+
       setLoading(false);
     };
-    
+
     fetchProfile();
   }, []);
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!event.target.files || event.target.files.length === 0) return;
+      setUploadingAvatar(true);
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const userId = session.user.id;
+      const fileName = `${userId}-${Math.random()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('utilisateurs')
+        .update({ avatar_url: publicUrl })
+        .eq('id', userId);
+      if (updateError) throw updateError;
+
+      setProfile((prev) => ({ ...prev, avatar: publicUrl }));
+    } catch (error: any) {
+      alert('Erreur lors du telechargement de la photo : ' + error.message);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.user) return;
 
     try {
@@ -111,224 +109,212 @@ const StudentSettingsPage: React.FC = () => {
         .from('utilisateurs')
         .update({ telephone: profile.phone })
         .eq('id', session.user.id);
-      
       if (userError) throw userError;
-        
+
       const { error: studentError } = await supabase
         .from('etudiants')
         .update({
           portfolio_url: profile.website,
           github_url: profile.github,
-          linkedin_url: profile.linkedin
+          linkedin_url: profile.linkedin,
         })
         .eq('id', session.user.id);
-
       if (studentError) throw studentError;
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (error: any) {
-      console.error("Erreur lors de la sauvegarde:", error);
-      alert("Erreur lors de la sauvegarde: " + error.message);
+      alert('Erreur lors de la sauvegarde: ' + error.message);
     }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
-      alert("Les mots de passe ne correspondent pas.");
+      alert('Les mots de passe ne correspondent pas.');
       return;
     }
-    
+
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwords.new
-      });
-      
+      const { error } = await supabase.auth.updateUser({ password: passwords.new });
       if (error) throw error;
-      
+
       setPasswords({ current: '', new: '', confirm: '' });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (error: any) {
-      alert("Erreur lors du changement de mot de passe: " + error.message);
+      alert('Erreur lors du changement de mot de passe: ' + error.message);
     }
   };
 
-  const [activeTab, setActiveTab] = useState('profile');
-  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
-
   if (loading) {
-    return <div className="flex-1 bg-white p-8 flex items-center justify-center font-semibold text-gray-500">Chargement des données...</div>;
+    return (
+      <div className="flex flex-1 items-center justify-center bg-[#F8FAFF] text-sm font-medium text-[#64748B]">
+        Chargement des donnees...
+      </div>
+    );
   }
 
   return (
-    <div className="flex-1 bg-white text-gray-900 p-8 overflow-y-auto">
-      <header className="mb-12">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-gray-400 mt-2">Manage your account settings and profile information</p>
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold text-[#0F172A]">Settings</h1>
+        <p className="mt-1 text-sm text-[#64748B]">Manage your account settings and profile information.</p>
       </header>
 
-      <div className="max-w-4xl">
-        <div className="flex flex-col md:flex-row gap-12">
-          {/* Sidebar Settings Menu */}
-          <div className="w-full md:w-64 space-y-2">
+      <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+        <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+          <aside className="space-y-2">
             {[
               { id: 'profile', icon: User, label: 'Edit Profile' },
               { id: 'security', icon: Shield, label: 'Security' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${
-                  activeTab === item.id
-                    ? 'text-indigo-600'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab(item.id)}
-              >
-                <item.icon size={18} />
-                {item.label}
-              </button>
-            ))}
-          </div>
+            ].map((item) => {
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id as 'profile' | 'security')}
+                  className={`w-full rounded-xl px-4 py-3 text-left text-sm font-medium transition ${
+                    active
+                      ? 'bg-[#EEF2FF] text-[#4338CA]'
+                      : 'text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <item.icon size={16} />
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </aside>
 
-          {/* Main Content */}
-          <div className="flex-1">
+          <section>
             {success && (
-              <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-100 border border-green-400 text-green-900 px-8 py-3 rounded-2xl shadow-lg font-semibold text-base z-50 flex items-center gap-2 min-w-[320px] justify-center animate-fade-in">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M20 6L9.5 17L4 11.5"/></svg>
-                <span>Changes saved successfully!</span>
+              <div className="mb-4 rounded-xl border border-[#86EFAC] bg-[#F0FDF4] px-4 py-3 text-sm font-semibold text-[#166534]">
+                Changes saved successfully.
               </div>
             )}
+
             {activeTab === 'profile' && (
-              <form onSubmit={handleSave} className="space-y-10">
-                {/* Profile Header Modern */}
-                <div className="flex flex-col sm:flex-row items-center gap-6 p-8">
-                  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <form onSubmit={handleSave} className="space-y-6">
+                <div className="flex flex-col items-center gap-5 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-6 sm:flex-row">
+                  <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <img
                       src={profile.avatar}
                       alt="Profile"
-                      className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl transition-all ${uploadingAvatar ? 'opacity-50' : 'group-hover:opacity-75'}`}
+                      className={`h-24 w-24 rounded-full border-4 border-white object-cover shadow-md transition ${
+                        uploadingAvatar ? 'opacity-60' : 'hover:opacity-80'
+                      }`}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-                      <Camera className="text-white w-8 h-8" />
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35 text-white opacity-0 transition hover:opacity-100">
+                      <Camera size={18} />
                     </div>
-                    {uploadingAvatar && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                    <input 
-                      type="file" 
-                      ref={fileInputRef} 
-                      onChange={handleAvatarUpload} 
-                      accept="image/*" 
-                      className="hidden" 
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
                     />
                   </div>
-                  <div className="flex flex-col items-center sm:items-start gap-1">
-                    <span className="text-2xl font-bold text-gray-800">{profile.name}</span>
-                    <span className="text-base text-gray-500">{profile.email}</span>
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg font-semibold text-[#0F172A]">{profile.name}</p>
+                    <p className="text-sm text-[#64748B]">{profile.email}</p>
                   </div>
                 </div>
 
-                {/* Champs en deux colonnes modernes */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">Phone Number</label>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="space-y-2 text-sm font-medium text-[#334155]">
+                    Phone Number
                     <input
                       type="text"
                       value={profile.phone}
-                      onChange={e => setProfile({ ...profile, phone: e.target.value })}
-                      className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-base focus:outline-none focus:border-orange-400 transition-all"
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                      className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">Website</label>
+                  </label>
+                  <label className="space-y-2 text-sm font-medium text-[#334155]">
+                    Website
                     <input
                       type="text"
                       value={profile.website}
-                      onChange={e => setProfile({ ...profile, website: e.target.value })}
-                      className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-base focus:outline-none focus:border-orange-400 transition-all"
+                      onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                      className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">GitHub</label>
+                  </label>
+                  <label className="space-y-2 text-sm font-medium text-[#334155]">
+                    GitHub
                     <input
                       type="text"
                       value={profile.github}
-                      onChange={e => setProfile({ ...profile, github: e.target.value })}
-                      className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-base focus:outline-none focus:border-orange-400 transition-all"
+                      onChange={(e) => setProfile({ ...profile, github: e.target.value })}
+                      className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1">LinkedIn</label>
+                  </label>
+                  <label className="space-y-2 text-sm font-medium text-[#334155]">
+                    LinkedIn
                     <input
                       type="text"
                       value={profile.linkedin}
-                      onChange={e => setProfile({ ...profile, linkedin: e.target.value })}
-                      className="w-full bg-white border border-gray-200 rounded-xl py-3 px-4 text-base focus:outline-none focus:border-orange-400 transition-all"
+                      onChange={(e) => setProfile({ ...profile, linkedin: e.target.value })}
+                      className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
                     />
-                  </div>
+                  </label>
                 </div>
 
-
-
-                <div className="flex justify-center pt-4">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 px-10 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98] text-lg"
-                  >
-                    <Save size={22} />
-                    Save Changes
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#6366F1] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4F46E5]"
+                >
+                  <Save size={16} />
+                  Save Changes
+                </button>
               </form>
             )}
+
             {activeTab === 'security' && (
-              <form onSubmit={handlePasswordChange} className="space-y-8 max-w-lg mx-auto mt-8 p-0">
-                <h2 className="text-xl font-bold mb-6">Change Password</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-bold text-gray-700 ml-1">Current Password</label>
-                    <input
-                      type="password"
-                      value={passwords.current}
-                      onChange={e => setPasswords({ ...passwords, current: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-gray-200 py-3 px-0 text-base focus:outline-none focus:border-b-2 focus:border-blue-400 transition-all shadow-none rounded-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold text-gray-700 ml-1">New Password</label>
-                    <input
-                      type="password"
-                      value={passwords.new}
-                      onChange={e => setPasswords({ ...passwords, new: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-gray-200 py-3 px-0 text-base focus:outline-none focus:border-b-2 focus:border-blue-400 transition-all shadow-none rounded-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-bold text-gray-700 ml-1">Confirm New Password</label>
-                    <input
-                      type="password"
-                      value={passwords.confirm}
-                      onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-gray-200 py-3 px-0 text-base focus:outline-none focus:border-b-2 focus:border-blue-400 transition-all shadow-none rounded-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end pt-4">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
-                  >
-                    <Save size={20} />
-                    Change Password
-                  </button>
-                </div>
+              <form onSubmit={handlePasswordChange} className="max-w-xl space-y-4">
+                <h2 className="text-lg font-semibold text-[#0F172A]">Change Password</h2>
+                <label className="space-y-2 text-sm font-medium text-[#334155]">
+                  Current Password
+                  <input
+                    type="password"
+                    value={passwords.current}
+                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-[#334155]">
+                  New Password
+                  <input
+                    type="password"
+                    value={passwords.new}
+                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
+                  />
+                </label>
+                <label className="space-y-2 text-sm font-medium text-[#334155]">
+                  Confirm New Password
+                  <input
+                    type="password"
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-sm text-[#0F172A] outline-none transition focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/15"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E293B] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0F172A]"
+                >
+                  <Lock size={16} />
+                  Change Password
+                </button>
               </form>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </div>

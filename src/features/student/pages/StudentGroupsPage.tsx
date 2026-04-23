@@ -204,8 +204,8 @@ const StudentGroups: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-white overflow-hidden flex justify-center items-center h-screen">
-      <div className="w-full h-full p-8 flex flex-col relative" style={{ zoom: "0.90" }}>
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div className="relative flex h-full w-full flex-col">
         {/* BARRE DE SÉLECTION EN HAUT */}
         {selected.length > 0 && (
         <div className="mb-6 flex items-center gap-4 bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-3 shadow-sm">
@@ -259,10 +259,10 @@ const StudentGroups: React.FC = () => {
           </div>
         </div>
       )}
-      <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <header className="mb-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Student Directory</h1>
-          <p className="text-gray-500 mt-1">Connect with fellow students and form your project groups.</p>
+          <h1 className="text-2xl font-semibold text-[#0F172A]">Student Directory</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Connect with fellow students and form your project groups.</p>
         </div>
         <div className="flex gap-3">
           <div className="relative">
@@ -272,7 +272,7 @@ const StudentGroups: React.FC = () => {
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 w-64 transition-all text-gray-700"
+              className="w-64 rounded-2xl border border-[#E2E8F0] bg-white py-3 pl-11 pr-4 text-sm text-[#334155] transition-all focus:outline-none focus:ring-2 focus:ring-[#6366F1]/20"
             />
           </div>
           <button 
@@ -292,21 +292,21 @@ const StudentGroups: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="custom-scrollbar flex-1 overflow-y-auto pr-2">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredStudents.map((student) => (
             <motion.div 
               key={student.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gray-50 rounded-[32px] p-6 border border-gray-100 hover:border-indigo-200 hover:bg-white transition-all flex flex-col group h-full"
+              className="group mb-6 flex h-full flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)] transition-all hover:border-[#C7D2FE]"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="relative">
                   <img 
                     src={student.avatar} 
                     alt={student.name} 
-                    className="w-20 h-20 rounded-[28px] object-cover border-4 border-white shadow-md"
+                    className="h-20 w-20 rounded-[28px] border-4 border-white object-cover shadow-md"
                   />
                   <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white flex items-center justify-center ${
                     student.status === 'Available' ? 'bg-green-500' : 'bg-indigo-500'
@@ -320,15 +320,15 @@ const StudentGroups: React.FC = () => {
               </div>
 
 
-              <h3 className="text-xl font-bold text-gray-900 mb-1 truncate">{student.name}</h3>
+              <h3 className="mb-1 truncate text-xl font-bold text-[#0F172A]">{student.name}</h3>
               {student.groupName && (
-                <p className="text-sm font-medium text-gray-500 mb-1 truncate">Groupe: {student.groupName}</p>
+                <p className="mb-1 truncate text-sm font-medium text-[#64748B]">Groupe: {student.groupName}</p>
               )}
-              <p className="text-sm font-bold text-indigo-600 mb-4 truncate">{student.role}</p>
+              <p className="mb-4 truncate text-sm font-bold text-[#6366F1]">{student.role}</p>
 
               <div className="flex flex-wrap gap-2 mb-8">
                 {student.skills.map((skill, i) => (
-                  <span key={i} className="px-3 py-1 bg-white rounded-lg text-[10px] font-bold text-gray-400 uppercase tracking-widest border border-gray-100">
+                  <span key={i} className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFF] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
                     {skill}
                   </span>
                 ))}
@@ -359,12 +359,12 @@ const StudentGroups: React.FC = () => {
                   )}
                 </div>
                 <button
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
                     student.status === 'Available'
                       ? selected.find(s => s.id === student.id)
-                        ? 'bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-600/20'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-600/20'
-                      : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        ? 'bg-[#16A34A] text-white shadow-md shadow-green-600/20 hover:bg-[#15803D]'
+                        : 'bg-[#6366F1] text-white shadow-md shadow-indigo-600/20 hover:bg-[#4F46E5]'
+                      : 'cursor-not-allowed bg-[#E2E8F0] text-[#64748B]'
                   }`}
                   disabled={student.status !== 'Available'}
                   onClick={() => toggleSelect(student)}

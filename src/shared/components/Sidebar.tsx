@@ -12,6 +12,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
   const [isHovered, setIsHovered] = useState(false);
   const location = useLocation();
+  const isAdmin = role === 'admin';
 
   const professorItems = [
     { id: 'dashboard', icon: Home, label: 'HOME' },
@@ -49,6 +50,67 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
   };
 
   const menuItems = getMenuItems();
+
+  if (isAdmin) {
+    return (
+      <aside className="sticky top-0 z-40 hidden h-screen w-72 flex-col border-r border-[#E2E8F0] bg-white p-4 md:flex">
+        <div className="mb-4 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#6366F1]">
+              <Layers size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#0F172A]">Admin Hub</p>
+              <p className="text-xs text-[#64748B]">Crextio style workspace</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          {menuItems.map((item) => {
+            if (item.id === 'logout') {
+              return (
+                <button
+                  key="logout"
+                  onClick={onLogout}
+                  className="mt-3 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[#64748B] transition hover:bg-[#FEF2F2] hover:text-[#DC2626]"
+                  style={{ border: 'none', background: 'transparent' }}
+                >
+                  <LogOut size={16} />
+                  LOG OUT
+                </button>
+              );
+            }
+
+            const path = item.id === 'dashboard' ? '/dashboard' : `/${item.id}`;
+            const isActive = location.pathname === path;
+
+            return (
+              <Link
+                key={item.id}
+                to={path}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  isActive
+                    ? 'border border-[#C7D2FE] bg-[#EEF2FF] text-[#3730A3]'
+                    : 'border border-transparent text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#334155]'
+                }`}
+              >
+                <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${isActive ? 'bg-[#6366F1] text-white' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
+                  {item.icon && <item.icon size={16} />}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B]">Admin Overview</p>
+          <p className="mt-1 text-xs text-[#64748B]">Unified light navigation for dashboard, users, projects, members and settings.</p>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <motion.div 

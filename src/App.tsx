@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './shared/components/Sidebar';
+import AdminTopNav from './shared/components/AdminTopNav';
+import ProfessorTopNav from './shared/components/ProfessorTopNav';
+import StudentTopNav from './shared/components/StudentTopNav';
 import LoginPage from './features/auth/pages/LoginPage';
 import StudentSettingsPage from './features/student/pages/StudentSettingsPage';
 import ProfessorSettingsPage from './features/professor/pages/ProfessorSettingsPage';
@@ -40,9 +43,12 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className="flex h-screen bg-white">
-          <Sidebar role={userRole} onLogout={logout} />
+        <div className={userRole === 'admin' || userRole === 'professor' || userRole === 'student' ? 'h-screen bg-[#F8FAFF]' : 'flex h-screen bg-white'}>
+          {userRole !== 'admin' && userRole !== 'professor' && userRole !== 'student' && <Sidebar role={userRole} onLogout={logout} />}
           <main className="flex-1 flex flex-col overflow-hidden">
+            {userRole === 'admin' && <AdminTopNav onLogout={logout} />}
+            {userRole === 'professor' && <ProfessorTopNav onLogout={logout} />}
+            {userRole === 'student' && <StudentTopNav onLogout={logout} />}
             <Routes>
               <Route path="/login" element={<Navigate to="/dashboard" replace />} />
 

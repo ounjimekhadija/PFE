@@ -209,19 +209,19 @@ const StudentChat: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center bg-[#F8F9FD]">Chargement du chat...</div>;
+    return <div className="flex flex-1 items-center justify-center bg-[#F8FAFF] text-sm font-medium text-[#64748B]">Chargement du chat...</div>;
   }
 
   if (!projectId) {
     return (
-      <div className="flex h-screen bg-[#F8F9FD] items-center justify-center p-8 text-center text-slate-500 font-bold">
+      <div className="flex flex-1 items-center justify-center bg-[#F8FAFF] p-8 text-center font-bold text-slate-500">
         Vous n'êtes assigné à aucun projet. Veuillez d'abord rejoindre ou créer un groupe.
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-[#F8F9FD] font-sans antialiased text-slate-900 overflow-hidden w-full">
+    <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#F8FAFF] font-sans antialiased text-slate-900">
       
       {/* Left Sidebar */}
       <div className="shrink-0 w-80 border-r border-slate-200 bg-white shadow-sm hidden md:flex md:flex-col h-full">

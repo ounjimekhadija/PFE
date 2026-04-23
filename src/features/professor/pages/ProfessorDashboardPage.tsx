@@ -264,96 +264,89 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex-1 bg-white text-gray-900 p-6 h-full overflow-hidden flex flex-col">
-      <header className="flex justify-between items-center mb-6 shrink-0">
-        <h1 className="text-3xl font-bold">My Portfolio</h1>
+    <div className="flex-1 h-full overflow-hidden bg-[#F8FAFF] p-6 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <header className="mb-6 flex shrink-0 items-center justify-between">
+        <h1 className="text-2xl font-semibold">My Portfolio</h1>
         <img
           src={avatarUrl}
           alt="Professor"
-          className="w-8 h-8 rounded-full object-cover"
+          className="h-9 w-9 rounded-full border border-[#E2E8F0] object-cover"
           onError={(e) => {
             e.currentTarget.src = 'https://ui-avatars.com/api/?name=Professor&background=random';
           }}
         />
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 min-h-0">
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm h-full flex flex-col min-h-0">
-            <div className="flex justify-between items-center mb-6 shrink-0">
+          <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+            <div className="mb-6 flex shrink-0 items-center justify-between">
               <div>
-                <h2 className="text-2xl font-semibold">My Projects</h2>
-                {/* Ligne supprimée */}
+                <h2 className="text-2xl font-semibold text-[#0F172A]">My Projects</h2>
+                <p className="mt-1 text-sm text-[#64748B]">Projects supervised by your account</p>
               </div>
-              {/* Filtres supprimés */}
             </div>
-
-            {/* Ligne 'Ongoing Projects' supprimée */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 overflow-y-auto pr-1 min-h-0">
               {loading && (
-                <div className="col-span-full text-sm text-gray-500">Chargement des projets...</div>
+                <div className="col-span-full text-sm text-[#64748B]">Chargement des projets...</div>
               )}
               {!loading && projects.length === 0 && (
-                <div className="col-span-full text-sm text-gray-500">Aucun projet lié à cet encadrant.</div>
+                <div className="col-span-full text-sm text-[#64748B]">Aucun projet lie a cet encadrant.</div>
               )}
               {projects.map((project) => (
                 <motion.div
                   key={project.id}
                   whileHover={{ y: -2, boxShadow: '0 6px 24px 0 rgba(80,80,120,0.10)' }}
-                  className="bg-transparent rounded-xl p-4 border border-gray-100 transition-all duration-200 relative overflow-hidden group cursor-pointer hover:shadow-lg"
+                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-4 transition-all duration-200 hover:shadow-lg"
                   onClick={() => {
                     setSelectedProject(project);
                     setShowProjectModal(true);
                   }}
                 >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-black to-gray-800"></div>
-                  {/* Date supprimée */}
-                  <h3 className="text-xl font-bold mb-1 text-gray-800 tracking-tight">{project.title}</h3>
-                  <p className="text-xs text-gray-500 mb-5 font-medium">{project.category}</p>
+                  <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-[#6366F1] to-[#818CF8]"></div>
+                  <h3 className="mb-1 text-xl font-bold tracking-tight text-[#0F172A]">{project.title}</h3>
+                  <p className="mb-5 text-xs font-medium text-[#64748B]">{project.category}</p>
                   <div className="space-y-2 mb-5">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400 font-medium">Progress</span>
-                      <span className="text-gray-700 font-semibold">{project.progress}%</span>
+                      <span className="font-medium text-[#64748B]">Progress</span>
+                      <span className="font-semibold text-[#0F172A]">{project.progress}%</span>
                     </div>
-                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${project.progress}%` }}
                         transition={{ duration: 1, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-black to-gray-800"
+                        className="h-full bg-gradient-to-r from-[#6366F1] to-[#818CF8]"
                       ></motion.div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex -space-x-2">
                       {getGroupMembers(project).map((m) => (
-                        <img key={m.id} src={m.avatar} className="w-7 h-7 rounded-full border-2 border-gray-200 shadow-sm" alt={m.name} />
+                        <img key={m.id} src={m.avatar} className="h-7 w-7 rounded-full border-2 border-white shadow-sm" alt={m.name} />
                       ))}
                     </div>
-                    <span className="text-xs text-gray-400 font-medium">{project.timeLeft}</span>
+                    <span className="text-xs font-medium text-[#64748B]">{project.timeLeft}</span>
                   </div>
                 </motion.div>
               ))}
             </div>
-            {/* Modal projet : nom projet + membres du groupe */}
+
             {showProjectModal && selectedProject && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="bg-gray-50 rounded-3xl p-0 min-w-[340px] max-w-[95vw] shadow-2xl relative border border-gray-200 flex flex-col md:flex-row overflow-hidden">
-                  <button className="absolute top-4 right-4 text-gray-300 hover:text-indigo-500 transition-colors z-10" onClick={() => setShowProjectModal(false)}><X size={26} /></button>
-                  {/* Colonne gauche : projet (juste nom et description simple) */}
-                    <div className="md:w-1/2 w-full bg-gray-100 p-8 flex flex-col justify-center items-start border-r border-gray-200">
-                      <div className={`font-extrabold text-2xl tracking-tight mb-4 ${selectedProject.title === 'Web Designing' ? 'text-blue-600' : 'text-gray-700'}`}>{selectedProject.title}</div>
-                          <div className="text-gray-600 text-base mb-2">{selectedProject.description}</div>
+                <div className="relative flex min-w-[340px] max-w-[95vw] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-0 shadow-2xl md:flex-row">
+                  <button className="absolute right-4 top-4 z-10 text-[#94A3B8] transition-colors hover:text-[#6366F1]" onClick={() => setShowProjectModal(false)}><X size={24} /></button>
+                  <div className="w-full border-r border-[#E2E8F0] bg-[#F8FAFF] p-8 md:w-1/2">
+                    <div className="mb-4 text-2xl font-bold tracking-tight text-[#0F172A]">{selectedProject.title}</div>
+                    <div className="mb-2 text-base text-[#475569]">{selectedProject.description}</div>
                   </div>
-                  {/* Colonne droite : membres */}
-                  <div className="md:w-1/2 w-full p-8 flex flex-col justify-center">
-                    {/* plus de titre ici, juste la liste des membres */}
-                    <div className="flex gap-6 flex-wrap items-center">
-                      {getGroupMembers(selectedProject).map(m => (
+                  <div className="flex w-full flex-col justify-center p-8 md:w-1/2">
+                    <div className="flex flex-wrap items-center gap-6">
+                      {getGroupMembers(selectedProject).map((m) => (
                         <div key={m.id} className="flex flex-col items-center">
-                          <img src={m.avatar} alt={m.name} className="w-12 h-12 rounded-full object-cover mb-1" />
-                          <span className="text-sm font-semibold text-indigo-800 drop-shadow-sm">{m.name}</span>
+                          <img src={m.avatar} alt={m.name} className="mb-1 h-12 w-12 rounded-full border border-[#E2E8F0] object-cover" />
+                          <span className="text-sm font-semibold text-[#4338CA]">{m.name}</span>
                         </div>
                       ))}
                     </div>
@@ -364,45 +357,41 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm h-full flex flex-col min-h-0">
-          <div className="flex justify-between items-center mb-6 shrink-0">
+        <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+          <div className="mb-6 flex shrink-0 items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Notifications</h2>
+              <h2 className="text-xl font-semibold text-[#0F172A]">Notifications</h2>
               {sessionDateLabel && (
-                <p className="text-xs text-gray-400 mt-1">Session du {sessionDateLabel}</p>
+                <p className="mt-1 text-xs text-[#64748B]">Session du {sessionDateLabel}</p>
               )}
             </div>
-            <div className="flex gap-4 text-gray-400">
-                {/* Icônes search et menu supprimées */}
-            </div>
+            <div className="flex gap-4 text-[#94A3B8]"></div>
           </div>
 
           <div className="space-y-4 overflow-y-auto overflow-x-hidden pr-1 min-h-0">
-            {/* Exemple de notifications variées */}
-            {loading && <div className="text-sm text-gray-500">Chargement des notifications...</div>}
-            {!loading && notifications.length === 0 && <div className="text-sm text-gray-500">Aucune notification récente.</div>}
+            {loading && <div className="text-sm text-[#64748B]">Chargement des notifications...</div>}
+            {!loading && notifications.length === 0 && <div className="text-sm text-[#64748B]">Aucune notification recente.</div>}
             {notifications.map((notif) => (
               <motion.div 
                 key={notif.id}
                 whileHover={{ x: 5 }}
-                className={`flex gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 hover:bg-gray-50 w-full max-w-full overflow-hidden`}
+                className="flex w-full max-w-full cursor-pointer gap-4 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-4 transition-all duration-300 hover:bg-white"
               >
-                <img src={notif.avatar} alt={notif.name} className="w-12 h-12 rounded-full object-cover" />
+                <img src={notif.avatar} alt={notif.name} className="h-12 w-12 rounded-full border border-[#E2E8F0] object-cover" />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-1">
-                    <h4 className="font-semibold text-sm text-gray-800">{notif.name}</h4>
-                    <span className="text-[10px] text-gray-400">{notif.time}</span>
+                    <h4 className="text-sm font-semibold text-[#0F172A]">{notif.name}</h4>
+                    <span className="text-[10px] text-[#64748B]">{notif.time}</span>
                   </div>
-                  {/* Affichage selon le type de notification */}
                   {notif.type === 'deliverable' ? (
-                    <p className="text-xs text-green-700 flex items-center gap-1">
-                      <span className="flex items-center justify-center text-xs font-semibold text-gray-600 bg-gray-200 rounded-full w-6 h-6">
+                    <p className="flex items-center gap-1 text-xs text-[#166534]">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E2E8F0] text-xs font-semibold text-[#475569]">
                         {notif.name}
                       </span>
                       <span className="min-w-0 break-words">{notif.content}</span>
                     </p>
                   ) : (
-                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed break-words">{notif.content}</p>
+                    <p className="line-clamp-2 break-words text-xs leading-relaxed text-[#64748B]">{notif.content}</p>
                   )}
                 </div>
               </motion.div>

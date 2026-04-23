@@ -293,17 +293,17 @@ const Tasks: React.FC = () => {
   );
 
   return (
-    <div className="flex-1 bg-white p-8 overflow-y-auto">
-      <header className="flex justify-between items-center mb-10">
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-gray-800">My Task Board #{totalTasks > 0 ? '1' : '0'}</h1>
+          <h1 className="text-2xl font-semibold text-[#0F172A]">My Task Board #{totalTasks > 0 ? '1' : '0'}</h1>
         </div>
       </header>
 
-      {loading && <p className="text-sm text-gray-500 mb-6">Chargement des taches...</p>}
-      {!loading && error && <p className="text-sm text-red-500 mb-6">Erreur: {error}</p>}
+      {loading && <p className="mb-6 text-sm text-[#64748B]">Chargement des taches...</p>}
+      {!loading && error && <p className="mb-6 text-sm text-[#B91C1C]">Erreur: {error}</p>}
       {!loading && !error && totalTasks === 0 && (
-        <p className="text-sm text-gray-500 mb-6">Aucune tache trouvee pour les projets assignes a cet encadrant.</p>
+        <p className="mb-6 text-sm text-[#64748B]">Aucune tache trouvee pour les projets assignes a cet encadrant.</p>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -311,8 +311,8 @@ const Tasks: React.FC = () => {
           <div key={column.id} className="space-y-6">
             <div className="flex justify-between items-center px-2">
               <div>
-                <h3 className="text-lg font-bold text-gray-800">{column.title}</h3>
-                <p className="text-xs text-gray-400">{column.tasks.length} taches</p>
+                <h3 className="text-lg font-bold text-[#0F172A]">{column.title}</h3>
+                <p className="text-xs text-[#64748B]">{column.tasks.length} taches</p>
               </div>
             </div>
 
@@ -321,29 +321,29 @@ const Tasks: React.FC = () => {
                 <motion.div
                   key={task.id}
                   whileHover={{ scale: 1.02 }}
-                  className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative group cursor-pointer"
+                  className="group relative mb-6 cursor-pointer rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_8px_20px_rgba(0,0,0,0.05)]"
                   onClick={() => handleTaskClick(column)}
                 >
                   <div className="flex gap-4">
                     <div className="flex flex-col items-center gap-2">
-                      <img src={`https://picsum.photos/seed/task${task.id}/30/30`} alt="Avatar" className="w-8 h-8 rounded-full" />
-                      <div className="w-0.5 h-full bg-gray-100 group-last:hidden"></div>
+                      <img src={`https://picsum.photos/seed/task${task.id}/30/30`} alt="Avatar" className="h-8 w-8 rounded-full border border-[#E2E8F0]" />
+                      <div className="h-full w-0.5 bg-[#E2E8F0] group-last:hidden"></div>
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Commits on {task.dateLabel}</span>
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-[#64748B]">Commits on {task.dateLabel}</span>
                       </div>
-                      <h4 className="text-sm font-bold text-gray-800 mb-1 leading-tight">{task.title}</h4>
-                      <p className="text-xs text-gray-500 mb-1">{task.assignee}</p>
-                      <p className="text-[11px] text-gray-400 mb-4">{task.projectTitle}</p>
+                      <h4 className="mb-1 text-sm font-bold leading-tight text-[#0F172A]">{task.title}</h4>
+                      <p className="mb-1 text-xs text-[#64748B]">{task.assignee}</p>
+                      <p className="mb-4 text-[11px] text-[#64748B]">{task.projectTitle}</p>
                       <div className="flex justify-between items-center">
                         <span
                           className={`text-[10px] font-bold px-2.5 py-1 rounded-md ${
                             task.status === 'DONE'
-                              ? 'bg-green-100 text-green-600'
+                              ? 'bg-[#DCFCE7] text-[#166534]'
                               : task.status === 'URGENT'
-                              ? 'bg-red-100 text-red-600'
-                              : 'bg-yellow-100 text-yellow-600'
+                              ? 'bg-[#FEE2E2] text-[#B91C1C]'
+                              : 'bg-[#FEF3C7] text-[#B45309]'
                           }`}
                         >
                           {task.status}
@@ -360,40 +360,40 @@ const Tasks: React.FC = () => {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[3px]">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 min-w-[350px] max-w-lg w-full relative border border-gray-100">
-            <button onClick={closeModal} className="absolute top-4 right-6 text-gray-400 hover:text-red-500 text-3xl font-bold">&times;</button>
-            <h2 className="text-2xl font-extrabold mb-7 text-gray-900 tracking-tight">
-              Taches du groupe : <span className="text-indigo-600">{modalTitle}</span>
+          <div className="relative w-full min-w-[350px] max-w-lg rounded-2xl border border-[#E2E8F0] bg-white p-8 shadow-2xl">
+            <button onClick={closeModal} className="absolute right-6 top-4 text-3xl font-bold text-[#94A3B8] hover:text-[#DC2626]">&times;</button>
+            <h2 className="mb-7 text-2xl font-extrabold tracking-tight text-[#0F172A]">
+              Taches du groupe : <span className="text-[#4338CA]">{modalTitle}</span>
             </h2>
             <ul className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
               {modalTasks.map((t) => (
-                <li key={t.id} className="pb-4 border-b last:border-b-0 flex flex-col gap-2">
+                <li key={t.id} className="flex flex-col gap-2 border-b border-[#E2E8F0] pb-4 last:border-b-0">
                   <div className="flex items-center gap-3">
-                    <div className="font-bold text-gray-800 text-lg flex-1">{t.title}</div>
+                    <div className="flex-1 text-lg font-bold text-[#0F172A]">{t.title}</div>
                     <span
                       className={`text-xs font-bold px-3 py-1 rounded-full shadow-sm select-none tracking-wide ${
                         t.status === 'DONE'
-                          ? 'bg-green-100 text-green-700 border border-green-200'
+                          ? 'border border-[#BBF7D0] bg-[#DCFCE7] text-[#166534]'
                           : t.status === 'URGENT'
-                          ? 'bg-red-100 text-red-600 border border-red-200'
-                          : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                          ? 'border border-[#FECACA] bg-[#FEE2E2] text-[#B91C1C]'
+                          : 'border border-[#FDE68A] bg-[#FEF3C7] text-[#B45309]'
                       }`}
                     >
                       {t.status}
                     </span>
                   </div>
-                  <div className="text-[13px] text-gray-500 mb-1 font-medium">
-                    Assigne a : <span className="text-gray-700 font-semibold">{t.assignee}</span>
+                  <div className="mb-1 text-[13px] font-medium text-[#64748B]">
+                    Assigne a : <span className="font-semibold text-[#334155]">{t.assignee}</span>
                   </div>
-                  <div className="text-[13px] text-gray-500 mb-1 font-medium">
-                    Projet : <span className="text-gray-700 font-semibold">{t.projectTitle}</span>
+                  <div className="mb-1 text-[13px] font-medium text-[#64748B]">
+                    Projet : <span className="font-semibold text-[#334155]">{t.projectTitle}</span>
                   </div>
-                  <div className="text-[13px] text-gray-600">{t.description}</div>
+                  <div className="text-[13px] text-[#475569]">{t.description}</div>
                   <div className="relative flex items-center mt-1">
                     <input
                       type="text"
                       placeholder="Ajouter un commentaire..."
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[15px] bg-gray-50 focus:outline-none transition-all shadow-sm placeholder:text-gray-400 pr-12"
+                      className="w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFF] px-3 py-2 pr-12 text-[15px] placeholder:text-[#94A3B8] shadow-sm transition-all focus:outline-none"
                       value={comments[t.id] || ''}
                       onChange={(e) => handleCommentChange(t.id, e.target.value)}
                       onKeyDown={(e) => {
@@ -407,13 +407,13 @@ const Tasks: React.FC = () => {
                       type="button"
                       onClick={() => handleSendComment(t.id)}
                       disabled={sendingTaskId === t.id || !(comments[t.id] || '').trim()}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-600 hover:text-indigo-800 p-2 rounded-lg transition-all focus:outline-none bg-transparent shadow-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-transparent p-2 text-[#6366F1] shadow-none transition-all hover:text-[#4338CA] focus:outline-none"
                       title="Envoyer le commentaire"
                     >
                       <Send size={22} />
                     </button>
                   </div>
-                  <div className="text-[12px] text-gray-400 flex items-center gap-1">
+                  <div className="flex items-center gap-1 text-[12px] text-[#64748B]">
                     <MessageSquare size={14} />
                     {t.comments} commentaires
                   </div>

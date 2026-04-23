@@ -350,10 +350,10 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8F9FD] font-sans antialiased text-slate-900 overflow-hidden">
+    <div className="flex min-h-0 flex-1 overflow-hidden bg-[#F8FAFF] font-sans antialiased text-slate-900">
       
       {/* Sidebar */}
-      <div className="w-96 border-r border-slate-200 bg-white flex flex-col shadow-sm z-10">
+      <div className="z-10 flex w-96 flex-col border-r border-[#E2E8F0] bg-white shadow-sm">
         <div className="p-8 pb-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-extrabold tracking-tight">Messages</h2>

@@ -273,31 +273,31 @@ const Deliverables: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-white text-gray-900 p-4 md:p-6 overflow-hidden">
-      <div className="origin-top-left scale-[0.82] w-[121.9512%]">
-        <header className="flex justify-between items-center mb-7">
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div>
+        <header className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Group Deliverables</h1>
-            <p className="text-gray-400 mt-1.5">View and manage all project deliverables by group</p>
-            <p className="text-xs text-gray-400 mt-1">{totalCount} livrable(s)</p>
+            <h1 className="text-2xl font-semibold">Group Deliverables</h1>
+            <p className="mt-1.5 text-sm text-[#64748B]">View and manage all project deliverables by group</p>
+            <p className="mt-1 text-xs text-[#64748B]">{totalCount} livrable(s)</p>
           </div>
         </header>
 
-        {loading && <p className="text-sm text-gray-500 mb-4">Chargement des livrables...</p>}
-        {!loading && error && <p className="text-sm text-red-500 mb-4">Erreur: {error}</p>}
+        {loading && <p className="mb-4 text-sm text-[#64748B]">Chargement des livrables...</p>}
+        {!loading && error && <p className="mb-4 text-sm text-[#B91C1C]">Erreur: {error}</p>}
         {!loading && !error && groups.length === 0 && (
-          <p className="text-sm text-gray-500 mb-4">Aucun livrable trouve pour les projets assignes a cet encadrant.</p>
+          <p className="mb-4 text-sm text-[#64748B]">Aucun livrable trouve pour les projets assignes a cet encadrant.</p>
         )}
 
         <div className="space-y-7">
           {groups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-gray-100"></div>
-                <h2 className="text-lg font-bold text-indigo-600 px-3 py-1.5 bg-indigo-50 rounded-full border border-indigo-100">
+                <div className="h-px flex-1 bg-[#E2E8F0]"></div>
+                <h2 className="rounded-full border border-[#C7D2FE] bg-[#EEF2FF] px-3 py-1.5 text-lg font-bold text-[#4338CA]">
                   {group.groupName}
                 </h2>
-                <div className="h-px flex-1 bg-gray-100"></div>
+                <div className="h-px flex-1 bg-[#E2E8F0]"></div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -305,10 +305,10 @@ const Deliverables: React.FC = () => {
                   <motion.div
                     key={deliverable.id}
                     whileHover={{ scale: 1.01 }}
-                    className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm hover:border-indigo-100 transition-all group relative"
+                    className="group relative mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.05)] transition-all hover:border-[#C7D2FE]"
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div className="p-2.5 bg-gray-50 rounded-2xl">
+                      <div className="rounded-2xl bg-[#F8FAFF] p-2.5">
                         {getIcon(deliverable.type)}
                       </div>
                       <div className="flex items-center gap-2">
@@ -321,15 +321,15 @@ const Deliverables: React.FC = () => {
                       </div>
                     </div>
 
-                    <h3 className="text-base font-bold mb-1.5 text-gray-800 group-hover:text-indigo-600 transition-colors">
+                    <h3 className="mb-1.5 text-base font-bold text-[#0F172A] transition-colors group-hover:text-[#4338CA]">
                       {deliverable.title}
                     </h3>
                     
-                    <div className="flex items-center gap-3 text-xs text-gray-400 mb-4">
+                    <div className="mb-4 flex items-center gap-3 text-xs text-[#64748B]">
                       <span>{deliverable.date}</span>
                       {deliverable.size && (
                         <>
-                          <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                          <span className="h-1 w-1 rounded-full bg-[#CBD5E1]"></span>
                           <span>{deliverable.size}</span>
                         </>
                       )}
@@ -341,8 +341,8 @@ const Deliverables: React.FC = () => {
                         disabled={!deliverable.externalUrl && !deliverable.filePath}
                         className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
                           deliverable.isExternal
-                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md disabled:bg-indigo-300'
-                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 disabled:bg-gray-100 disabled:text-gray-400'
+                              ? 'bg-[#6366F1] text-white shadow-md hover:bg-[#4F46E5] disabled:bg-[#A5B4FC]'
+                              : 'border border-[#E2E8F0] bg-[#F8FAFF] text-[#334155] hover:bg-white disabled:bg-[#F1F5F9] disabled:text-[#94A3B8]'
                         }`}
                       >
                         {deliverable.isExternal ? <ExternalLink size={16} /> : <Download size={16} />}

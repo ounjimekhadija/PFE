@@ -268,12 +268,12 @@ const StudentDeliverables: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-white overflow-hidden flex justify-center items-center h-screen">
-      <div className="w-full h-full p-8 flex flex-col relative" style={{ zoom: "0.90" }}>
-      <header className="mb-10 flex justify-between items-center">
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div className="relative flex h-full w-full flex-col">
+      <header className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Deliverables</h1>
-          <p className="text-gray-500 mt-1">Upload and manage your project documents and versions.</p>
+          <h1 className="text-2xl font-semibold text-[#0F172A]">Deliverables</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Upload and manage your project documents and versions.</p>
         </div>
         <button 
           className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
@@ -349,23 +349,23 @@ const StudentDeliverables: React.FC = () => {
         </div>
       )}
 
-      <div className="flex-1 flex gap-8 overflow-hidden">
+      <div className="flex flex-1 gap-8 overflow-hidden">
         {/* Deliverables List */}
-        <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+        <div className="custom-scrollbar flex-1 overflow-y-auto pr-4">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {deliverables.map((doc) => (
               <motion.div 
                 key={doc.id}
                 onClick={() => setSelectedDoc(doc)}
-                className={`p-6 rounded-[32px] border-2 transition-all cursor-pointer ${
+                className={`mb-6 cursor-pointer rounded-2xl border-2 p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)] transition-all ${
                   selectedDoc?.id === doc.id 
-                    ? 'border-indigo-500 bg-indigo-50/30' 
-                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                    ? 'border-[#6366F1] bg-[#EEF2FF]/60' 
+                    : 'border-[#E2E8F0] bg-white hover:border-[#CBD5E1]'
                 }`}
               >
                 <div className="flex items-start justify-between mb-6">
-                  <div className="p-4 bg-white rounded-2xl shadow-sm">
-                    <FileText className="text-indigo-600" size={24} />
+                  <div className="rounded-2xl bg-[#F8FAFF] p-4 shadow-sm">
+                    <FileText className="text-[#6366F1]" size={24} />
                   </div>
                   <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${
                     (doc.status?.toUpperCase() === 'VALIDATED' || doc.status?.toUpperCase() === 'VALIDE') 
@@ -378,31 +378,31 @@ const StudentDeliverables: React.FC = () => {
                   </span>
                 </div>
 
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{doc.title}</h3>
-                <p className="text-sm text-gray-500 mb-6">{doc.type} • Last updated {doc.lastModified}</p>
+                <h3 className="mb-1 text-lg font-bold text-[#0F172A]">{doc.title}</h3>
+                <p className="mb-6 text-sm text-[#64748B]">{doc.type} • Last updated {doc.lastModified}</p>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#64748B]">
                     <History size={14} />
                     {doc.versions.length} Versions
                   </div>
                   <div className="flex gap-2">
                     <button
-                      className="p-2 bg-white rounded-xl border border-gray-100 text-gray-400 hover:text-indigo-600 transition-all"
+                      className="rounded-xl border border-[#E2E8F0] bg-white p-2 text-[#94A3B8] transition-all hover:text-[#6366F1]"
                       title="View versions"
                       onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
                     >
                       <Eye size={18} />
                     </button>
                     <button
-                      className="p-2 bg-white rounded-xl border border-gray-100 text-gray-400 hover:text-indigo-600 transition-all"
+                      className="rounded-xl border border-[#E2E8F0] bg-white p-2 text-[#94A3B8] transition-all hover:text-[#6366F1]"
                       title="Upload new version"
                       onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
                     >
                       <PlusCircle size={18} />
                     </button>
                     <button 
-                      className="p-2 bg-white rounded-xl border border-gray-100 text-gray-400 hover:text-indigo-600 transition-all"
+                      className="rounded-xl border border-[#E2E8F0] bg-white p-2 text-[#94A3B8] transition-all hover:text-[#6366F1]"
                       title="Download latest version"
                       onClick={e => {
                         e.stopPropagation();
@@ -448,7 +448,7 @@ const StudentDeliverables: React.FC = () => {
                       <Download size={18} />
                     </button>
                     <button 
-                      className="p-2 bg-white rounded-xl border border-gray-100 text-gray-400 hover:text-red-600 transition-all"
+                      className="rounded-xl border border-[#E2E8F0] bg-white p-2 text-[#94A3B8] transition-all hover:text-[#DC2626]"
                       title="Delete deliverable"
                       onClick={async e => {
                          e.stopPropagation();

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { UserPlus, Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, UserPlus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
 
@@ -50,6 +50,18 @@ const toText = (value: string | null | undefined, fallback = 'N/A'): string => {
   return v ? v : fallback;
 };
 
+const roleBadgeClass = (role: string): string => {
+  if (role === 'ADMINISTRATEUR') return 'bg-[#EEF2FF] text-[#4338CA]';
+  if (role === 'ENCADRANT') return 'bg-[#E0F2FE] text-[#075985]';
+  return 'bg-[#DCFCE7] text-[#166534]';
+};
+
+const roleLabel = (role: string): string => {
+  if (role === 'ADMINISTRATEUR') return 'Admin';
+  if (role === 'ENCADRANT') return 'Encadrant';
+  return 'Etudiant';
+};
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000';
 
 const AdminUsers: React.FC = () => {
@@ -64,7 +76,6 @@ const AdminUsers: React.FC = () => {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
 
-  // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState({
     role: 'ENCADRANT',
@@ -132,9 +143,12 @@ const AdminUsers: React.FC = () => {
       encadrants.forEach((e) => {
         const encadrantId = String(e.id || '');
         if (!encadrantId) return;
-        const candidates = [e.utilisateur_id, e.user_id, e.auth_user_id]
-          .filter((value) => typeof value === 'string' && value.length > 0) as string[];
-        candidates.forEach((c) => { encadrantByUserId.set(c, encadrantId); });
+        const candidates = [e.utilisateur_id, e.user_id, e.auth_user_id].filter(
+          (value) => typeof value === 'string' && value.length > 0
+        ) as string[];
+        candidates.forEach((c) => {
+          encadrantByUserId.set(c, encadrantId);
+        });
       });
 
       const adminRows: TableRow[] = users
@@ -173,7 +187,9 @@ const AdminUsers: React.FC = () => {
         .filter((u) => u.role === 'ENCADRANT')
         .map((u) => {
           const encadrantId = encadrantByUserId.get(String(u.id));
-          const relatedProject = projects.find((p) => p.encadrant_id === u.id || (encadrantId ? p.encadrant_id === encadrantId : false));
+          const relatedProject = projects.find(
+            (p) => p.encadrant_id === u.id || (encadrantId ? p.encadrant_id === encadrantId : false)
+          );
           return {
             id: String(u.id),
             nom: toText(u.nom),
@@ -195,7 +211,6 @@ const AdminUsers: React.FC = () => {
 
       setRows(mergedRows);
     } catch (err: unknown) {
-      console.error('Erreur chargement users admin:', err);
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
@@ -410,26 +425,41 @@ const AdminUsers: React.FC = () => {
   );
   const projets = useMemo(() => projectOptions, [projectOptions]);
 
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const admins = rows.filter((r) => r.role === 'ADMINISTRATEUR').length;
+    const encadrants = rows.filter((r) => r.role === 'ENCADRANT').length;
+    const etudiants = rows.filter((r) => r.role === 'ETUDIANT').length;
+    return { total, admins, encadrants, etudiants };
+  }, [rows]);
+
+  const recentUpdates = useMemo(
+    () => rows.slice(0, 5).map((r) => `${r.prenom} ${r.nom} · ${roleLabel(r.role)} · ${r.projet === 'N/A' ? 'No project yet' : r.projet}`),
+    [rows]
+  );
+
   return (
-    <div className="flex-1 bg-gray-50 p-8 overflow-y-auto">
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-500 mt-1">Create and manage student and teacher accounts.</p>
+          <h1 className="text-2xl font-semibold text-[#0F172A]">User Management</h1>
+          <p className="mt-2 text-sm text-[#64748B]">Create and manage student and teacher accounts.</p>
         </div>
-        <div className="flex items-center gap-3 justify-end w-full md:w-auto">
+
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            className="bg-white text-gray-700 px-4 py-2 rounded-xl font-bold flex items-center gap-2 border border-gray-200 hover:bg-gray-50 transition-all shadow-sm text-sm disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-medium text-[#334155] shadow-[0_8px_20px_rgba(0,0,0,0.05)] transition hover:border-[#CBD5E1]"
             onClick={handleExportExcel}
             disabled={exportLoading}
           >
             <Download size={16} />
             {exportLoading ? 'Exporting...' : 'Export Excel'}
           </button>
+
           <button
             type="button"
-            className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-black transition-all shadow-lg text-sm"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#6366F1] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] transition hover:bg-[#4F46E5]"
             onClick={() => {
               setCreateError(null);
               setCreateSuccess(null);
@@ -440,413 +470,472 @@ const AdminUsers: React.FC = () => {
             <UserPlus size={16} />
             Add User
           </button>
-
-          {/* Add User Modal */}
-          {showAddModal && (
-            <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 backdrop-blur-sm overflow-y-auto p-4 sm:p-6">
-              <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl relative animate-fadeIn max-h-[92vh] flex flex-col overflow-hidden my-4">
-                <button
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl"
-                  onClick={() => setShowAddModal(false)}
-                  aria-label="Close"
-                >
-                  &times;
-                </button>
-                <div className="px-8 pt-8 pb-4 border-b border-gray-100">
-                  <h2 className="text-2xl font-bold text-gray-900">Creer un utilisateur</h2>
-                </div>
-                <form className="flex-1 overflow-y-auto px-8 py-6 space-y-4" onSubmit={handleCreateUser}>
-                  {createError && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                      {createError}
-                    </div>
-                  )}
-                  {createSuccess && (
-                    <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                      {createSuccess}
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-sm font-semibold mb-1">Role</label>
-                    <select
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                      value={form.role}
-                      onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                    >
-                      <option value="ADMINISTRATEUR">Admin</option>
-                      <option value="ENCADRANT">Encadrant</option>
-                      <option value="ETUDIANT">Etudiant</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-1">Nom</label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                      value={form.nom}
-                      onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-semibold mb-1">Prenom</label>
-                      <input
-                        type="text"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                        value={form.prenom}
-                        onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-semibold mb-1">Numero de telephone</label>
-                      <input
-                        type="tel"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                        value={form.phone}
-                        onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-1">Email</label>
-                    <input
-                      type="email"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                      value={form.email}
-                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-1">Mot de passe</label>
-                    <input
-                      type="password"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                      value={form.password}
-                      onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                      required
-                    />
-                  </div>
-
-                  {form.role === 'ADMINISTRATEUR' && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Nom organisation</label>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                          value={form.nomOrganisation}
-                          onChange={e => setForm(f => ({ ...f, nomOrganisation: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Niveau acces</label>
-                        <select
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                          value={form.niveauAcces}
-                          onChange={e => setForm(f => ({ ...f, niveauAcces: e.target.value }))}
-                        >
-                          <option value="ADMIN">ADMIN</option>
-                          <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {form.role === 'ENCADRANT' && (
-                    <>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Grade</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.grade}
-                            onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}
-                            required
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Specialite</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.specialite}
-                            onChange={e => setForm(f => ({ ...f, specialite: e.target.value }))}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Bureau</label>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                          value={form.bureau}
-                          onChange={e => setForm(f => ({ ...f, bureau: e.target.value }))}
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {form.role === 'ETUDIANT' && (
-                    <>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Numero etudiant</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.numeroEtudiant}
-                            onChange={e => setForm(f => ({ ...f, numeroEtudiant: e.target.value }))}
-                            required
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Niveau</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.niveau}
-                            onChange={e => setForm(f => ({ ...f, niveau: e.target.value }))}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Filiere</label>
-                          <input
-                            type="text"
-                            list="filiere-options"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.filiere}
-                            onChange={e => setForm(f => ({ ...f, filiere: e.target.value }))}
-                            required
-                          />
-                          <datalist id="filiere-options">
-                            {filieres.map(f => <option key={f} value={f} />)}
-                          </datalist>
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Titre profil</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.titreProfil}
-                            onChange={e => setForm(f => ({ ...f, titreProfil: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">CNE</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.cne}
-                            onChange={e => setForm(f => ({ ...f, cne: e.target.value }))}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">CIN</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.cin}
-                            onChange={e => setForm(f => ({ ...f, cin: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Competences (separees par virgule)</label>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                          value={form.competences}
-                          onChange={e => setForm(f => ({ ...f, competences: e.target.value }))}
-                        />
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">GitHub URL</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.githubUrl}
-                            onChange={e => setForm(f => ({ ...f, githubUrl: e.target.value }))}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">LinkedIn URL</label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                            value={form.linkedinUrl}
-                            onChange={e => setForm(f => ({ ...f, linkedinUrl: e.target.value }))}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold mb-1">Portfolio URL</label>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                          value={form.portfolioUrl}
-                          onChange={e => setForm(f => ({ ...f, portfolioUrl: e.target.value }))}
-                        />
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Nom du groupe</label>
-                          <select
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                            value={form.projetId ? (projets.find((p) => p.id === form.projetId)?.nom_groupe || '') : ''}
-                            onChange={e => {
-                              const selected = projets.find((p) => p.nom_groupe === e.target.value);
-                              setForm(f => ({ ...f, projetId: selected?.id || '' }));
-                            }}
-                          >
-                            <option value="">Choisir...</option>
-                            {groupes.map(g => <option key={g} value={g}>{g}</option>)}
-                          </select>
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm font-semibold mb-1">Nom du projet</label>
-                          <select
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                            value={form.projetId}
-                            onChange={e => setForm(f => ({ ...f, projetId: e.target.value }))}
-                          >
-                            <option value="">Choisir...</option>
-                            {projets.map(p => <option key={p.id} value={p.id}>{p.titre}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <div className="sticky bottom-0 bg-white pt-4 pb-1 flex justify-end gap-2 border-t border-gray-100 mt-6">
-                    <button
-                      type="button"
-                      className="px-6 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200"
-                      onClick={() => setShowAddModal(false)}
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow disabled:opacity-50"
-                      disabled={createLoading}
-                    >
-                      {createLoading ? 'Creation...' : 'Creer'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
         </div>
       </header>
 
+      <section className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
+        {[
+          { label: 'Total Users', value: stats.total },
+          { label: 'Admins', value: stats.admins },
+          { label: 'Encadrants', value: stats.encadrants },
+          { label: 'Etudiants', value: stats.etudiants },
+        ].map((item) => (
+          <article key={item.label} className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+            <p className="text-sm text-[#64748B]">{item.label}</p>
+            <p className="mt-2 text-[2rem] font-bold leading-none text-[#0F172A]">{item.value}</p>
+          </article>
+        ))}
+      </section>
+
       {loading && (
-        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+        <div className="mb-4 rounded-2xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-sm text-[#1E40AF]">
           Chargement des utilisateurs depuis la base de donnees...
         </div>
       )}
 
       {!loading && error && (
-        <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="mb-4 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">{error}</div>
       )}
 
       {!showAddModal && createError && (
-        <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {createError}
-        </div>
+        <div className="mb-4 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">{createError}</div>
       )}
 
       {!showAddModal && createSuccess && (
-        <div className="mb-4 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-700">
-          {createSuccess}
+        <div className="mb-4 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-[#15803D]">{createSuccess}</div>
+      )}
+
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,360px]">
+        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+          <div className="overflow-x-auto rounded-2xl border border-[#E2E8F0]">
+            <table className="hidden min-w-[980px] w-full border-collapse md:table">
+              <thead className="bg-[#F8FAFF]">
+                <tr>
+                  {['Nom', 'Prenom', 'Role', 'Telephone', 'Email', 'Filiere', 'Groupe', 'Projet', 'Actions'].map((h) => (
+                    <th key={h} className="border-b border-[#E2E8F0] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {!loading && rows.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-[#64748B]">
+                      Aucun utilisateur trouve.
+                    </td>
+                  </tr>
+                )}
+
+                {rows.map((row, index) => (
+                  <tr key={row.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFF]'} hover:bg-[#EEF2FF]/40`}>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 font-semibold text-[#0F172A]">{row.nom}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#0F172A]">{row.prenom}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(row.role)}`}>
+                        {roleLabel(row.role)}
+                      </span>
+                    </td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.telephone}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.email}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.filiere}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.groupe}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.projet}</td>
+                    <td className="border-b border-[#EEF2F7] px-4 py-3">
+                      <button
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#64748B] transition hover:border-[#FCA5A5] hover:text-[#DC2626] disabled:opacity-50"
+                        title="Supprimer"
+                        onClick={() => setDeleteConfirmId(row.id)}
+                        disabled={deleteLoading}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="space-y-3 p-3 md:hidden">
+              {rows.length === 0 && !loading && <p className="py-6 text-center text-sm text-[#64748B]">Aucun utilisateur trouve.</p>}
+              {rows.map((row) => (
+                <div key={row.id} className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#0F172A]">{row.prenom} {row.nom}</p>
+                      <p className="text-xs text-[#64748B]">{row.email}</p>
+                    </div>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(row.role)}`}>
+                      {roleLabel(row.role)}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#64748B]">
+                    <p>Tel: {row.telephone}</p>
+                    <p>Filiere: {row.filiere}</p>
+                    <p>Groupe: {row.groupe}</p>
+                    <p>Projet: {row.projet}</p>
+                  </div>
+                  <div className="mt-3">
+                    <button
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#64748B] transition hover:border-[#FCA5A5] hover:text-[#DC2626] disabled:opacity-50"
+                      title="Supprimer"
+                      onClick={() => setDeleteConfirmId(row.id)}
+                      disabled={deleteLoading}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
+
+        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+          <h3 className="text-2xl font-semibold text-[#0F172A]">Weekly Team Sync</h3>
+          <p className="mt-1 text-sm text-[#64748B]">Recent user updates and account assignments.</p>
+          <div className="mt-4 space-y-3">
+            {recentUpdates.length === 0 && <p className="text-sm text-[#64748B]">No recent updates.</p>}
+            {recentUpdates.map((item, idx) => (
+              <div key={`${item}-${idx}`} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 text-sm text-[#334155]">
+                {item}
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4">
+          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] px-6 py-4">
+              <h2 className="text-xl font-semibold text-[#0F172A]">Creer un utilisateur</h2>
+              <button className="text-[#64748B]" onClick={() => setShowAddModal(false)} aria-label="Close">
+                &times;
+              </button>
+            </div>
+
+            <form className="max-h-[80vh] overflow-y-auto px-6 py-5" onSubmit={handleCreateUser}>
+              <div className="space-y-4">
+                {createError && <div className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm text-[#B91C1C]">{createError}</div>}
+                {createSuccess && <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#334155]">Role</label>
+                  <select
+                    className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                    value={form.role}
+                    onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                  >
+                    <option value="ADMINISTRATEUR">Admin</option>
+                    <option value="ENCADRANT">Encadrant</option>
+                    <option value="ETUDIANT">Etudiant</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Nom</label>
+                    <input
+                      type="text"
+                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      value={form.nom}
+                      onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Prenom</label>
+                    <input
+                      type="text"
+                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      value={form.prenom}
+                      onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Numero de telephone</label>
+                    <input
+                      type="tel"
+                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      value={form.phone}
+                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Email</label>
+                    <input
+                      type="email"
+                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#334155]">Mot de passe</label>
+                  <input
+                    type="password"
+                    className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                    value={form.password}
+                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    required
+                  />
+                </div>
+
+                {form.role === 'ADMINISTRATEUR' && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Nom organisation</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        value={form.nomOrganisation}
+                        onChange={(e) => setForm((f) => ({ ...f, nomOrganisation: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Niveau acces</label>
+                      <select
+                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        value={form.niveauAcces}
+                        onChange={(e) => setForm((f) => ({ ...f, niveauAcces: e.target.value }))}
+                      >
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {form.role === 'ENCADRANT' && (
+                  <>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Grade</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.grade}
+                          onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Specialite</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.specialite}
+                          onChange={(e) => setForm((f) => ({ ...f, specialite: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Bureau</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        value={form.bureau}
+                        onChange={(e) => setForm((f) => ({ ...f, bureau: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+
+                {form.role === 'ETUDIANT' && (
+                  <>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Numero etudiant</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.numeroEtudiant}
+                          onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Niveau</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.niveau}
+                          onChange={(e) => setForm((f) => ({ ...f, niveau: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Filiere</label>
+                        <input
+                          type="text"
+                          list="filiere-options"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.filiere}
+                          onChange={(e) => setForm((f) => ({ ...f, filiere: e.target.value }))}
+                          required
+                        />
+                        <datalist id="filiere-options">
+                          {filieres.map((f) => (
+                            <option key={f} value={f} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Titre profil</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.titreProfil}
+                          onChange={(e) => setForm((f) => ({ ...f, titreProfil: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">CNE</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.cne}
+                          onChange={(e) => setForm((f) => ({ ...f, cne: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">CIN</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.cin}
+                          onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Competences (separees par virgule)</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        value={form.competences}
+                        onChange={(e) => setForm((f) => ({ ...f, competences: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">GitHub URL</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.githubUrl}
+                          onChange={(e) => setForm((f) => ({ ...f, githubUrl: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">LinkedIn URL</label>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.linkedinUrl}
+                          onChange={(e) => setForm((f) => ({ ...f, linkedinUrl: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Portfolio URL</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        value={form.portfolioUrl}
+                        onChange={(e) => setForm((f) => ({ ...f, portfolioUrl: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Nom du groupe</label>
+                        <select
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.projetId ? projets.find((p) => p.id === form.projetId)?.nom_groupe || '' : ''}
+                          onChange={(e) => {
+                            const selected = projets.find((p) => p.nom_groupe === e.target.value);
+                            setForm((f) => ({ ...f, projetId: selected?.id || '' }));
+                          }}
+                        >
+                          <option value="">Choisir...</option>
+                          {groupes.map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-[#334155]">Nom du projet</label>
+                        <select
+                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          value={form.projetId}
+                          onChange={(e) => setForm((f) => ({ ...f, projetId: e.target.value }))}
+                        >
+                          <option value="">Choisir...</option>
+                          {projets.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.titre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-[#E2E8F0] bg-white pt-4">
+                <button
+                  type="button"
+                  className="rounded-xl border border-[#E2E8F0] bg-white px-5 py-2 text-sm font-semibold text-[#334155]"
+                  onClick={() => setShowAddModal(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-[#6366F1] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] disabled:opacity-50"
+                  disabled={createLoading}
+                >
+                  {createLoading ? 'Creation...' : 'Creer'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Users Table */}
-      <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50/50 border-bottom border-gray-100">
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Nom</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Prénom</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Rôle</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Téléphone</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Email</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Filière</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Nom du groupe</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Nom du projet</th>
-              <th className="px-4 py-5 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {!loading && rows.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-500">
-                  Aucun utilisateur trouve.
-                </td>
-              </tr>
-            )}
-
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td className="px-4 py-5 font-bold text-gray-900">{row.nom}</td>
-                <td className="px-4 py-5 text-gray-900">{row.prenom}</td>
-                <td className="px-4 py-5">
-                  {row.role === 'ADMINISTRATEUR' && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">Admin</span>
-                  )}
-                  {row.role === 'ENCADRANT' && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Encadrant</span>
-                  )}
-                  {row.role === 'ETUDIANT' && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Etudiant</span>
-                  )}
-                </td>
-                <td className="px-4 py-5 text-gray-900">{row.telephone}</td>
-                <td className="px-4 py-5 text-gray-900">{row.email}</td>
-                <td className="px-4 py-5 text-gray-900">{row.filiere}</td>
-                <td className="px-4 py-5 text-gray-900">{row.groupe}</td>
-                <td className="px-4 py-5 text-gray-900">{row.projet}</td>
-                <td className="px-4 py-5 text-right">
-                  <button
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-40"
-                    title="Supprimer"
-                    onClick={() => setDeleteConfirmId(row.id)}
-                    disabled={deleteLoading}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Delete confirmation modal */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col gap-4 animate-fadeIn">
-            <h2 className="text-xl font-bold text-gray-900">Confirmer la suppression</h2>
-            <p className="text-gray-600 text-sm">Cette action est irreversible. L'utilisateur sera supprime definitivement.</p>
-            <div className="flex justify-end gap-3 mt-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
+            <h2 className="text-lg font-semibold text-[#0F172A]">Confirmer la suppression</h2>
+            <p className="mt-2 text-sm text-[#64748B]">Cette action est irreversible. L'utilisateur sera supprime definitivement.</p>
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-5 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200"
+                className="rounded-xl border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-semibold text-[#334155]"
                 onClick={() => setDeleteConfirmId(null)}
                 disabled={deleteLoading}
               >
@@ -854,7 +943,7 @@ const AdminUsers: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="px-5 py-2 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 shadow disabled:opacity-50"
+                className="rounded-xl bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 onClick={() => handleDeleteUser(deleteConfirmId)}
                 disabled={deleteLoading}
               >

@@ -22,6 +22,28 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     return 'student';
   };
 
+  const findUserByEmail = async (email: string) => {
+    const normalized = email.trim().toLowerCase();
+
+    // Prefer exact match first.
+    const { data: exactMatch } = await supabase
+      .from('utilisateurs')
+      .select('id, role, email')
+      .eq('email', normalized)
+      .maybeSingle();
+
+    if (exactMatch) return exactMatch;
+
+    // Fallback to case-insensitive match for legacy/mixed-case records.
+    const { data: ciMatches } = await supabase
+      .from('utilisateurs')
+      .select('id, role, email')
+      .ilike('email', normalized)
+      .limit(1);
+
+    return Array.isArray(ciMatches) && ciMatches.length > 0 ? ciMatches[0] : null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -69,20 +91,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       console.error('Erreur de connexion:', err);
       const message = err?.message || 'Identifiants incorrects';
       if (message.toLowerCase().includes('invalid login credentials')) {
-        const { data: existingUser } = await supabase
-          .from('utilisateurs')
-          .select('id, role')
-          .eq('email', email)
-          .maybeSingle();
+        const existingUser = await findUserByEmail(email);
 
         if (existingUser) {
           if (existingUser.role === 'ENCADRANT') {
             setError("Compte encadrant trouvé. Mot de passe incorrect. Utilisez 'Forgot Password' pour réinitialiser.");
           } else {
-            setError("Email trouvé. Mot de passe incorrect ou compte Auth non synchronisé. Utilisez 'Forgot Password'.");
+            setError("Compte trouvé. Mot de passe incorrect ou compte Auth non synchronisé. Utilisez 'Forgot Password'.");
           }
         } else {
-          setError("Compte introuvable dans Supabase Authentication. Créez d'abord ce compte puis connectez-vous.");
+          setError("Email ou mot de passe incorrect. Si le problème persiste, utilisez 'Forgot Password'.");
         }
       } else {
         setError(message);

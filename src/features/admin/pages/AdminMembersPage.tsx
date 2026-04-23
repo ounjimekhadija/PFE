@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface Student {
@@ -44,9 +44,7 @@ const AdminMembers: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const { data: rows, error: fetchError } = await supabase
-          .from('etudiants')
-          .select(`
+        const { data: rows, error: fetchError } = await supabase.from('etudiants').select(`
             id,
             cne,
             filiere,
@@ -60,26 +58,22 @@ const AdminMembers: React.FC = () => {
 
         if (fetchError) throw fetchError;
 
-        // Fetch projects separately to avoid FK relationship issues
         const projectIds = [...new Set((rows || []).map((r: any) => r.projet_id).filter(Boolean))];
         const projectMap = new Map<string, { nom_groupe: string; domaine: string }>();
         if (projectIds.length > 0) {
-          const { data: projets } = await supabase
-            .from('projets')
-            .select('id, nom_groupe, domaine')
-            .in('id', projectIds);
+          const { data: projets } = await supabase.from('projets').select('id, nom_groupe, domaine').in('id', projectIds);
           (projets || []).forEach((p: any) => projectMap.set(String(p.id), p));
         }
 
         const formatted: Student[] = (rows || []).map((row: any) => {
           const u = Array.isArray(row.utilisateurs) ? row.utilisateurs[0] : row.utilisateurs;
           const p = row.projet_id ? projectMap.get(String(row.projet_id)) : null;
-          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Étudiant';
+          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
           return {
             id: row.id,
-            name: fullName || 'Étudiant',
+            name: fullName || 'Etudiant',
             cne: row.cne || 'N/A',
-            avatar: resolveAvatar(u?.avatar_url, fullName || 'Étudiant'),
+            avatar: resolveAvatar(u?.avatar_url, fullName || 'Etudiant'),
             projet_id: row.projet_id || null,
             filiere: row.filiere || p?.domaine || null,
             nom_groupe: p?.nom_groupe || null,
@@ -88,22 +82,22 @@ const AdminMembers: React.FC = () => {
 
         setStudents(formatted);
 
-        // Build groups from project data
         const groupMap = new Map<string, Groupe>();
         for (const s of formatted) {
           const key = s.nom_groupe || s.projet_id || 'Sans groupe';
           if (!groupMap.has(key)) {
             groupMap.set(key, {
               name: s.nom_groupe || 'Groupe sans nom',
-              filiere: s.filiere || 'Non définie',
+              filiere: s.filiere || 'Non definie',
               students: [],
             });
           }
-          groupMap.get(key)!.students.push(s);
+          groupMap.get(key)?.students.push(s);
         }
+
         setGroupes(Array.from(groupMap.values()));
 
-        const uniqueFilieres = Array.from(new Set(formatted.map(s => s.filiere).filter(Boolean))) as string[];
+        const uniqueFilieres = Array.from(new Set(formatted.map((s) => s.filiere).filter(Boolean))) as string[];
         setFilieres(uniqueFilieres);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erreur lors du chargement');
@@ -115,91 +109,161 @@ const AdminMembers: React.FC = () => {
     fetchData();
   }, []);
 
-  const filteredGroupes = groupes.filter(g => !selectedFiliere || g.filiere === selectedFiliere);
+  const filteredGroupes = useMemo(
+    () => groupes.filter((g) => !selectedFiliere || g.filiere === selectedFiliere),
+    [groupes, selectedFiliere]
+  );
+
+  const timeline = useMemo(() => {
+    if (showGroupes) {
+      return filteredGroupes.slice(0, 5).map((g) => `${g.name} · ${g.students.length} student(s) · ${g.filiere}`);
+    }
+    return students.slice(0, 5).map((s) => `${s.name} joined ${s.nom_groupe || 'No group'} · CNE ${s.cne}`);
+  }, [showGroupes, filteredGroupes, students]);
 
   return (
-    <div className="flex-1 bg-gray-50 p-8 overflow-y-auto">
-      <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="w-full md:w-auto">
-          <h1 className="text-3xl font-bold text-gray-900">Student List</h1>
-          <p className="text-gray-500 mt-1">View and manage all students enrolled in the platform.</p>
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-[#0F172A]">Student List</h1>
+          <p className="mt-2 text-sm text-[#64748B]">View and manage all students enrolled in the platform.</p>
         </div>
-        <div className="flex w-full md:w-auto justify-end">
-          <button
-            className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:bg-black transition-all shadow-lg text-sm md:text-base"
-            onClick={() => setShowGroupes(g => !g)}
-          >
-            Les Groupes
-          </button>
-        </div>
+        <button
+          className="inline-flex items-center gap-2 rounded-xl bg-[#6366F1] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] transition hover:bg-[#4F46E5]"
+          onClick={() => setShowGroupes((g) => !g)}
+        >
+          <Users size={16} />
+          {showGroupes ? 'Voir Etudiants' : 'Voir Groupes'}
+        </button>
       </header>
 
-      {loading && <p className="text-sm text-gray-500 mb-4">Chargement des étudiants...</p>}
-      {!loading && error && <p className="text-sm text-red-500 mb-4">Erreur: {error}</p>}
+      {loading && <p className="mb-4 text-sm text-[#64748B]">Chargement des etudiants...</p>}
+      {!loading && error && <p className="mb-4 text-sm text-[#B91C1C]">Erreur: {error}</p>}
 
-      <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 p-8">
-        {!showGroupes ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {!loading && students.length === 0 && (
-              <p className="text-sm text-gray-400 col-span-3">Aucun étudiant trouvé.</p>
-            )}
-            {students.map((s) => (
-              <div key={s.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                <img src={s.avatar} alt={s.name} className="w-12 h-12 rounded-full object-cover" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 truncate">{s.name}</p>
-                  <p className="text-xs text-gray-500">CNE: {s.cne}</p>
-                </div>
-                <CheckCircle2 className="text-emerald-500 shrink-0" size={18} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {filieres.length > 0 && (
-              <div className="mb-6 flex flex-wrap gap-4 items-center">
-                <div className="relative w-7 h-7 flex items-center justify-end">
-                  <select
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    value={selectedFiliere}
-                    onChange={e => setSelectedFiliere(e.target.value)}
-                  >
-                    <option value="">Toutes</option>
-                    {filieres.map(f => (
-                      <option key={f} value={f}>{f}</option>
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,340px]">
+        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+          {!showGroupes ? (
+            <>
+              <div className="mb-4 overflow-x-auto rounded-2xl border border-[#E2E8F0]">
+                <table className="hidden min-w-[760px] w-full border-collapse md:table">
+                  <thead className="bg-[#F8FAFF]">
+                    <tr>
+                      {['Etudiant', 'CNE', 'Filiere', 'Groupe', 'Statut'].map((h) => (
+                        <th key={h} className="border-b border-[#E2E8F0] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.map((s, idx) => (
+                      <tr key={s.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFF]'} hover:bg-[#EEF2FF]/40`}>
+                        <td className="border-b border-[#EEF2F7] px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <img src={s.avatar} alt={s.name} className="h-10 w-10 rounded-full border border-[#E2E8F0] object-cover" />
+                            <span className="font-semibold text-[#0F172A]">{s.name}</span>
+                          </div>
+                        </td>
+                        <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{s.cne}</td>
+                        <td className="border-b border-[#EEF2F7] px-4 py-3">
+                          <span className="rounded-full bg-[#E0F2FE] px-2.5 py-1 text-xs font-semibold text-[#075985]">
+                            {s.filiere || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{s.nom_groupe || 'Sans groupe'}</td>
+                        <td className="border-b border-[#EEF2F7] px-4 py-3">
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#10B981]">
+                            <CheckCircle2 size={16} />
+                          </span>
+                        </td>
+                      </tr>
                     ))}
-                  </select>
-                  <svg className="w-5 h-5 text-gray-700 z-0 pointer-events-none mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            )}
-            {!loading && filteredGroupes.length === 0 && (
-              <p className="text-sm text-gray-400">Aucun groupe trouvé.</p>
-            )}
-            {filteredGroupes.map((g) => (
-              <div key={g.name}>
-                <h3 className="text-lg font-bold text-indigo-600 mb-3">
-                  {g.name} <span className="text-xs text-gray-400 font-normal">({g.filiere})</span>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {g.students.map((s) => (
-                    <div key={s.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <img src={s.avatar} alt={s.name} className="w-12 h-12 rounded-full object-cover" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 truncate">{s.name}</p>
-                        <p className="text-xs text-gray-500">CNE: {s.cne}</p>
+                  </tbody>
+                </table>
+
+                <div className="space-y-3 p-3 md:hidden">
+                  {!loading && students.length === 0 && <p className="text-center text-sm text-[#64748B]">Aucun etudiant trouve.</p>}
+                  {students.map((s) => (
+                    <div key={s.id} className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+                      <div className="flex items-center gap-3">
+                        <img src={s.avatar} alt={s.name} className="h-11 w-11 rounded-full border border-[#E2E8F0] object-cover" />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-[#0F172A]">{s.name}</p>
+                          <p className="text-xs text-[#64748B]">CNE: {s.cne}</p>
+                        </div>
                       </div>
-                      <CheckCircle2 className="text-emerald-500 shrink-0" size={18} />
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#64748B]">
+                        <p>Filiere: {s.filiere || 'N/A'}</p>
+                        <p>Groupe: {s.nom_groupe || 'Sans groupe'}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
+            </>
+          ) : (
+            <div>
+              {filieres.length > 0 && (
+                <div className="mb-4">
+                  <select
+                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#334155] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                    value={selectedFiliere}
+                    onChange={(e) => setSelectedFiliere(e.target.value)}
+                  >
+                    <option value="">Toutes les filieres</option>
+                    {filieres.map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {!loading && filteredGroupes.length === 0 && <p className="text-sm text-[#64748B]">Aucun groupe trouve.</p>}
+                {filteredGroupes.map((g) => (
+                  <div key={g.name} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-[#0F172A]">{g.name}</h3>
+                        <p className="text-xs text-[#64748B]">{g.filiere}</p>
+                      </div>
+                      <span className="rounded-full bg-[#EEF2FF] px-2.5 py-1 text-xs font-semibold text-[#4338CA]">
+                        {g.students.length} students
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {g.students.map((s) => (
+                        <div key={s.id} className="flex items-center gap-3 rounded-lg border border-[#E2E8F0] bg-white p-3">
+                          <img src={s.avatar} alt={s.name} className="h-10 w-10 rounded-full border border-[#E2E8F0] object-cover" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-[#0F172A]">{s.name}</p>
+                            <p className="text-xs text-[#64748B]">CNE: {s.cne}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </article>
+
+        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+          <h3 className="text-2xl font-semibold text-[#0F172A]">Weekly Team Sync</h3>
+          <p className="mt-1 text-sm text-[#64748B]">Recent student activity and group updates.</p>
+          <div className="mt-4 space-y-3">
+            {timeline.length === 0 && <p className="text-sm text-[#64748B]">No updates available.</p>}
+            {timeline.map((item, idx) => (
+              <div key={`${item}-${idx}`} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 text-sm text-[#334155]">
+                {item}
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </article>
+      </section>
     </div>
   );
 };
