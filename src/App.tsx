@@ -43,7 +43,7 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className={userRole === 'admin' || userRole === 'professor' || userRole === 'student' ? 'h-screen bg-[#F8FAFF]' : 'flex h-screen bg-white'}>
+        <div className={userRole === 'admin' || userRole === 'professor' || userRole === 'student' ? 'h-screen bg-[#faf9f6]' : 'flex h-screen bg-white'}>
           {userRole !== 'admin' && userRole !== 'professor' && userRole !== 'student' && <Sidebar role={userRole} onLogout={logout} />}
           <main className="flex-1 flex flex-col overflow-hidden">
             {userRole === 'admin' && <AdminTopNav onLogout={logout} />}

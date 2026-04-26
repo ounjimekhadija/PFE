@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreHorizontal, User, MessageSquare, Paperclip, CheckSquare, Clock } from 'lucide-react';
+import { Plus, MessageSquare } from 'lucide-react';
 import CommentModal from '../../../shared/components/CommentModal';
-import { motion } from 'motion/react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { supabase } from '../../../lib/supabase';
 
@@ -14,7 +13,7 @@ interface TaskS {
   assigneeStudentId?: string;
   comments: number;
   attachments: number;
-  db_id?: string; // Garder l'id supabase
+  db_id?: string;
 }
 
 interface Column {
@@ -30,7 +29,6 @@ const StudentTasks: React.FC = () => {
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  // Modal création de tâche
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', assignee: '', description: '' });
   const [assigneeOptions, setAssigneeOptions] = useState<{id: string, name: string}[]>([]);
@@ -48,7 +46,6 @@ const StudentTasks: React.FC = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // 1. Get student's project
         const { data: studentData, error: studentError } = await supabase
           .from('etudiants')
           .select('projet_id')
@@ -58,7 +55,6 @@ const StudentTasks: React.FC = () => {
         if (studentError || !studentData?.projet_id) return;
         const projectId = studentData.projet_id;
 
-        // 2. Fetch all members of this project to assign tasks
         const { data: projectMembers, error: membersError } = await supabase
           .from('etudiants')
           .select('id, utilisateurs!inner(nom, prenom)')
@@ -74,15 +70,14 @@ const StudentTasks: React.FC = () => {
             const isMe = m.id === user.id;
             return {
               id: m.id,
-              name: userObj 
-                ? `${userObj.prenom} ${userObj.nom} ${isMe ? '(Moi)' : ''}` 
+              name: userObj
+                ? `${userObj.prenom} ${userObj.nom} ${isMe ? '(Moi)' : ''}`
                 : (isMe ? 'Moi' : 'Membre Inconnu')
             };
           });
           setAssigneeOptions(formattedMembers);
         }
 
-        // 3. Fetch active iteration
         const { data: iteration } = await supabase
           .from('iterations')
           .select('id')
@@ -93,7 +88,6 @@ const StudentTasks: React.FC = () => {
         if (!iteration) return;
         setCurrentIterationId(iteration.id);
 
-        // 4. Fetch tasks
         const { data: tasksData, error: tasksError } = await supabase
           .from('taches')
           .select(`
@@ -110,12 +104,9 @@ const StudentTasks: React.FC = () => {
 
         if (tasksError) {
           console.error("Error fetching tasks:", tasksError);
-          // If the relation or columns like 'description' / 'assigne_id' don't exist yet, this query will fail.
         }
 
         const taskRows = tasksData || [];
-
-        // Distribute in columns based on status
         const todo: TaskS[] = [];
         const inprogress: TaskS[] = [];
         const done: TaskS[] = [];
@@ -130,7 +121,6 @@ const StudentTasks: React.FC = () => {
           if (dbPriority === 'HIGH') uiPriority = 'High';
           if (dbPriority === 'LOW') uiPriority = 'Low';
 
-          // Format task
           const taskObj: TaskS = {
             id: t.id.toString(),
             db_id: t.id,
@@ -146,7 +136,7 @@ const StudentTasks: React.FC = () => {
           if (t.etat === 'A_FAIRE') todo.push(taskObj);
           else if (t.etat === 'EN_COURS') inprogress.push(taskObj);
           else if (t.etat === 'TERMINE') done.push(taskObj);
-          else todo.push(taskObj); // Default to 'todo'
+          else todo.push(taskObj);
         });
 
         setColumns([
@@ -154,7 +144,6 @@ const StudentTasks: React.FC = () => {
           { id: 'inprogress', title: 'En cours', tasks: inprogress },
           { id: 'done', title: 'Terminé', tasks: done },
         ]);
-
       } catch (err) {
         console.error('Failed to load tasks', err);
       }
@@ -193,10 +182,7 @@ const StudentTasks: React.FC = () => {
       if (newTask.assignee) {
         const { error: assignError } = await supabase
           .from('tache_assignations')
-          .insert({
-            tache_id: newDbTask.id,
-            etudiant_id: newTask.assignee,
-          });
+          .insert({ tache_id: newDbTask.id, etudiant_id: newTask.assignee });
 
         if (assignError) {
           console.error("Erreur lors de l'assignation", assignError);
@@ -204,7 +190,6 @@ const StudentTasks: React.FC = () => {
       }
 
       const selectedAssignee = assigneeOptions.find((opt) => opt.id === newTask.assignee);
-
       const assigneeName = selectedAssignee?.name || 'Non assigné';
 
       const taskObj: TaskS = {
@@ -222,7 +207,7 @@ const StudentTasks: React.FC = () => {
       setColumns(cols => cols.map(col =>
         col.id === 'todo' ? { ...col, tasks: [...col.tasks, taskObj] } : col
       ));
-      
+
       setShowCreateTask(false);
       setNewTask({ title: '', assignee: '', description: '' });
     } catch (err) {
@@ -252,13 +237,9 @@ const StudentTasks: React.FC = () => {
     newColumns[sourceColIndex] = { ...sourceCol, tasks: sourceTasks };
     newColumns[destColIndex] = { ...destCol, tasks: destTasks };
 
-    // Sauvegarde en cas d'erreur pour rollback
     const previousColumns = [...columns];
-    
-    // Update UI optimistic
     setColumns(newColumns);
 
-    // Update via Supabase
     if (source.droppableId !== destination.droppableId && removed.db_id) {
       let newState = 'A_FAIRE';
       if (destination.droppableId === 'inprogress') newState = 'EN_COURS';
@@ -269,29 +250,25 @@ const StudentTasks: React.FC = () => {
           .from('taches')
           .update({ etat: newState })
           .eq('id', removed.db_id);
-        
+
         if (error) throw error;
       } catch (error: any) {
         console.error("Update task status failed", error);
         alert("Erreur de sauvegarde: impossible de déplacer la tâche (Avez-vous configuré les Policies Supabase ?)");
-        // Rollback de l'interface en cas d'erreur
         setColumns(previousColumns);
       }
     }
   };
 
-
-
   return (
-
-    <div className="flex-1 bg-gray-50 p-8 flex flex-col overflow-hidden">
+    <div className="flex-1 bg-[#faf9f6] p-8 flex flex-col overflow-hidden" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tasks Board</h1>
-          <p className="text-gray-500 mt-1">Manage your team's tasks and sub-tasks.</p>
+          <h1 className="text-3xl font-bold text-[#1a1c1a]">Tasks Board</h1>
+          <p className="text-[#7f7664] mt-1">Manage your team's tasks and sub-tasks.</p>
         </div>
         <button
-          className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-black transition-all shadow-md min-w-0"
+          className="bg-[#1a1c1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-[#4d4636] transition-all shadow-md min-w-0"
           onClick={() => setShowCreateTask(true)}
         >
           <Plus size={16} />
@@ -299,42 +276,41 @@ const StudentTasks: React.FC = () => {
         </button>
       </header>
 
-      {/* Modal création de tâche */}
       {showCreateTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative border border-[#d1c5b0]">
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              className="absolute top-4 right-4 text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold"
               onClick={() => setShowCreateTask(false)}
               aria-label="Fermer"
             >
               &times;
             </button>
-            <h2 className="text-xl font-bold mb-6 text-gray-900">Créer une tâche</h2>
+            <h2 className="text-xl font-bold mb-6 text-[#1a1c1a]">Créer une tâche</h2>
             <form onSubmit={handleCreateTask} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold mb-1">Titre de la tâche</label>
+                <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Titre de la tâche</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-indigo-400"
+                  className="w-full border border-[#d1c5b0] rounded-xl px-4 py-2 focus:outline-none focus:border-[#765b00]"
                   value={newTask.title}
                   onChange={e => setNewTask({ ...newTask, title: e.target.value })}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Description</label>
+                <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Description</label>
                 <textarea
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-indigo-400 resize-none min-h-[60px]"
+                  className="w-full border border-[#d1c5b0] rounded-xl px-4 py-2 focus:outline-none focus:border-[#765b00] resize-none min-h-[60px]"
                   value={newTask.description}
                   onChange={e => setNewTask({ ...newTask, description: e.target.value })}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1">Assigner à</label>
+                <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Assigner à</label>
                 <select
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2 focus:outline-none focus:border-indigo-400"
+                  className="w-full border border-[#d1c5b0] rounded-xl px-4 py-2 focus:outline-none focus:border-[#765b00]"
                   value={newTask.assignee}
                   onChange={e => setNewTask({ ...newTask, assignee: e.target.value })}
                 >
@@ -347,7 +323,7 @@ const StudentTasks: React.FC = () => {
               <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                  className="bg-[#765b00] text-white px-6 py-2 rounded-xl font-bold hover:bg-[#594400] transition-all"
                 >
                   Créer
                 </button>
@@ -363,8 +339,8 @@ const StudentTasks: React.FC = () => {
             <div key={column.id} className="w-[370px] flex flex-col flex-1 max-w-[370px] min-h-[420px]">
               <div className="flex items-center justify-between mb-4 px-2">
                 <div className="flex items-center gap-3">
-                  <h3 className="font-bold text-gray-700">{column.title}</h3>
-                  <span className="bg-gray-200 text-gray-500 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <h3 className="font-bold text-[#4d4636]">{column.title}</h3>
+                  <span className="bg-[#d1c5b0] text-[#7f7664] text-xs font-bold px-2 py-0.5 rounded-full">
                     {column.tasks.length}
                   </span>
                 </div>
@@ -372,11 +348,11 @@ const StudentTasks: React.FC = () => {
 
               <DroppableComponent droppableId={column.id}>
                 {(provided: any, snapshot: any) => (
-                  <div 
+                  <div
                     {...provided.droppableProps}
                     ref={provided.innerRef}
-                    className={`flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar transition-colors rounded-2xl ${
-                      snapshot.isDraggingOver ? 'bg-indigo-50/50' : ''
+                    className={`flex-1 space-y-4 overflow-y-auto pr-2 transition-colors rounded-2xl ${
+                      snapshot.isDraggingOver ? 'bg-[#ffd464]/10' : ''
                     }`}
                   >
                     {column.tasks.map((task, index) => (
@@ -386,38 +362,38 @@ const StudentTasks: React.FC = () => {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`bg-white rounded-[24px] p-6 border border-gray-100 transition-all ${
-                              snapshot.isDragging ? 'shadow-2xl ring-2 ring-indigo-500/20 scale-105 rotate-2 z-50' : 'shadow-sm hover:shadow-md'
+                            className={`bg-white rounded-[24px] p-6 border border-[#d1c5b0] transition-all ${
+                              snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#765b00]/20 scale-105 rotate-2 z-50' : 'shadow-sm hover:shadow-md'
                             }`}
                           >
                             <div className="mb-4"></div>
 
-                            <h4 className="font-bold text-gray-900 mb-2">{task.title}</h4>
-                            <p className="text-sm text-gray-500 mb-6 line-clamp-2">{task.description}</p>
+                            <h4 className="font-bold text-[#1a1c1a] mb-2">{task.title}</h4>
+                            <p className="text-sm text-[#7f7664] mb-6 line-clamp-2">{task.description}</p>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                            <div className="flex items-center justify-between pt-4 border-t border-[#d1c5b0]">
                               <div className="flex items-center gap-2">
                                 <img
                                   src={`https://picsum.photos/seed/${task.assignee}/100/100`}
                                   alt={task.assignee}
                                   className="w-8 h-8 rounded-full border-2 border-white object-cover"
                                 />
-                                <span className="text-xs font-semibold text-gray-700">{task.assignee}</span>
+                                <span className="text-xs font-semibold text-[#4d4636]">{task.assignee}</span>
                               </div>
 
-                                <div className="flex items-center gap-4 text-gray-400">
-                                  <button
-                                    className="flex items-center gap-1 text-xs font-bold focus:outline-none"
-                                    onClick={() => {
-                                        setSelectedTaskId(task.db_id || null);
-                                      setIsCommentOpen(true);
-                                    }}
-                                    type="button"
-                                  >
-                                    <MessageSquare size={14} />
-                                    {task.comments}
-                                  </button>
-                                </div>
+                              <div className="flex items-center gap-4 text-[#7f7664]">
+                                <button
+                                  className="flex items-center gap-1 text-xs font-bold focus:outline-none"
+                                  onClick={() => {
+                                    setSelectedTaskId(task.db_id || null);
+                                    setIsCommentOpen(true);
+                                  }}
+                                  type="button"
+                                >
+                                  <MessageSquare size={14} />
+                                  {task.comments}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}

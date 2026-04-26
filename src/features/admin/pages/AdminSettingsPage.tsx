@@ -35,9 +35,7 @@ const AdminSettingsPage: React.FC = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
         const { data: userData, error: userError } = await supabase
@@ -81,9 +79,7 @@ const AdminSettingsPage: React.FC = () => {
 
       const file = event.target.files[0];
       const ext = file.name.split('.').pop() || 'jpg';
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const filePath = `${user.id}-${Date.now()}.${ext}`;
@@ -94,7 +90,6 @@ const AdminSettingsPage: React.FC = () => {
       const publicUrl = urlData?.publicUrl || '';
 
       const { error: updateError } = await supabase.from('utilisateurs').update({ avatar_url: publicUrl }).eq('id', user.id);
-
       if (updateError) throw updateError;
       setProfile((prev) => ({ ...prev, avatar: publicUrl }));
     } catch (error: any) {
@@ -107,9 +102,7 @@ const AdminSettingsPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { error: userError } = await supabase.from('utilisateurs').update({ telephone: profile.phone }).eq('id', user.id);
@@ -117,11 +110,7 @@ const AdminSettingsPage: React.FC = () => {
 
       const { error: adminError } = await supabase
         .from('administrateurs')
-        .update({
-          portfolio_url: profile.website,
-          github_url: profile.github,
-          linkedin_url: profile.linkedin,
-        })
+        .update({ portfolio_url: profile.website, github_url: profile.github, linkedin_url: profile.linkedin })
         .eq('utilisateur_id', user.id);
 
       if (adminError) throw adminError;
@@ -152,17 +141,17 @@ const AdminSettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-[#F8FAFF] p-8 text-sm font-medium text-[#64748B]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div className="flex flex-1 items-center justify-center bg-[#faf9f6] p-8 text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
         Chargement des donnees...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-[#0F172A]">Settings</h1>
-        <p className="mt-2 text-sm text-[#64748B]">Manage your account profile and security preferences.</p>
+        <h1 className="text-2xl font-semibold text-[#1a1c1a]">Settings</h1>
+        <p className="mt-2 text-sm text-[#7f7664]">Manage your account profile and security preferences.</p>
       </header>
 
       {success && (
@@ -172,7 +161,7 @@ const AdminSettingsPage: React.FC = () => {
       )}
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-[260px,1fr]">
-        <aside className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+        <aside className="mb-6 rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           <div className="space-y-2">
             {[
               { id: 'profile', icon: User, label: 'Edit Profile' },
@@ -182,8 +171,8 @@ const AdminSettingsPage: React.FC = () => {
                 key={item.id}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
                   activeTab === item.id
-                    ? 'bg-[#EEF2FF] text-[#4338CA]'
-                    : 'text-[#64748B] hover:bg-[#F8FAFF] hover:text-[#334155]'
+                    ? 'bg-[#ffd464] text-[#594400]'
+                    : 'text-[#7f7664] hover:bg-[#f4f3f1] hover:text-[#4d4636]'
                 }`}
                 onClick={() => setActiveTab(item.id)}
               >
@@ -194,15 +183,15 @@ const AdminSettingsPage: React.FC = () => {
           </div>
         </aside>
 
-        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+        <article className="mb-6 rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           {activeTab === 'profile' && (
             <form onSubmit={handleSave} className="space-y-6">
-              <div className="flex flex-col items-center gap-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-4 sm:flex-row sm:items-center">
+              <div className="flex flex-col items-center gap-4 rounded-xl border border-transparent bg-[#f4f3f1] p-4 sm:flex-row sm:items-center">
                 <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                   <img
                     src={profile.avatar}
                     alt="Profile"
-                    className={`h-24 w-24 rounded-full border border-[#E2E8F0] object-cover transition ${uploadingAvatar ? 'opacity-60' : ''}`}
+                    className={`h-24 w-24 rounded-full border border-transparent object-cover transition ${uploadingAvatar ? 'opacity-60' : ''}`}
                   />
                   <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30 text-white opacity-0 transition hover:opacity-100">
                     <Camera size={18} />
@@ -210,54 +199,34 @@ const AdminSettingsPage: React.FC = () => {
                   <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
                 </div>
                 <div>
-                  <p className="text-lg font-semibold text-[#0F172A]">{profile.name}</p>
-                  <p className="text-sm text-[#64748B]">{profile.email}</p>
+                  <p className="text-lg font-semibold text-[#1a1c1a]">{profile.name}</p>
+                  <p className="text-sm text-[#7f7664]">{profile.email}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">Phone</label>
-                  <input
-                    type="text"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">Website</label>
-                  <input
-                    type="text"
-                    value={profile.website}
-                    onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">GitHub</label>
-                  <input
-                    type="text"
-                    value={profile.github}
-                    onChange={(e) => setProfile({ ...profile, github: e.target.value })}
-                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">LinkedIn</label>
-                  <input
-                    type="text"
-                    value={profile.linkedin}
-                    onChange={(e) => setProfile({ ...profile, linkedin: e.target.value })}
-                    className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                  />
-                </div>
+                {[
+                  { label: 'Phone', key: 'phone', type: 'text' },
+                  { label: 'Website', key: 'website', type: 'text' },
+                  { label: 'GitHub', key: 'github', type: 'text' },
+                  { label: 'LinkedIn', key: 'linkedin', type: 'text' },
+                ].map(({ label, key, type }) => (
+                  <div key={key}>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">{label}</label>
+                    <input
+                      type={type}
+                      value={profile[key as keyof typeof profile]}
+                      onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
+                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                    />
+                  </div>
+                ))}
               </div>
 
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#6366F1] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] transition hover:bg-[#4F46E5]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#765b00] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(118,91,0,0.30)] transition hover:bg-[#594400]"
                 >
                   <Save size={16} />
                   Save Changes
@@ -268,40 +237,28 @@ const AdminSettingsPage: React.FC = () => {
 
           {activeTab === 'security' && (
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              <h2 className="text-xl font-semibold text-[#0F172A]">Change Password</h2>
+              <h2 className="text-xl font-semibold text-[#1a1c1a]">Change Password</h2>
 
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[#334155]">Current Password</label>
-                <input
-                  type="password"
-                  value={passwords.current}
-                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                  className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[#334155]">New Password</label>
-                <input
-                  type="password"
-                  value={passwords.new}
-                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                  className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-[#334155]">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={passwords.confirm}
-                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                  className="w-full rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#0F172A] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-                />
-              </div>
+              {[
+                { label: 'Current Password', key: 'current' },
+                { label: 'New Password', key: 'new' },
+                { label: 'Confirm New Password', key: 'confirm' },
+              ].map(({ label, key }) => (
+                <div key={key}>
+                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">{label}</label>
+                  <input
+                    type="password"
+                    value={passwords[key as keyof typeof passwords]}
+                    onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
+                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                  />
+                </div>
+              ))}
 
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#6366F1] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] transition hover:bg-[#4F46E5]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#765b00] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(118,91,0,0.30)] transition hover:bg-[#594400]"
                 >
                   <Save size={16} />
                   Change Password

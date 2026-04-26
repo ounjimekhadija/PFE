@@ -65,7 +65,6 @@ const Members: React.FC = () => {
 
         const projectIdSet = new Set<string>((directProjectRows || []).map((p: any) => String(p.id)));
 
-        // Fallback: some schemas store projets.encadrant_id as encadrants.id (not auth.users.id).
         if (projectIdSet.size === 0) {
           const encadrantIdCandidates = new Set<string>();
 
@@ -167,102 +166,102 @@ const Members: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <header className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Team Members</h1>
-          <p className="mt-2 text-sm text-[#64748B]">Manage and view all students in your supervised groups</p>
+          <p className="mt-2 text-sm text-[#7f7664]">Manage and view all students in your supervised groups</p>
         </div>
       </header>
 
-      {loading && <p className="mb-6 text-sm text-[#64748B]">Chargement des membres...</p>}
-      {!loading && loadError && <p className="mb-6 text-sm text-[#B91C1C]">Erreur de chargement: {loadError}</p>}
-      {!loading && members.length === 0 && <p className="mb-6 text-sm text-[#64748B]">Aucun membre trouve pour vos groupes.</p>}
+      {loading && <p className="mb-6 text-sm text-[#7f7664]">Chargement des membres...</p>}
+      {!loading && loadError && <p className="mb-6 text-sm text-[#ba1a1a]">Erreur de chargement: {loadError}</p>}
+      {!loading && members.length === 0 && <p className="mb-6 text-sm text-[#7f7664]">Aucun membre trouve pour vos groupes.</p>}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {members.map((member) => (
           <motion.div
             key={member.id}
             whileHover={{ y: -8 }}
-            className="group relative mb-6 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]"
+            className="group relative mb-6 overflow-hidden rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]"
           >
-            <div className="absolute left-0 top-0 h-24 w-full bg-gradient-to-br from-[#EEF2FF] to-[#E0F2FE]"></div>
-            
+            <div className="absolute left-0 top-0 h-24 w-full bg-gradient-to-br from-[#f4f3f1] to-[#efeeeb]"></div>
+
             <div className="relative flex flex-col items-center pt-4">
               <div className="relative mb-4">
-                <img 
-                  src={member.avatar} 
-                  alt={member.name} 
+                <img
+                  src={member.avatar}
+                  alt={member.name}
                   className="h-24 w-24 rounded-3xl border-4 border-white object-cover shadow-lg"
                 />
                 <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-white bg-[#22C55E]"></div>
               </div>
-              
-              <h3 className="mb-1 text-xl font-bold text-[#0F172A]">{member.name}</h3>
-              <p className="mb-6 text-xs font-medium uppercase tracking-wider text-[#6366F1]">Student Member</p>
+
+              <h3 className="mb-1 text-xl font-bold text-[#1a1c1a]">{member.name}</h3>
+              <p className="mb-6 text-xs font-medium uppercase tracking-wider text-[#765b00]">Student Member</p>
 
               <div className="w-full space-y-3 mb-8">
-                <div className="flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 transition-colors group-hover:border-[#C7D2FE]">
-                  <div className="rounded-lg bg-[#EEF2FF] p-2 text-[#6366F1]">
+                <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#ebc254]">
+                  <div className="rounded-lg bg-[#ffd464] p-2 text-[#594400]">
                     <Mail size={16} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase text-[#64748B]">Email</p>
-                    <p className="truncate text-xs text-[#334155]">{member.email}</p>
+                    <p className="text-[10px] font-bold uppercase text-[#7f7664]">Email</p>
+                    <p className="truncate text-xs text-[#4d4636]">{member.email}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 transition-colors group-hover:border-[#BAE6FD]">
-                  <div className="rounded-lg bg-[#E0F2FE] p-2 text-[#0284C7]">
+                <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#d1c5b0]">
+                  <div className="rounded-lg bg-[#efeeeb] p-2 text-[#765b00]">
                     <Phone size={16} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase text-[#64748B]">Phone</p>
-                    <p className="text-xs text-[#334155]">{member.phone}</p>
+                    <p className="text-[10px] font-bold uppercase text-[#7f7664]">Phone</p>
+                    <p className="text-xs text-[#4d4636]">{member.phone}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 transition-colors group-hover:border-[#FED7AA]">
+                  <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#ebc254]">
                     <div className="flex items-center gap-2 mb-1">
-                      <GraduationCap size={14} className="text-[#EA580C]" />
-                      <p className="text-[10px] font-bold uppercase text-[#64748B]">CNE</p>
+                      <GraduationCap size={14} className="text-[#765b00]" />
+                      <p className="text-[10px] font-bold uppercase text-[#7f7664]">CNE</p>
                     </div>
-                    <p className="text-xs font-mono text-[#334155]">{member.cne}</p>
+                    <p className="text-xs font-mono text-[#4d4636]">{member.cne}</p>
                   </div>
-                  <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 transition-colors group-hover:border-[#FBCFE8]">
+                  <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#d1c5b0]">
                     <div className="flex items-center gap-2 mb-1">
-                      <CreditCard size={14} className="text-[#E11D48]" />
-                      <p className="text-[10px] font-bold uppercase text-[#64748B]">CIN</p>
+                      <CreditCard size={14} className="text-[#ba1a1a]" />
+                      <p className="text-[10px] font-bold uppercase text-[#7f7664]">CIN</p>
                     </div>
-                    <p className="text-xs font-mono text-[#334155]">{member.cin}</p>
+                    <p className="text-xs font-mono text-[#4d4636]">{member.cin}</p>
                   </div>
                 </div>
               </div>
 
               <div className="w-full flex gap-3">
-                <a 
-                  href={normalizeExternalUrl(member.linkedin)} 
-                  target="_blank" 
+                <a
+                  href={normalizeExternalUrl(member.linkedin)}
+                  target="_blank"
                   rel="noreferrer"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] py-3 transition-all hover:bg-white"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] py-3 transition-all hover:bg-white"
                 >
                   <Linkedin size={16} className="text-[#0A66C2]" />
-                  <span className="text-xs font-medium text-[#334155]">LinkedIn</span>
+                  <span className="text-xs font-medium text-[#4d4636]">LinkedIn</span>
                 </a>
-                <a 
-                  href={normalizeExternalUrl(member.github)} 
-                  target="_blank" 
+                <a
+                  href={normalizeExternalUrl(member.github)}
+                  target="_blank"
                   rel="noreferrer"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] py-3 transition-all hover:bg-white"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] py-3 transition-all hover:bg-white"
                 >
-                  <Github size={16} className="text-[#334155]" />
-                  <span className="text-xs font-medium text-[#334155]">GitHub</span>
+                  <Github size={16} className="text-[#4d4636]" />
+                  <span className="text-xs font-medium text-[#4d4636]">GitHub</span>
                 </a>
               </div>
             </div>
 
-            <button className="absolute right-6 top-6 text-[#94A3B8] transition-colors hover:text-[#64748B]">
+            <button className="absolute right-6 top-6 text-[#7f7664] transition-colors hover:text-[#4d4636]">
               <MoreHorizontal size={20} />
             </button>
           </motion.div>

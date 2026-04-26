@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, CheckCircle2, Clock3, Layers, TrendingUp, Users } from 'lucide-react';
+import { Clock3, Download, Layers, TrendingUp, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { supabase } from '../../../lib/supabase';
 
 interface ProjectRow {
@@ -38,13 +40,9 @@ interface DashboardProject {
   deadline: string | null;
   supervisor: string;
   studentCount: number;
+  createdAt: string | null;
 }
 
-interface NotificationItem {
-  id: number;
-  type: 'group' | 'project';
-  message: string;
-}
 
 const getErrorText = (error: unknown): string => {
   if (!error) return '';
@@ -59,7 +57,6 @@ const getErrorText = (error: unknown): string => {
 const extractMissingColumns = (error: unknown): string[] => {
   const text = getErrorText(error);
   if (!text) return [];
-
   const matches = Array.from(text.matchAll(/column\s+([a-zA-Z0-9_.\"]+)\s+does not exist/gi));
   const found = matches.map((m) => m[1]?.replace(/"/g, '')).filter(Boolean) as string[];
   return Array.from(new Set(found));
@@ -74,10 +71,19 @@ const toDaysDelay = (deadlineIso: string | null): number => {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 };
 
-const normalizeDelayToPercent = (days: number): number => {
-  // 120 days and above is considered a full risk score.
-  return Math.min(100, Math.round((days / 120) * 100));
+
+const resolveAvatar = (avatarUrl: string | null | undefined, name: string): string => {
+  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&size=64`;
+  if (!avatarUrl) return fallback;
+  const raw = avatarUrl.trim();
+  if (!raw) return fallback;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  const clean = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
+  const { data } = supabase.storage.from('avatars').getPublicUrl(clean);
+  return data?.publicUrl || fallback;
 };
+
+interface OnboardingMember { name: string; avatar: string; }
 
 const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -85,17 +91,8 @@ const AdminDashboard: React.FC = () => {
   const [missingColumns, setMissingColumns] = useState<string[]>([]);
   const [projects, setProjects] = useState<DashboardProject[]>([]);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [showNotif, setShowNotif] = useState(false);
-
-  const filieres = useMemo(() => Array.from(new Set(projects.map((p) => p.category))), [projects]);
-  const [selectedFiliere, setSelectedFiliere] = useState<string>(filieres[0] || '');
-
-  useEffect(() => {
-    if (!selectedFiliere && filieres.length > 0) {
-      setSelectedFiliere(filieres[0]);
-    }
-  }, [filieres, selectedFiliere]);
+  const [totalProfessors, setTotalProfessors] = useState(0);
+  const [onboardingMembers, setOnboardingMembers] = useState<OnboardingMember[]>([]);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -104,17 +101,32 @@ const AdminDashboard: React.FC = () => {
         setError(null);
         setMissingColumns([]);
 
-        const [{ count: studentCount, error: studentsError }, { data: projectRows, error: projectsError }] =
-          await Promise.all([
-            supabase.from('etudiants').select('id', { count: 'exact', head: true }),
-            supabase
-              .from('projets')
-              .select('id, titre, domaine, encadrant_id, deadline_globale, created_at')
-              .order('created_at', { ascending: false }),
-          ]);
+        const [
+          { count: studentCount, error: studentsError },
+          { data: projectRows, error: projectsError },
+          { count: professorCount, error: professorsError },
+          { data: membersData },
+        ] = await Promise.all([
+          supabase.from('etudiants').select('id', { count: 'exact', head: true }),
+          supabase
+            .from('projets')
+            .select('id, titre, domaine, encadrant_id, deadline_globale, created_at')
+            .order('created_at', { ascending: false }),
+          supabase.from('utilisateurs').select('id', { count: 'exact', head: true }).eq('role', 'ENCADRANT'),
+          supabase.from('utilisateurs').select('nom, prenom, avatar_url').limit(6),
+        ]);
 
         if (studentsError) throw studentsError;
         if (projectsError) throw projectsError;
+        if (professorsError) throw professorsError;
+        setTotalProfessors(professorCount || 0);
+
+        setOnboardingMembers(
+          (membersData || []).map((u: { nom: string | null; prenom: string | null; avatar_url?: string | null }) => {
+            const name = `${u.prenom || ''} ${u.nom || ''}`.trim() || 'User';
+            return { name, avatar: resolveAvatar(u.avatar_url, name) };
+          })
+        );
 
         const safeProjects = (projectRows || []) as ProjectRow[];
         if (safeProjects.length === 0) {
@@ -199,6 +211,7 @@ const AdminDashboard: React.FC = () => {
             deadline: p.deadline_globale,
             supervisor: p.encadrant_id ? (supervisorsById[p.encadrant_id] || 'N/A') : 'N/A',
             studentCount: studentsByProject[p.id] || 0,
+            createdAt: p.created_at || null,
           };
         });
 
@@ -216,8 +229,6 @@ const AdminDashboard: React.FC = () => {
     fetchDashboard();
   }, []);
 
-  const projectsFiliere = projects.filter((p) => p.category === selectedFiliere);
-
   const completionRate = useMemo(() => {
     if (projects.length === 0) return 0;
     const total = projects.reduce((sum, p) => sum + p.progress, 0);
@@ -232,321 +243,238 @@ const AdminDashboard: React.FC = () => {
     return Number((totalDelay / delayedProjects.length).toFixed(1));
   }, [delayedProjects]);
 
-  const projectStatus = useMemo(() => {
-    const source = projectsFiliere.length > 0 ? projectsFiliere : projects;
-    return [
-      {
-        name: 'Completed',
-        value: source.filter((p) => p.progress >= 80).length,
-        color: '#10B981',
-      },
-      {
-        name: 'In Progress',
-        value: source.filter((p) => p.progress > 0 && p.progress < 80).length,
-        color: '#6366F1',
-      },
-      {
-        name: 'Delayed',
-        value: source.filter((p) => toDaysDelay(p.deadline) > 0 && p.progress < 80).length,
-        color: '#F97316',
-      },
-      {
-        name: 'Pending',
-        value: source.filter((p) => p.progress === 0).length,
-        color: '#94A3B8',
-      },
-    ];
-  }, [projects, projectsFiliere]);
-
-  const statusTotal = Math.max(1, projectStatus.reduce((sum, item) => sum + item.value, 0));
-
-  const statusFilteredProjects = useMemo(() => {
-    if (!selectedStatus) return [];
-    const source = projectsFiliere.length > 0 ? projectsFiliere : projects;
-
-    return source.filter((p) => {
-      if (selectedStatus === 'Completed') return p.progress >= 80;
-      if (selectedStatus === 'In Progress') return p.progress > 0 && p.progress < 80;
-      if (selectedStatus === 'Delayed') return toDaysDelay(p.deadline) > 0 && p.progress < 80;
-      if (selectedStatus === 'Pending') return p.progress === 0;
-      return false;
-    });
-  }, [selectedStatus, projects, projectsFiliere]);
+  const projectStatus = useMemo(() => [
+    { name: 'Completed', value: projects.filter((p) => p.progress >= 80).length, color: '#10B981' },
+    { name: 'In Progress', value: projects.filter((p) => p.progress > 0 && p.progress < 80).length, color: '#765b00' },
+    { name: 'Delayed', value: projects.filter((p) => toDaysDelay(p.deadline) > 0 && p.progress < 80).length, color: '#F97316' },
+    { name: 'Pending', value: projects.filter((p) => p.progress === 0).length, color: '#7f7664' },
+  ], [projects]);
 
   const ringProgress = Math.max(6, completionRate);
-  const ringDelay = Math.max(6, normalizeDelayToPercent(avgDelay));
-
-  const notifications: NotificationItem[] = [
-    { id: 1, type: 'group', message: `${projects.length} projects synced from database.` },
-    { id: 2, type: 'project', message: `${projectStatus[0].value} projects are currently completed.` },
-  ];
 
   const timelineItems = useMemo(() => {
-    const delayed = delayedProjects.slice(0, 2).map((p) => ({
-      id: `delay-${p.id}`,
-      title: `${p.title} is delayed`,
-      subtitle: `${toDaysDelay(p.deadline)} days delay`,
-      accent: '#F97316',
-    }));
-
-    const upcoming = [...projects]
+    const delayedIds = new Set(delayedProjects.map((p) => p.id));
+    return [...projects]
       .filter((p) => !!p.deadline)
       .sort((a, b) => new Date(a.deadline || '').getTime() - new Date(b.deadline || '').getTime())
-      .slice(0, 3)
       .map((p) => ({
-        id: `due-${p.id}`,
-        title: `Deadline: ${p.title}`,
-        subtitle: p.deadline ? new Date(p.deadline).toLocaleDateString() : 'No date',
-        accent: '#6366F1',
+        id: p.id,
+        title: p.title,
+        subtitle: delayedIds.has(p.id)
+          ? `${toDaysDelay(p.deadline)} days delay`
+          : new Date(p.deadline!).toLocaleDateString(),
+        accent: delayedIds.has(p.id) ? '#F97316' : '#765b00',
       }));
+  }, [projects, delayedProjects]);
 
-    return [...delayed, ...upcoming].slice(0, 5);
-  }, [delayedProjects, projects]);
+  const handleExportReport = () => {
+    const summary = [
+      { Metric: 'Total Students', Value: totalStudents },
+      { Metric: 'Total Professors', Value: totalProfessors },
+      { Metric: 'Active Projects', Value: projects.length },
+      { Metric: 'Completion Rate', Value: `${completionRate}%` },
+      { Metric: 'Avg Delay (days)', Value: avgDelay },
+      { Metric: 'Delayed Projects', Value: delayedProjects.length },
+    ];
+    const projectRows = projects.map((p) => ({
+      Title: p.title,
+      Category: p.category,
+      Supervisor: p.supervisor,
+      'Progress (%)': p.progress,
+      Deadline: p.deadline || 'N/A',
+      Students: p.studentCount,
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projectRows), 'Projects');
+    XLSX.writeFile(wb, `dashboard_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  const barData = useMemo(() => {
+    const map = new Map<string, number>();
+    projects.forEach((p) => map.set(p.category, (map.get(p.category) || 0) + 1));
+    const entries = Array.from(map.entries());
+    const colors = ['#765b00', '#ffd464', '#4d4636', '#d1c5b0', '#F97316'];
+    return entries.length > 0
+      ? entries.map(([name, count], i) => ({ name, count, color: colors[i % colors.length] }))
+      : projectStatus.map((s) => ({ name: s.name, count: s.value, color: s.color }));
+  }, [projects, projectStatus]);
+
+  const maxBarCount = useMemo(() => Math.max(...barData.map((b) => b.count), 1), [barData]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+
+      {/* Header */}
+      <header className="mb-4 shrink-0 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#0F172A]">Global Statistics</h1>
-          <p className="mt-2 text-sm font-normal text-[#64748B]">Overview of the entire platform performance and progress.</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Platform Overview</h1>
+          <p className="mt-0.5 text-sm text-[#7f7664]">Real-time performance metrics and team activity</p>
         </div>
-        <div className="relative">
+        <div className="flex items-center gap-2">
           <button
-            className="relative rounded-full border border-[#E2E8F0] bg-white p-3 text-[#64748B] shadow-[0_8px_20px_rgba(0,0,0,0.05)]"
-            onClick={() => setShowNotif((v) => !v)}
-            aria-label="Notifications"
+            type="button"
+            onClick={handleExportReport}
+            className="flex items-center gap-2 rounded-xl bg-[#ffd464] px-4 py-2 text-sm font-semibold text-[#594400] shadow-[0_4px_16px_rgba(118,91,0,0.2)] transition hover:bg-[#ebc254]"
           >
-            <Bell size={18} />
-            {notifications.length > 0 && (
-              <span className="absolute -right-1 -top-1 rounded-full bg-[#EF4444] px-1.5 py-0.5 text-[11px] font-semibold text-white">
-                {notifications.length}
-              </span>
-            )}
+            <Download size={14} /> Export Report
           </button>
-          {showNotif && (
-            <div className="absolute right-0 z-30 mt-3 w-80 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-              <h3 className="text-sm font-semibold text-[#0F172A]">Notifications</h3>
-              <div className="mt-3 space-y-3">
-                {notifications.map((n) => (
-                  <div key={n.id} className="flex items-start gap-2">
-                    <div className="mt-0.5 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: n.type === 'group' ? '#6366F1' : '#10B981' }} />
-                    <p className="text-sm text-[#334155]">{n.message}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </header>
 
       {loading && (
-        <div className="mb-6 rounded-2xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-sm text-[#1E40AF]">
+        <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">
           Loading dashboard data from database...
         </div>
       )}
-
       {!loading && error && (
-        <div className="mb-6 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">
+        <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">
           <p className="font-semibold">Database error while loading dashboard.</p>
-          {missingColumns.length > 0 ? (
-            <p className="mt-1">Missing column(s): {missingColumns.join(', ')}</p>
-          ) : (
-            <p className="mt-1">{error}</p>
-          )}
+          <p className="mt-1">{missingColumns.length > 0 ? `Missing column(s): ${missingColumns.join(', ')}` : error}</p>
         </div>
       )}
 
-      <section className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
+      {/* Stat Cards */}
+      <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
         {[
-          {
-            label: 'Total Students',
-            value: String(totalStudents),
-            trend: `${Math.max(1, Math.round(totalStudents * 0.08))} new this week`,
-            icon: Users,
-          },
-          {
-            label: 'Active Projects',
-            value: String(projects.length),
-            trend: `${projectStatus[1].value} in progress`,
-            icon: Layers,
-          },
-          {
-            label: 'Completion Rate',
-            value: `${completionRate}%`,
-            trend: `${projectStatus[0].value} completed`,
-            icon: TrendingUp,
-          },
-          {
-            label: 'Avg. Delay',
-            value: `${avgDelay} days`,
-            trend: `${delayedProjects.length} projects delayed`,
-            icon: Clock3,
-          },
+          { label: 'Total Students', value: String(totalStudents), trend: `+${Math.max(1, Math.round(totalStudents * 0.08))}`, trendClass: 'text-[#10B981] bg-[#ECFDF5]', icon: Users },
+          { label: 'Active Projects', value: String(projects.length), trend: projectStatus[1].value > 0 ? `${projectStatus[1].value} active` : 'Steady', trendClass: 'text-[#765b00] bg-[#ffd464]/30', icon: Layers },
+          { label: 'Completion Rate', value: `${completionRate}%`, trend: `+${completionRate}%`, trendClass: 'text-[#10B981] bg-[#ECFDF5]', icon: TrendingUp },
+          { label: 'Avg. Delay', value: `${avgDelay} Days`, trend: avgDelay > 0 ? `+${avgDelay}d` : 'None', trendClass: avgDelay > 0 ? 'text-[#ba1a1a] bg-[#ffdad6]' : 'text-[#10B981] bg-[#ECFDF5]', icon: Clock3 },
         ].map((card) => (
-          <article key={card.label} className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-normal text-[#64748B]">{card.label}</p>
-                <p className="mt-3 text-[2rem] font-bold leading-none text-[#0F172A]">{card.value}</p>
-                <p className="mt-2 text-xs text-[#64748B]">{card.trend}</p>
+          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+            <div className="mb-3 flex items-start justify-between">
+              <div className="rounded-xl bg-[#f4f3f1] p-2.5 text-[#765b00]">
+                <card.icon size={18} />
               </div>
-              <div className="rounded-xl bg-[#EEF2FF] p-3 text-[#6366F1]">
-                <card.icon size={20} />
-              </div>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${card.trendClass}`}>{card.trend}</span>
             </div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#7f7664]">{card.label}</p>
+            <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{card.value}</p>
           </article>
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)] xl:col-span-2">
-          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-2xl font-semibold text-[#0F172A]">Project Distribution</h2>
-            <select
-              className="rounded-xl border border-[#E2E8F0] bg-white px-3 py-2 text-sm text-[#334155] outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
-              value={selectedFiliere}
-              onChange={(e) => {
-                setSelectedFiliere(e.target.value);
-                setSelectedStatus(null);
-              }}
-            >
-              {filieres.length === 0 && <option value="">No categories</option>}
-              {filieres.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
+      {/* Main Row */}
+      <section className="flex-1 min-h-0 mb-4 grid grid-cols-[2fr_1fr_1fr] gap-4">
+
+        {/* Bar Chart — Project Distribution */}
+        <article className="flex min-h-0 flex-col rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+          <div className="mb-3 flex items-center justify-between shrink-0">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Project Distribution</h2>
+            <div className="flex flex-wrap gap-3">
+              {barData.slice(0, 4).map((b) => (
+                <span key={b.name} className="flex items-center gap-1 text-xs text-[#7f7664]">
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: b.color }} />
+                  <span className="truncate max-w-[56px]">{b.name}</span>
+                </span>
               ))}
-            </select>
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            <div>
-              <div className="mb-4 overflow-hidden rounded-full bg-[#F1F5F9]">
-                <div className="flex h-4">
-                  {projectStatus.map((item) => (
-                    <button
-                      key={item.name}
-                      className="transition-opacity hover:opacity-80"
-                      style={{
-                        width: `${(item.value / statusTotal) * 100}%`,
-                        backgroundColor: item.color,
-                        opacity: selectedStatus && selectedStatus !== item.name ? 0.45 : 1,
-                      }}
-                      onClick={() => setSelectedStatus(item.name)}
-                      aria-label={`Filter ${item.name}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {projectStatus.map((item) => (
-                  <button
-                    key={item.name}
-                    onClick={() => setSelectedStatus(item.name)}
-                    className={`rounded-xl border px-3 py-2 text-left transition ${
-                      selectedStatus === item.name
-                        ? 'border-[#6366F1] bg-[#EEF2FF]'
-                        : 'border-[#E2E8F0] bg-[#F8FAFF] hover:border-[#CBD5E1]'
-                    }`}
-                  >
-                    <span className="mb-2 inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <p className="text-sm font-medium text-[#0F172A]">{item.name}</p>
-                    <p className="text-xs text-[#64748B]">{item.value} projects</p>
-                  </button>
-                ))}
-              </div>
-
-              {selectedStatus && (
-                <div className="mt-5 space-y-3">
-                  {statusFilteredProjects.length === 0 && <p className="text-sm text-[#64748B]">No projects found for this status.</p>}
-                  {statusFilteredProjects.slice(0, 4).map((p) => (
-                    <div key={p.id} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-[#0F172A]">{p.title}</p>
-                          <p className="text-xs text-[#64748B]">{p.supervisor} · {p.studentCount} students</p>
-                        </div>
-                        <span className="rounded-full bg-[#EEF2FF] px-3 py-1 text-xs font-semibold text-[#4338CA]">{p.progress}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-4">
-              <p className="text-sm text-[#64748B]">Completion ring</p>
-              <div className="mt-4 flex items-center justify-center">
+          <div className="flex flex-1 min-h-0 items-end gap-3 pb-1">
+            {barData.map((bar) => (
+              <div key={bar.name} className="flex flex-1 flex-col items-center gap-1.5">
                 <div
-                  className="relative h-56 w-56 rounded-full md:h-64 md:w-64"
+                  className="w-full rounded-t-xl transition-all duration-700"
                   style={{
-                    background: `conic-gradient(#6366F1 ${ringProgress}%, #E2E8F0 0%)`,
+                    height: `${Math.max(28, Math.round((bar.count / maxBarCount) * 160))}px`,
+                    backgroundColor: bar.color,
                   }}
-                >
-                  <div className="absolute inset-5 flex items-center justify-center rounded-full bg-white">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-[#0F172A] md:text-4xl">{completionRate}%</p>
-                      <p className="text-sm text-[#64748B]">Output</p>
-                    </div>
-                  </div>
-                </div>
+                />
+                <span className="text-[10px] text-[#7f7664] truncate w-full text-center">{bar.name.slice(0, 7)}</span>
               </div>
-            </div>
+            ))}
           </div>
         </article>
 
-        <div className="space-y-6">
-          <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-            <h3 className="text-2xl font-semibold text-[#0F172A]">Onboarding Snapshot</h3>
-            <div className="mt-5 space-y-3">
-              <div className="flex items-center justify-between rounded-xl bg-[#EEF2FF] px-3 py-2">
-                <span className="text-sm text-[#4338CA]">Students</span>
-                <span className="font-semibold text-[#1E1B4B]">{totalStudents}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-xl bg-[#ECFDF5] px-3 py-2">
-                <span className="text-sm text-[#065F46]">Projects</span>
-                <span className="font-semibold text-[#064E3B]">{projects.length}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-xl bg-[#FFF7ED] px-3 py-2">
-                <span className="text-sm text-[#9A3412]">Completion</span>
-                <span className="font-semibold text-[#7C2D12]">{completionRate}%</span>
-              </div>
+        {/* Quarterly Progress Ring */}
+        <article className="flex min-h-0 flex-col items-center justify-between rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664] self-start">Quarterly Progress</h2>
+          <div
+            className="relative h-36 w-36 rounded-full"
+            style={{ background: `conic-gradient(#ffd464 ${ringProgress}%, #e8e3da 0%)` }}
+          >
+            <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white">
+              <p className="text-2xl font-bold text-[#1a1c1a]">{completionRate}%</p>
             </div>
-          </article>
+          </div>
+          <p className="text-center text-sm font-semibold text-[#765b00]">
+            {avgDelay > 0 ? `${avgDelay} days behind schedule` : projects.length > 0 ? 'Ahead of schedule' : 'No data yet'}
+          </p>
+        </article>
 
-          <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-2xl font-semibold text-[#0F172A]">Progress</h3>
-              <span className="text-xs text-[#64748B]">Project completion rate</span>
+        {/* Active Onboarding — Dark Card */}
+        <article className="flex min-h-0 flex-col justify-between rounded-2xl bg-[#1a1c1a] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Active Onboarding</p>
+          <div>
+            <div className="mb-3 flex -space-x-2">
+              {onboardingMembers.slice(0, 4).map((m, i) => (
+                <img
+                  key={i}
+                  src={m.avatar}
+                  alt={m.name}
+                  title={m.name}
+                  className="h-9 w-9 rounded-full border-2 border-[#1a1c1a] object-cover"
+                />
+              ))}
+              {(totalStudents + totalProfessors) > 4 && (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#1a1c1a] bg-[#efeeeb] text-xs font-bold text-[#1a1c1a]">
+                  +{totalStudents + totalProfessors - 4}
+                </div>
+              )}
             </div>
-            <p className="text-sm text-[#64748B]">Work Time this week was adapted to completion analytics.</p>
-            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#E2E8F0]">
-              <div className="h-full rounded-full bg-[#6366F1]" style={{ width: `${Math.max(8, completionRate)}%` }} />
-            </div>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-[#64748B]">Avg. Delay</span>
-              <span className="font-semibold text-[#0F172A]">{avgDelay} days</span>
-            </div>
-          </article>
+            <p className="text-sm font-semibold leading-snug text-white">
+              {totalStudents + totalProfessors} new members joined this week
+            </p>
+          </div>
+          <Link to="/users" className="mt-3 flex items-center justify-center rounded-xl border border-[#4d4636] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4d4636]">
+            View List
+          </Link>
+        </article>
+      </section>
 
-          <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-            <h3 className="text-2xl font-semibold text-[#0F172A]">Weekly Team Sync</h3>
-            <div className="mt-4 space-y-3">
-              {timelineItems.length === 0 && <p className="text-sm text-[#64748B]">No upcoming updates.</p>}
+      {/* Team Sync Timeline */}
+      <section className="shrink-0 rounded-2xl border border-transparent bg-white px-6 py-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+        <div className="mb-4">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Team Sync Timeline</h3>
+        </div>
+        {timelineItems.length === 0 ? (
+          <p className="text-sm text-[#7f7664]">No upcoming updates.</p>
+        ) : (
+          <div className="relative">
+            {/* Connecting line — sits at 32px (subtitle area) + 8px (half dot) = 40px from top */}
+            <div className="absolute left-0 right-0 h-px bg-[#e8e3da]" style={{ top: '40px' }} />
+
+            <div
+              className="grid"
+              style={{ gridTemplateColumns: `repeat(${timelineItems.length}, 1fr)`, gap: '12px' }}
+            >
               {timelineItems.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-3">
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.accent }} />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[#0F172A]">{item.title}</p>
-                    <p className="text-xs text-[#64748B]">{item.subtitle}</p>
+                <div key={item.id} className="flex flex-col items-center">
+                  {/* Subtitle — fixed 32px area so all dots align */}
+                  <div className="flex h-8 w-full items-center justify-center px-1">
+                    <p className="line-clamp-2 text-center text-[10px] leading-tight text-[#7f7664]">
+                      {item.subtitle}
+                    </p>
                   </div>
-                  <CheckCircle2 size={16} className="ml-auto mt-0.5 text-[#94A3B8]" />
+
+                  {/* Dot on the line */}
+                  <div
+                    className="relative z-10 h-4 w-4 flex-shrink-0 rounded-full border-2 border-white shadow-md"
+                    style={{ backgroundColor: item.accent }}
+                  />
+
+                  {/* Title below */}
+                  <div className="mt-2 w-full px-1">
+                    <p className="line-clamp-2 text-center text-xs font-semibold leading-snug text-[#1a1c1a]">
+                      {item.title}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
-          </article>
-        </div>
+          </div>
+        )}
       </section>
     </div>
   );

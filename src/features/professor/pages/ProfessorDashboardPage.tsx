@@ -78,7 +78,6 @@ const Dashboard: React.FC = () => {
       return raw;
     }
 
-    // Accept values stored as "avatars/filename.png" or plain "filename.png".
     raw = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
     const { data } = supabase.storage.from('avatars').getPublicUrl(raw);
     return data?.publicUrl || fallback;
@@ -264,13 +263,13 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex-1 h-full overflow-hidden bg-[#F8FAFF] p-6 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="flex-1 h-full overflow-hidden bg-[#faf9f6] p-6 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <header className="mb-6 flex shrink-0 items-center justify-between">
         <h1 className="text-2xl font-semibold">My Portfolio</h1>
         <img
           src={avatarUrl}
           alt="Professor"
-          className="h-9 w-9 rounded-full border border-[#E2E8F0] object-cover"
+          className="h-9 w-9 rounded-full border border-[#d1c5b0] object-cover"
           onError={(e) => {
             e.currentTarget.src = 'https://ui-avatars.com/api/?name=Professor&background=random';
           }}
@@ -279,45 +278,45 @@ const Dashboard: React.FC = () => {
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 min-h-0">
-          <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+          <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
             <div className="mb-6 flex shrink-0 items-center justify-between">
               <div>
-                <h2 className="text-2xl font-semibold text-[#0F172A]">My Projects</h2>
-                <p className="mt-1 text-sm text-[#64748B]">Projects supervised by your account</p>
+                <h2 className="text-2xl font-semibold text-[#1a1c1a]">My Projects</h2>
+                <p className="mt-1 text-sm text-[#7f7664]">Projects supervised by your account</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 overflow-y-auto pr-1 min-h-0">
               {loading && (
-                <div className="col-span-full text-sm text-[#64748B]">Chargement des projets...</div>
+                <div className="col-span-full text-sm text-[#7f7664]">Chargement des projets...</div>
               )}
               {!loading && projects.length === 0 && (
-                <div className="col-span-full text-sm text-[#64748B]">Aucun projet lie a cet encadrant.</div>
+                <div className="col-span-full text-sm text-[#7f7664]">Aucun projet lie a cet encadrant.</div>
               )}
               {projects.map((project) => (
                 <motion.div
                   key={project.id}
-                  whileHover={{ y: -2, boxShadow: '0 6px 24px 0 rgba(80,80,120,0.10)' }}
-                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-4 transition-all duration-200 hover:shadow-lg"
+                  whileHover={{ y: -2, boxShadow: '0 6px 24px 0 rgba(118,91,0,0.10)' }}
+                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#d1c5b0] bg-[#f4f3f1] p-4 transition-all duration-200 hover:shadow-lg"
                   onClick={() => {
                     setSelectedProject(project);
                     setShowProjectModal(true);
                   }}
                 >
-                  <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-[#6366F1] to-[#818CF8]"></div>
-                  <h3 className="mb-1 text-xl font-bold tracking-tight text-[#0F172A]">{project.title}</h3>
-                  <p className="mb-5 text-xs font-medium text-[#64748B]">{project.category}</p>
+                  <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-[#765b00] to-[#ebc254]"></div>
+                  <h3 className="mb-1 text-xl font-bold tracking-tight text-[#1a1c1a]">{project.title}</h3>
+                  <p className="mb-5 text-xs font-medium text-[#7f7664]">{project.category}</p>
                   <div className="space-y-2 mb-5">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="font-medium text-[#64748B]">Progress</span>
-                      <span className="font-semibold text-[#0F172A]">{project.progress}%</span>
+                      <span className="font-medium text-[#7f7664]">Progress</span>
+                      <span className="font-semibold text-[#1a1c1a]">{project.progress}%</span>
                     </div>
-                    <div className="h-1 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-[#d1c5b0]">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${project.progress}%` }}
                         transition={{ duration: 1, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-[#6366F1] to-[#818CF8]"
+                        className="h-full bg-gradient-to-r from-[#765b00] to-[#ebc254]"
                       ></motion.div>
                     </div>
                   </div>
@@ -327,26 +326,26 @@ const Dashboard: React.FC = () => {
                         <img key={m.id} src={m.avatar} className="h-7 w-7 rounded-full border-2 border-white shadow-sm" alt={m.name} />
                       ))}
                     </div>
-                    <span className="text-xs font-medium text-[#64748B]">{project.timeLeft}</span>
+                    <span className="text-xs font-medium text-[#7f7664]">{project.timeLeft}</span>
                   </div>
                 </motion.div>
               ))}
             </div>
 
             {showProjectModal && selectedProject && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                <div className="relative flex min-w-[340px] max-w-[95vw] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white p-0 shadow-2xl md:flex-row">
-                  <button className="absolute right-4 top-4 z-10 text-[#94A3B8] transition-colors hover:text-[#6366F1]" onClick={() => setShowProjectModal(false)}><X size={24} /></button>
-                  <div className="w-full border-r border-[#E2E8F0] bg-[#F8FAFF] p-8 md:w-1/2">
-                    <div className="mb-4 text-2xl font-bold tracking-tight text-[#0F172A]">{selectedProject.title}</div>
-                    <div className="mb-2 text-base text-[#475569]">{selectedProject.description}</div>
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                <div className="relative flex min-w-[340px] max-w-[95vw] flex-col overflow-hidden rounded-2xl border border-[#d1c5b0] bg-white p-0 shadow-2xl md:flex-row">
+                  <button className="absolute right-4 top-4 z-10 text-[#7f7664] transition-colors hover:text-[#765b00]" onClick={() => setShowProjectModal(false)}><X size={24} /></button>
+                  <div className="w-full border-r border-[#d1c5b0] bg-[#f4f3f1] p-8 md:w-1/2">
+                    <div className="mb-4 text-2xl font-bold tracking-tight text-[#1a1c1a]">{selectedProject.title}</div>
+                    <div className="mb-2 text-base text-[#4d4636]">{selectedProject.description}</div>
                   </div>
                   <div className="flex w-full flex-col justify-center p-8 md:w-1/2">
                     <div className="flex flex-wrap items-center gap-6">
                       {getGroupMembers(selectedProject).map((m) => (
                         <div key={m.id} className="flex flex-col items-center">
-                          <img src={m.avatar} alt={m.name} className="mb-1 h-12 w-12 rounded-full border border-[#E2E8F0] object-cover" />
-                          <span className="text-sm font-semibold text-[#4338CA]">{m.name}</span>
+                          <img src={m.avatar} alt={m.name} className="mb-1 h-12 w-12 rounded-full border border-[#d1c5b0] object-cover" />
+                          <span className="text-sm font-semibold text-[#765b00]">{m.name}</span>
                         </div>
                       ))}
                     </div>
@@ -357,41 +356,41 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
+        <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           <div className="mb-6 flex shrink-0 items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-[#0F172A]">Notifications</h2>
+              <h2 className="text-xl font-semibold text-[#1a1c1a]">Notifications</h2>
               {sessionDateLabel && (
-                <p className="mt-1 text-xs text-[#64748B]">Session du {sessionDateLabel}</p>
+                <p className="mt-1 text-xs text-[#7f7664]">Session du {sessionDateLabel}</p>
               )}
             </div>
-            <div className="flex gap-4 text-[#94A3B8]"></div>
+            <div className="flex gap-4 text-[#7f7664]"></div>
           </div>
 
           <div className="space-y-4 overflow-y-auto overflow-x-hidden pr-1 min-h-0">
-            {loading && <div className="text-sm text-[#64748B]">Chargement des notifications...</div>}
-            {!loading && notifications.length === 0 && <div className="text-sm text-[#64748B]">Aucune notification recente.</div>}
+            {loading && <div className="text-sm text-[#7f7664]">Chargement des notifications...</div>}
+            {!loading && notifications.length === 0 && <div className="text-sm text-[#7f7664]">Aucune notification recente.</div>}
             {notifications.map((notif) => (
-              <motion.div 
+              <motion.div
                 key={notif.id}
                 whileHover={{ x: 5 }}
-                className="flex w-full max-w-full cursor-pointer gap-4 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFF] p-4 transition-all duration-300 hover:bg-white"
+                className="flex w-full max-w-full cursor-pointer gap-4 overflow-hidden rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-4 transition-all duration-300 hover:bg-white"
               >
-                <img src={notif.avatar} alt={notif.name} className="h-12 w-12 rounded-full border border-[#E2E8F0] object-cover" />
+                <img src={notif.avatar} alt={notif.name} className="h-12 w-12 rounded-full border border-[#d1c5b0] object-cover" />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-1">
-                    <h4 className="text-sm font-semibold text-[#0F172A]">{notif.name}</h4>
-                    <span className="text-[10px] text-[#64748B]">{notif.time}</span>
+                    <h4 className="text-sm font-semibold text-[#1a1c1a]">{notif.name}</h4>
+                    <span className="text-[10px] text-[#7f7664]">{notif.time}</span>
                   </div>
                   {notif.type === 'deliverable' ? (
                     <p className="flex items-center gap-1 text-xs text-[#166534]">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E2E8F0] text-xs font-semibold text-[#475569]">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d1c5b0] text-xs font-semibold text-[#4d4636]">
                         {notif.name}
                       </span>
                       <span className="min-w-0 break-words">{notif.content}</span>
                     </p>
                   ) : (
-                    <p className="line-clamp-2 break-words text-xs leading-relaxed text-[#64748B]">{notif.content}</p>
+                    <p className="line-clamp-2 break-words text-xs leading-relaxed text-[#7f7664]">{notif.content}</p>
                   )}
                 </div>
               </motion.div>

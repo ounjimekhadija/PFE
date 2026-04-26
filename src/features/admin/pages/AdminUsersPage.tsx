@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Trash2, UserPlus } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Download, Filter, GraduationCap, MoreVertical, ShieldCheck, User, UserPlus, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
 
@@ -10,7 +10,19 @@ interface DbUser {
   telephone: string | null;
   email: string | null;
   role: string | null;
+  avatar_url: string | null;
 }
+
+const resolveAvatar = (avatarUrl: string | null | undefined, name: string): string => {
+  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&size=64`;
+  if (!avatarUrl) return fallback;
+  const raw = avatarUrl.trim();
+  if (!raw) return fallback;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  const clean = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
+  const { data } = supabase.storage.from('avatars').getPublicUrl(clean);
+  return data?.publicUrl || fallback;
+};
 
 interface DbStudent {
   id: string;
@@ -36,6 +48,7 @@ interface TableRow {
   filiere: string;
   groupe: string;
   projet: string;
+  avatar: string;
 }
 
 interface ProjectOption {
@@ -51,9 +64,9 @@ const toText = (value: string | null | undefined, fallback = 'N/A'): string => {
 };
 
 const roleBadgeClass = (role: string): string => {
-  if (role === 'ADMINISTRATEUR') return 'bg-[#EEF2FF] text-[#4338CA]';
-  if (role === 'ENCADRANT') return 'bg-[#E0F2FE] text-[#075985]';
-  return 'bg-[#DCFCE7] text-[#166534]';
+  if (role === 'ADMINISTRATEUR') return 'bg-[#ffd464]/40 text-[#594400]';
+  if (role === 'ENCADRANT') return 'bg-[#ECFDF5] text-[#065F46]';
+  return 'bg-[#FFF7ED] text-[#9A3412]';
 };
 
 const roleLabel = (role: string): string => {
@@ -61,6 +74,9 @@ const roleLabel = (role: string): string => {
   if (role === 'ENCADRANT') return 'Encadrant';
   return 'Etudiant';
 };
+
+
+const PAGE_SIZE = 10;
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000';
 
@@ -77,6 +93,19 @@ const AdminUsers: React.FC = () => {
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setCurrentPage(1); }, [rows]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuId(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
   const [form, setForm] = useState({
     role: 'ENCADRANT',
     nom: '',
@@ -108,7 +137,7 @@ const AdminUsers: React.FC = () => {
       setError(null);
 
       const [usersRes, studentsRes, projectsRes, encadrantsRes] = await Promise.all([
-        supabase.from('utilisateurs').select('id, nom, prenom, telephone, email, role'),
+        supabase.from('utilisateurs').select('id, nom, prenom, telephone, email, role, avatar_url'),
         supabase.from('etudiants').select('id, filiere, projet_id'),
         supabase.from('projets').select('id, titre, nom_groupe, domaine, encadrant_id'),
         supabase.from('encadrants').select('*'),
@@ -153,23 +182,28 @@ const AdminUsers: React.FC = () => {
 
       const adminRows: TableRow[] = users
         .filter((u) => u.role === 'ADMINISTRATEUR')
-        .map((u) => ({
-          id: String(u.id),
-          nom: toText(u.nom),
-          prenom: toText(u.prenom),
-          telephone: toText(u.telephone),
-          email: toText(u.email),
-          role: 'ADMINISTRATEUR',
-          filiere: 'N/A',
-          groupe: 'N/A',
-          projet: 'N/A',
-        }));
+        .map((u) => {
+          const name = `${toText(u.prenom)} ${toText(u.nom)}`.trim();
+          return {
+            id: String(u.id),
+            nom: toText(u.nom),
+            prenom: toText(u.prenom),
+            telephone: toText(u.telephone),
+            email: toText(u.email),
+            role: 'ADMINISTRATEUR',
+            filiere: 'N/A',
+            groupe: 'N/A',
+            projet: 'N/A',
+            avatar: resolveAvatar(u.avatar_url, name),
+          };
+        });
 
       const studentRows: TableRow[] = users
         .filter((u) => u.role === 'ETUDIANT')
         .map((u) => {
           const student = studentById.get(String(u.id));
           const project = student?.projet_id ? projectById.get(String(student.projet_id)) : undefined;
+          const name = `${toText(u.prenom)} ${toText(u.nom)}`.trim();
           return {
             id: String(u.id),
             nom: toText(u.nom),
@@ -180,6 +214,7 @@ const AdminUsers: React.FC = () => {
             filiere: toText(student?.filiere || project?.domaine),
             groupe: toText(project?.nom_groupe),
             projet: toText(project?.titre),
+            avatar: resolveAvatar(u.avatar_url, name),
           };
         });
 
@@ -190,6 +225,7 @@ const AdminUsers: React.FC = () => {
           const relatedProject = projects.find(
             (p) => p.encadrant_id === u.id || (encadrantId ? p.encadrant_id === encadrantId : false)
           );
+          const name = `${toText(u.prenom)} ${toText(u.nom)}`.trim();
           return {
             id: String(u.id),
             nom: toText(u.nom),
@@ -200,6 +236,7 @@ const AdminUsers: React.FC = () => {
             filiere: toText(relatedProject?.domaine),
             groupe: toText(relatedProject?.nom_groupe),
             projet: toText(relatedProject?.titre),
+            avatar: resolveAvatar(u.avatar_url, name),
           };
         });
 
@@ -433,184 +470,163 @@ const AdminUsers: React.FC = () => {
     return { total, admins, encadrants, etudiants };
   }, [rows]);
 
-  const recentUpdates = useMemo(
-    () => rows.slice(0, 5).map((r) => `${r.prenom} ${r.nom} · ${roleLabel(r.role)} · ${r.projet === 'N/A' ? 'No project yet' : r.projet}`),
-    [rows]
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const paginatedRows = useMemo(
+    () => rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [rows, currentPage]
   );
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+
+      {/* Header */}
+      <header className="mb-4 shrink-0 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#0F172A]">User Management</h1>
-          <p className="mt-2 text-sm text-[#64748B]">Create and manage student and teacher accounts.</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">User Management</h1>
+          <p className="mt-0.5 text-sm text-[#7f7664]">Oversee your organization's members and their specific roles.</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-medium text-[#334155] shadow-[0_8px_20px_rgba(0,0,0,0.05)] transition hover:border-[#CBD5E1]"
-            onClick={handleExportExcel}
-            disabled={exportLoading}
-          >
-            <Download size={16} />
-            {exportLoading ? 'Exporting...' : 'Export Excel'}
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={handleExportExcel} disabled={exportLoading}
+            className="inline-flex items-center gap-2 rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-medium text-[#4d4636] shadow-sm transition hover:border-[#c4b99a] disabled:opacity-50">
+            <Download size={14} />{exportLoading ? 'Exporting...' : 'Export Excel'}
           </button>
-
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#6366F1] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] transition hover:bg-[#4F46E5]"
-            onClick={() => {
-              setCreateError(null);
-              setCreateSuccess(null);
-              resetForm();
-              setShowAddModal(true);
-            }}
-          >
-            <UserPlus size={16} />
-            Add User
+          <button type="button"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#765b00] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(118,91,0,0.2)] transition hover:bg-[#594400]"
+            onClick={() => { setCreateError(null); setCreateSuccess(null); resetForm(); setShowAddModal(true); }}>
+            <UserPlus size={14} />Add User
           </button>
         </div>
       </header>
 
-      <section className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-5">
+      {/* Banners */}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Chargement des utilisateurs...</div>}
+      {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{error}</div>}
+      {!showAddModal && createError && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{createError}</div>}
+      {!showAddModal && createSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
+
+      {/* Stat Cards */}
+      <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
         {[
-          { label: 'Total Users', value: stats.total },
-          { label: 'Admins', value: stats.admins },
-          { label: 'Encadrants', value: stats.encadrants },
-          { label: 'Etudiants', value: stats.etudiants },
-        ].map((item) => (
-          <article key={item.label} className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-            <p className="text-sm text-[#64748B]">{item.label}</p>
-            <p className="mt-2 text-[2rem] font-bold leading-none text-[#0F172A]">{item.value}</p>
+          { label: 'TOTAL USERS',  value: stats.total,      icon: Users,         iconBg: 'bg-[#ffd464]',   iconColor: 'text-[#765b00]', trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
+          { label: 'ADMINS',       value: stats.admins,     icon: ShieldCheck,   iconBg: 'bg-[#f4f3f1]',   iconColor: 'text-[#4d4636]', trend: null },
+          { label: 'ENCADRANTS',   value: stats.encadrants, icon: GraduationCap, iconBg: 'bg-[#f4f3f1]',   iconColor: 'text-[#4d4636]', trend: null },
+          { label: 'ETUDIANTS',    value: stats.etudiants,  icon: User,          iconBg: 'bg-[#f4f3f1]',   iconColor: 'text-[#4d4636]', trend: null },
+        ].map((card) => (
+          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+            <div className="mb-3 flex items-start justify-between">
+              <div className={`rounded-xl ${card.iconBg} p-2.5 ${card.iconColor}`}><card.icon size={18} /></div>
+              {card.trend && <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-xs font-semibold text-[#10B981]">{card.trend}</span>}
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#7f7664]">{card.label}</p>
+            <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{card.value}</p>
           </article>
         ))}
       </section>
 
-      {loading && (
-        <div className="mb-4 rounded-2xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-sm text-[#1E40AF]">
-          Chargement des utilisateurs depuis la base de donnees...
+      {/* Directory */}
+      <section className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+        <div className="shrink-0 flex items-center justify-between border-b border-transparent px-5 py-3">
+          <h2 className="font-semibold text-[#1a1c1a]">Directory</h2>
+          <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1]">
+            <Filter size={15} />
+          </button>
         </div>
-      )}
 
-      {!loading && error && (
-        <div className="mb-4 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">{error}</div>
-      )}
-
-      {!showAddModal && createError && (
-        <div className="mb-4 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-sm text-[#B91C1C]">{createError}</div>
-      )}
-
-      {!showAddModal && createSuccess && (
-        <div className="mb-4 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-[#15803D]">{createSuccess}</div>
-      )}
-
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr,360px]">
-        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-          <div className="overflow-x-auto rounded-2xl border border-[#E2E8F0]">
-            <table className="hidden min-w-[980px] w-full border-collapse md:table">
-              <thead className="bg-[#F8FAFF]">
+        <div className="flex-1 overflow-y-auto">
+          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#7f7664]">Aucun utilisateur trouve.</p>}
+          {rows.length > 0 && (
+            <table className="w-full border-collapse table-fixed">
+              <colgroup>
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '7%' }} />
+              </colgroup>
+              <thead className="sticky top-0 bg-[#f4f3f1]">
                 <tr>
-                  {['Nom', 'Prenom', 'Role', 'Telephone', 'Email', 'Filiere', 'Groupe', 'Projet', 'Actions'].map((h) => (
-                    <th key={h} className="border-b border-[#E2E8F0] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#64748B]">
-                      {h}
-                    </th>
+                  {['NOM & PRENOM', 'ROLE', 'CONTACT', 'FILIERE / GROUPE', 'PROJET', 'ACTIONS'].map((h) => (
+                    <th key={h} className="border-b border-transparent px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-[#7f7664]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {!loading && rows.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-[#64748B]">
-                      Aucun utilisateur trouve.
+                {paginatedRows.map((row, i) => (
+                  <tr key={row.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-[#faf9f6]'} hover:bg-[#ffd464]/10 transition-colors`}>
+                    <td className="border-b border-transparent px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={row.avatar}
+                          alt={`${row.prenom} ${row.nom}`}
+                          className="h-9 w-9 shrink-0 rounded-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#1a1c1a]">{row.prenom} {row.nom}</p>
+                          <p className="text-xs text-[#7f7664]">ID: #{row.id.slice(0, 6)}</p>
+                        </div>
+                      </div>
                     </td>
-                  </tr>
-                )}
-
-                {rows.map((row, index) => (
-                  <tr key={row.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFF]'} hover:bg-[#EEF2FF]/40`}>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 font-semibold text-[#0F172A]">{row.nom}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#0F172A]">{row.prenom}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(row.role)}`}>
-                        {roleLabel(row.role)}
-                      </span>
+                    <td className="border-b border-transparent px-4 py-3">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(row.role)}`}>{roleLabel(row.role)}</span>
                     </td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.telephone}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.email}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.filiere}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.groupe}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3 text-[#334155]">{row.projet}</td>
-                    <td className="border-b border-[#EEF2F7] px-4 py-3">
-                      <button
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#64748B] transition hover:border-[#FCA5A5] hover:text-[#DC2626] disabled:opacity-50"
-                        title="Supprimer"
-                        onClick={() => setDeleteConfirmId(row.id)}
-                        disabled={deleteLoading}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    <td className="border-b border-transparent px-4 py-3">
+                      <p className="truncate text-xs text-[#1a1c1a]">{row.email}</p>
+                      <p className="text-xs text-[#7f7664]">{row.telephone}</p>
+                    </td>
+                    <td className="border-b border-transparent px-4 py-3">
+                      <p className="truncate text-xs text-[#1a1c1a]">{row.filiere}</p>
+                      <p className="truncate text-xs text-[#7f7664]">{row.groupe}</p>
+                    </td>
+                    <td className="border-b border-transparent px-4 py-3">
+                      <p className="truncate text-sm text-[#1a1c1a]">{row.projet === 'N/A' ? '—' : row.projet}</p>
+                    </td>
+                    <td className="border-b border-transparent px-4 py-3">
+                      <div className="relative" ref={openMenuId === row.id ? menuRef : null}>
+                        <button type="button" onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#7f7664] transition hover:bg-[#f4f3f1]">
+                          <MoreVertical size={16} />
+                        </button>
+                        {openMenuId === row.id && (
+                          <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.12)]">
+                            <button type="button" onClick={() => { setDeleteConfirmId(row.id); setOpenMenuId(null); }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]">
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
 
-            <div className="space-y-3 p-3 md:hidden">
-              {rows.length === 0 && !loading && <p className="py-6 text-center text-sm text-[#64748B]">Aucun utilisateur trouve.</p>}
-              {rows.map((row) => (
-                <div key={row.id} className="rounded-xl border border-[#E2E8F0] bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-[#0F172A]">{row.prenom} {row.nom}</p>
-                      <p className="text-xs text-[#64748B]">{row.email}</p>
-                    </div>
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadgeClass(row.role)}`}>
-                      {roleLabel(row.role)}
-                    </span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[#64748B]">
-                    <p>Tel: {row.telephone}</p>
-                    <p>Filiere: {row.filiere}</p>
-                    <p>Groupe: {row.groupe}</p>
-                    <p>Projet: {row.projet}</p>
-                  </div>
-                  <div className="mt-3">
-                    <button
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#64748B] transition hover:border-[#FCA5A5] hover:text-[#DC2626] disabled:opacity-50"
-                      title="Supprimer"
-                      onClick={() => setDeleteConfirmId(row.id)}
-                      disabled={deleteLoading}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Pagination */}
+        <div className="shrink-0 flex items-center justify-between border-t border-transparent px-5 py-3">
+          <p className="text-sm text-[#7f7664]">Showing {paginatedRows.length} of {rows.length} results</p>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
+              className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#4d4636] transition hover:border-[#c4b99a] disabled:opacity-40">
+              Previous
+            </button>
+            <span className="text-sm text-[#7f7664]">{currentPage} / {totalPages}</span>
+            <button type="button" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}
+              className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#4d4636] transition hover:border-[#c4b99a] disabled:opacity-40">
+              Next
+            </button>
           </div>
-        </article>
-
-        <article className="mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-          <h3 className="text-2xl font-semibold text-[#0F172A]">Weekly Team Sync</h3>
-          <p className="mt-1 text-sm text-[#64748B]">Recent user updates and account assignments.</p>
-          <div className="mt-4 space-y-3">
-            {recentUpdates.length === 0 && <p className="text-sm text-[#64748B]">No recent updates.</p>}
-            {recentUpdates.map((item, idx) => (
-              <div key={`${item}-${idx}`} className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFF] p-3 text-sm text-[#334155]">
-                {item}
-              </div>
-            ))}
-          </div>
-        </article>
+        </div>
       </section>
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4">
-          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
-            <div className="flex items-center justify-between border-b border-[#E2E8F0] px-6 py-4">
-              <h2 className="text-xl font-semibold text-[#0F172A]">Creer un utilisateur</h2>
-              <button className="text-[#64748B]" onClick={() => setShowAddModal(false)} aria-label="Close">
+          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]">
+            <div className="flex items-center justify-between border-b border-transparent px-6 py-4">
+              <h2 className="text-xl font-semibold text-[#1a1c1a]">Creer un utilisateur</h2>
+              <button className="text-[#7f7664]" onClick={() => setShowAddModal(false)} aria-label="Close">
                 &times;
               </button>
             </div>
@@ -621,9 +637,9 @@ const AdminUsers: React.FC = () => {
                 {createSuccess && <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">Role</label>
+                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">Role</label>
                   <select
-                    className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                     value={form.role}
                     onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
                   >
@@ -635,20 +651,20 @@ const AdminUsers: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#334155]">Nom</label>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.nom}
                       onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
                       required
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#334155]">Prenom</label>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Prenom</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.prenom}
                       onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
                       required
@@ -658,19 +674,19 @@ const AdminUsers: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#334155]">Numero de telephone</label>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero de telephone</label>
                     <input
                       type="tel"
-                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.phone}
                       onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#334155]">Email</label>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Email</label>
                     <input
                       type="email"
-                      className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -679,10 +695,10 @@ const AdminUsers: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">Mot de passe</label>
+                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">Mot de passe</label>
                   <input
                     type="password"
-                    className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                     value={form.password}
                     onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                     required
@@ -692,19 +708,19 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ADMINISTRATEUR' && (
                   <>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Nom organisation</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom organisation</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.nomOrganisation}
                         onChange={(e) => setForm((f) => ({ ...f, nomOrganisation: e.target.value }))}
                         required
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Niveau acces</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Niveau acces</label>
                       <select
-                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.niveauAcces}
                         onChange={(e) => setForm((f) => ({ ...f, niveauAcces: e.target.value }))}
                       >
@@ -719,20 +735,20 @@ const AdminUsers: React.FC = () => {
                   <>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Grade</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Grade</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.grade}
                           onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))}
                           required
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Specialite</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Specialite</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.specialite}
                           onChange={(e) => setForm((f) => ({ ...f, specialite: e.target.value }))}
                           required
@@ -740,10 +756,10 @@ const AdminUsers: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Bureau</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Bureau</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.bureau}
                         onChange={(e) => setForm((f) => ({ ...f, bureau: e.target.value }))}
                         required
@@ -756,20 +772,20 @@ const AdminUsers: React.FC = () => {
                   <>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Numero etudiant</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero etudiant</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.numeroEtudiant}
                           onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
                           required
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Niveau</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Niveau</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.niveau}
                           onChange={(e) => setForm((f) => ({ ...f, niveau: e.target.value }))}
                           required
@@ -779,11 +795,11 @@ const AdminUsers: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Filiere</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Filiere</label>
                         <input
                           type="text"
                           list="filiere-options"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.filiere}
                           onChange={(e) => setForm((f) => ({ ...f, filiere: e.target.value }))}
                           required
@@ -795,10 +811,10 @@ const AdminUsers: React.FC = () => {
                         </datalist>
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Titre profil</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Titre profil</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.titreProfil}
                           onChange={(e) => setForm((f) => ({ ...f, titreProfil: e.target.value }))}
                         />
@@ -807,19 +823,19 @@ const AdminUsers: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">CNE</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">CNE</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.cne}
                           onChange={(e) => setForm((f) => ({ ...f, cne: e.target.value }))}
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">CIN</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">CIN</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.cin}
                           onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
                         />
@@ -827,10 +843,10 @@ const AdminUsers: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Competences (separees par virgule)</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Competences (separees par virgule)</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.competences}
                         onChange={(e) => setForm((f) => ({ ...f, competences: e.target.value }))}
                       />
@@ -838,19 +854,19 @@ const AdminUsers: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">GitHub URL</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">GitHub URL</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.githubUrl}
                           onChange={(e) => setForm((f) => ({ ...f, githubUrl: e.target.value }))}
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">LinkedIn URL</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">LinkedIn URL</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.linkedinUrl}
                           onChange={(e) => setForm((f) => ({ ...f, linkedinUrl: e.target.value }))}
                         />
@@ -858,10 +874,10 @@ const AdminUsers: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Portfolio URL</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Portfolio URL</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.portfolioUrl}
                         onChange={(e) => setForm((f) => ({ ...f, portfolioUrl: e.target.value }))}
                       />
@@ -869,9 +885,9 @@ const AdminUsers: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Nom du groupe</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom du groupe</label>
                         <select
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.projetId ? projets.find((p) => p.id === form.projetId)?.nom_groupe || '' : ''}
                           onChange={(e) => {
                             const selected = projets.find((p) => p.nom_groupe === e.target.value);
@@ -887,9 +903,9 @@ const AdminUsers: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#334155]">Nom du projet</label>
+                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom du projet</label>
                         <select
-                          className="w-full rounded-xl border border-[#E2E8F0] px-3 py-2 text-sm outline-none focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20"
+                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.projetId}
                           onChange={(e) => setForm((f) => ({ ...f, projetId: e.target.value }))}
                         >
@@ -906,17 +922,17 @@ const AdminUsers: React.FC = () => {
                 )}
               </div>
 
-              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-[#E2E8F0] bg-white pt-4">
+              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-transparent bg-white pt-4">
                 <button
                   type="button"
-                  className="rounded-xl border border-[#E2E8F0] bg-white px-5 py-2 text-sm font-semibold text-[#334155]"
+                  className="rounded-xl border border-transparent bg-white px-5 py-2 text-sm font-semibold text-[#4d4636]"
                   onClick={() => setShowAddModal(false)}
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#6366F1] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(99,102,241,0.35)] disabled:opacity-50"
+                  className="rounded-xl bg-[#765b00] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(118,91,0,0.2)] disabled:opacity-50"
                   disabled={createLoading}
                 >
                   {createLoading ? 'Creation...' : 'Creer'}
@@ -929,13 +945,13 @@ const AdminUsers: React.FC = () => {
 
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-[#E2E8F0] bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
-            <h2 className="text-lg font-semibold text-[#0F172A]">Confirmer la suppression</h2>
-            <p className="mt-2 text-sm text-[#64748B]">Cette action est irreversible. L'utilisateur sera supprime definitivement.</p>
+          <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
+            <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirmer la suppression</h2>
+            <p className="mt-2 text-sm text-[#7f7664]">Cette action est irreversible. L'utilisateur sera supprime definitivement.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-xl border border-[#E2E8F0] bg-white px-4 py-2 text-sm font-semibold text-[#334155]"
+                className="rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[#4d4636]"
                 onClick={() => setDeleteConfirmId(null)}
                 disabled={deleteLoading}
               >

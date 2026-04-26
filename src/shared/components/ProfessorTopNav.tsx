@@ -1,70 +1,100 @@
 import React from 'react';
-import { Bell, LogOut, Settings, User } from 'lucide-react';
+import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, User, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useDarkMode } from '../hooks/useDarkMode';
 
 interface ProfessorTopNavProps {
   onLogout?: () => void;
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', to: '/dashboard' },
-  { id: 'members', label: 'People', to: '/members' },
-  { id: 'tasks', label: 'Tasks', to: '/tasks' },
-  { id: 'deliverables', label: 'Deliverables', to: '/deliverables' },
-  { id: 'chat', label: 'Inbox', to: '/chat' },
-  { id: 'settings', label: 'Setting', to: '/settings' },
+  { id: 'dashboard', label: 'Dashboard', to: '/dashboard', icon: Home },
+  { id: 'members', label: 'People', to: '/members', icon: Users },
+  { id: 'tasks', label: 'Tasks', to: '/tasks', icon: CheckSquare },
+  { id: 'deliverables', label: 'Deliverables', to: '/deliverables', icon: FileText },
+  { id: 'chat', label: 'Inbox', to: '/chat', icon: MessageCircle },
 ];
 
 const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   const location = useLocation();
+  const [showNotif, setShowNotif] = React.useState(false);
+  const { isDark, toggle } = useDarkMode();
 
   return (
-    <header className="border-b border-[#E2E8F0] bg-[#F8FAFF] px-4 py-4 md:px-8">
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-[22px] border border-[#E2E8F0] bg-white px-3 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.05)]">
-        <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+    <header className="bg-[#faf9f6] px-4 py-3 md:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-[28px] border border-transparent bg-white px-4 py-2 shadow-[0_4px_16px_rgba(118,91,0,0.06)]" style={{ transition: 'background-color 0.2s' }}>
+        <nav className="flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
+            const Icon = item.icon;
             return (
               <Link
                 key={item.id}
                 to={item.to}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
+                title={item.label}
+                className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
                   isActive
-                    ? 'bg-[#1E293B] text-white'
-                    : 'text-[#475569] hover:bg-[#F8FAFF] hover:text-[#0F172A]'
+                    ? 'bg-[#1a1c1a] text-white shadow-[0_2px_8px_rgba(26,28,26,0.25)]'
+                    : 'text-[#7f7664] hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white'
                 }`}
               >
-                {item.label}
+                <Icon size={18} />
               </Link>
             );
           })}
         </nav>
 
-        <div className="ml-2 flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E2E8F0] text-[#64748B] transition hover:bg-[#F8FAFF]"
+        <div className="flex items-center gap-2">
+          <Link
+            to="/settings"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
             aria-label="Settings"
           >
             <Settings size={16} />
-          </button>
+          </Link>
+
+          <div className="relative">
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
+              aria-label="Notifications"
+              onClick={() => setShowNotif((v) => !v)}
+            >
+              <Bell size={16} />
+            </button>
+            {showNotif && (
+              <div className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_4px_16px_rgba(118,91,0,0.1)]">
+                <h3 className="text-sm font-semibold text-[#1a1c1a] dark:text-[#e8e3da]">Notifications</h3>
+                <p className="mt-3 text-sm text-[#7f7664]">No new notifications.</p>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E2E8F0] text-[#64748B] transition hover:bg-[#F8FAFF]"
-            aria-label="Notifications"
-          >
-            <Bell size={16} />
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E2E8F0] text-[#64748B] transition hover:bg-[#F8FAFF]"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
             aria-label="Profile"
           >
             <User size={16} />
           </button>
+
+          {/* Dark mode toggle */}
           <button
             type="button"
-            className="inline-flex items-center gap-1 rounded-full border border-[#E2E8F0] px-3 py-2 text-xs font-semibold text-[#64748B] transition hover:bg-[#FEF2F2] hover:text-[#DC2626]"
+            onClick={toggle}
+            aria-label="Toggle dark mode"
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
+              isDark
+                ? 'bg-[#222222] text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
+                : 'border border-transparent text-[#7f7664] hover:bg-[#f4f3f1] hover:text-[#1a1c1a]'
+            }`}
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-2 text-xs font-semibold text-[#7f7664] transition hover:bg-[#ffdad6] hover:border-[#f5c2be] hover:text-[#ba1a1a]"
             onClick={onLogout}
           >
             <LogOut size={14} />

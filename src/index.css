@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,13 +7,63 @@
 @layer base {
 	html {
 		font-size: 100%;
-		font-family: 'Inter', system-ui, sans-serif;
+		font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 	}
 
 	body {
 		margin: 0;
-		background-color: #f8faff;
-		color: #0f172a;
-		font-family: 'Inter', system-ui, sans-serif;
+		background-color: #faf9f6;
+		color: #1a1c1a;
+		font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 	}
+}
+
+/* ── Dark mode ─────────────────────────────────── */
+html.dark,
+html.dark body {
+  background-color: #0f0f0e;
+  color: #e8e3da;
+}
+
+/* Backgrounds */
+html.dark [class*="bg-[#faf9f6]"]  { background-color: #0f0f0e !important; }
+html.dark [class*="bg-[#f4f3f1]"]  { background-color: #1a1918 !important; }
+html.dark [class*="bg-[#efeeeb]"]  { background-color: #252320 !important; }
+html.dark [class*="bg-[#e8e3da]"]  { background-color: #2e2b28 !important; }
+html.dark [class*="bg-white"]      { background-color: #1c1b19 !important; }
+
+/* Text */
+html.dark [class*="text-[#1a1c1a]"] { color: #e8e3da !important; }
+html.dark [class*="text-[#4d4636]"] { color: #c4b89a !important; }
+html.dark [class*="text-[#7f7664]"] { color: #9a8e7e !important; }
+
+/* Borders */
+html.dark [class*="border-transparent"] { border-color: rgba(255,255,255,0.07) !important; }
+
+/* Shadows */
+html.dark [class*="shadow-[0_4px_16px_rgba(118"] {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45) !important;
+}
+html.dark [class*="shadow-[0_8px_20px_rgba(0"] {
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45) !important;
+}
+
+/* Outer app wrapper (App.tsx) */
+html.dark [class*="h-screen"] {
+  background-color: #0f0f0e !important;
+}
+html.dark main {
+  background-color: #0f0f0e !important;
+}
+
+select option:hover,
+select option:focus,
+select option:active {
+	background: linear-gradient(#1a1c1a, #1a1c1a) !important;
+	color: #ffffff !important;
+}
+
+select option:checked {
+	background: linear-gradient(#765b00, #765b00) !important;
+	color: #ffffff !important;
 }

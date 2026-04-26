@@ -29,9 +29,9 @@ const Deliverables: React.FC = () => {
     switch (type) {
       case 'PDF': return <FileText className="text-red-500" size={24} />;
       case 'ZIP': return <FileArchive className="text-amber-500" size={24} />;
-      case 'LINK': return <LinkIcon className="text-blue-500" size={24} />;
-      case 'DOC': return <File className="text-indigo-500" size={24} />;
-      default: return <File className="text-gray-400" size={24} />;
+      case 'LINK': return <LinkIcon className="text-[#765b00]" size={24} />;
+      case 'DOC': return <File className="text-[#594400]" size={24} />;
+      default: return <File className="text-[#7f7664]" size={24} />;
     }
   };
 
@@ -41,9 +41,9 @@ const Deliverables: React.FC = () => {
       return 'bg-green-100 text-green-600';
     }
     if (normalized === 'LATE' || normalized === 'EN_RETARD') {
-      return 'bg-red-100 text-red-600';
+      return 'bg-[#ffdad6] text-[#ba1a1a]';
     }
-    return 'bg-yellow-100 text-yellow-600';
+    return 'bg-[#ffd464] text-[#594400]';
   };
 
   const fetchProfessorProjectIds = async (authUserId: string): Promise<string[]> => {
@@ -253,7 +253,6 @@ const Deliverables: React.FC = () => {
         }
       }
 
-      // Fallback: open temporary signed URL if direct blob download fails.
       for (const bucket of bucketCandidates) {
         const { data, error: signedError } = await supabase.storage
           .from(bucket)
@@ -273,31 +272,31 @@ const Deliverables: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFF] p-6 md:p-8 text-[#0F172A]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <div>
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Group Deliverables</h1>
-            <p className="mt-1.5 text-sm text-[#64748B]">View and manage all project deliverables by group</p>
-            <p className="mt-1 text-xs text-[#64748B]">{totalCount} livrable(s)</p>
+            <p className="mt-1.5 text-sm text-[#7f7664]">View and manage all project deliverables by group</p>
+            <p className="mt-1 text-xs text-[#7f7664]">{totalCount} livrable(s)</p>
           </div>
         </header>
 
-        {loading && <p className="mb-4 text-sm text-[#64748B]">Chargement des livrables...</p>}
-        {!loading && error && <p className="mb-4 text-sm text-[#B91C1C]">Erreur: {error}</p>}
+        {loading && <p className="mb-4 text-sm text-[#7f7664]">Chargement des livrables...</p>}
+        {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a]">Erreur: {error}</p>}
         {!loading && !error && groups.length === 0 && (
-          <p className="mb-4 text-sm text-[#64748B]">Aucun livrable trouve pour les projets assignes a cet encadrant.</p>
+          <p className="mb-4 text-sm text-[#7f7664]">Aucun livrable trouve pour les projets assignes a cet encadrant.</p>
         )}
 
         <div className="space-y-7">
           {groups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#E2E8F0]"></div>
-                <h2 className="rounded-full border border-[#C7D2FE] bg-[#EEF2FF] px-3 py-1.5 text-lg font-bold text-[#4338CA]">
+                <div className="h-px flex-1 bg-[#d1c5b0]"></div>
+                <h2 className="rounded-full border border-[#ebc254] bg-[#ffd464] px-3 py-1.5 text-lg font-bold text-[#594400]">
                   {group.groupName}
                 </h2>
-                <div className="h-px flex-1 bg-[#E2E8F0]"></div>
+                <div className="h-px flex-1 bg-[#d1c5b0]"></div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -305,31 +304,31 @@ const Deliverables: React.FC = () => {
                   <motion.div
                     key={deliverable.id}
                     whileHover={{ scale: 1.01 }}
-                    className="group relative mb-6 rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.05)] transition-all hover:border-[#C7D2FE]"
+                    className="group relative mb-6 rounded-2xl border border-[#d1c5b0] bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-[#ebc254]"
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div className="rounded-2xl bg-[#F8FAFF] p-2.5">
+                      <div className="rounded-2xl bg-[#f4f3f1] p-2.5">
                         {getIcon(deliverable.type)}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${getStatusClass(deliverable.status)}`}>
                           {deliverable.status}
                         </span>
-                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <button className="text-[#7f7664] hover:text-[#4d4636] transition-colors">
                           <MoreVertical size={18} />
                         </button>
                       </div>
                     </div>
 
-                    <h3 className="mb-1.5 text-base font-bold text-[#0F172A] transition-colors group-hover:text-[#4338CA]">
+                    <h3 className="mb-1.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#765b00]">
                       {deliverable.title}
                     </h3>
-                    
-                    <div className="mb-4 flex items-center gap-3 text-xs text-[#64748B]">
+
+                    <div className="mb-4 flex items-center gap-3 text-xs text-[#7f7664]">
                       <span>{deliverable.date}</span>
                       {deliverable.size && (
                         <>
-                          <span className="h-1 w-1 rounded-full bg-[#CBD5E1]"></span>
+                          <span className="h-1 w-1 rounded-full bg-[#d1c5b0]"></span>
                           <span>{deliverable.size}</span>
                         </>
                       )}
@@ -341,8 +340,8 @@ const Deliverables: React.FC = () => {
                         disabled={!deliverable.externalUrl && !deliverable.filePath}
                         className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
                           deliverable.isExternal
-                              ? 'bg-[#6366F1] text-white shadow-md hover:bg-[#4F46E5] disabled:bg-[#A5B4FC]'
-                              : 'border border-[#E2E8F0] bg-[#F8FAFF] text-[#334155] hover:bg-white disabled:bg-[#F1F5F9] disabled:text-[#94A3B8]'
+                            ? 'bg-[#765b00] text-white shadow-md hover:bg-[#594400] disabled:bg-[#ebc254]'
+                            : 'border border-[#d1c5b0] bg-[#f4f3f1] text-[#4d4636] hover:bg-white disabled:bg-[#efeeeb] disabled:text-[#7f7664]'
                         }`}
                       >
                         {deliverable.isExternal ? <ExternalLink size={16} /> : <Download size={16} />}
