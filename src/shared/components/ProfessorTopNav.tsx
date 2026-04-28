@@ -1,10 +1,20 @@
-import React from 'react';
-import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, User, Users } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { supabase } from '../../lib/supabase';
 
 interface ProfessorTopNavProps {
   onLogout?: () => void;
+}
+
+interface NotifItem {
+  id: string;
+  type: 'message' | 'deliverable';
+  name: string;
+  content: string;
+  time: string;
+  avatar: string;
 }
 
 const navItems = [
@@ -15,10 +25,95 @@ const navItems = [
   { id: 'chat', label: 'Inbox', to: '/chat', icon: MessageCircle },
 ];
 
+const toShortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
 const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   const location = useLocation();
-  const [showNotif, setShowNotif] = React.useState(false);
+  const [showNotif, setShowNotif] = useState(false);
+  const [notifs, setNotifs] = useState<NotifItem[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notifRef = useRef<HTMLDivElement>(null);
   const { isDark, toggle } = useDarkMode();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotif(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const fetchNotifications = async () => {
+    setNotifLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: projectRows } = await supabase
+        .from('projets')
+        .select('id')
+        .eq('encadrant_id', user.id);
+
+      if (!projectRows || projectRows.length === 0) { setNotifs([]); return; }
+      const projectIds = projectRows.map((p: any) => p.id);
+
+      const [{ data: msgRows }, { data: delRows }] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('id, contenu, created_at, auteur_id, utilisateurs(nom, prenom)')
+          .in('projet_id', projectIds)
+          .neq('auteur_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('livrables')
+          .select('id, titre, created_at')
+          .in('projet_id', projectIds)
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
+
+      const msgNotifs: NotifItem[] = (msgRows || []).map((m: any) => {
+        const u = Array.isArray(m.utilisateurs) ? m.utilisateurs[0] : m.utilisateurs;
+        const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
+        return {
+          id: `msg-${m.id}`,
+          type: 'message',
+          name,
+          content: m.contenu,
+          time: toShortDate(m.created_at),
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+        };
+      });
+
+      const delNotifs: NotifItem[] = (delRows || []).map((d: any) => ({
+        id: `del-${d.id}`,
+        type: 'deliverable' as const,
+        name: 'Livrable',
+        content: d.titre,
+        time: toShortDate(d.created_at),
+        avatar: `https://ui-avatars.com/api/?name=Livrable&background=ffd464&color=765b00`,
+      }));
+
+      const merged = [...msgNotifs, ...delNotifs]
+        .sort((a, b) => 0)
+        .slice(0, 10);
+
+      setNotifs(merged);
+      setUnreadCount(0);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const handleBellClick = () => {
+    setShowNotif((v) => {
+      if (!v) fetchNotifications();
+      return !v;
+    });
+  };
 
   return (
     <header className="bg-[#faf9f6] px-4 py-3 md:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
@@ -53,30 +148,54 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
             <Settings size={16} />
           </Link>
 
-          <div className="relative">
+          {/* Notification bell */}
+          <div className="relative" ref={notifRef}>
             <button
               type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
               aria-label="Notifications"
-              onClick={() => setShowNotif((v) => !v)}
+              onClick={handleBellClick}
             >
               <Bell size={16} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#765b00] text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
             </button>
+
             {showNotif && (
-              <div className="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_4px_16px_rgba(118,91,0,0.1)]">
-                <h3 className="text-sm font-semibold text-[#1a1c1a] dark:text-[#e8e3da]">Notifications</h3>
-                <p className="mt-3 text-sm text-[#7f7664]">No new notifications.</p>
+              <div className="absolute right-0 top-11 z-50 w-80 rounded-2xl border border-[#f4f3f1] bg-white shadow-[0_8px_24px_rgba(118,91,0,0.12)]">
+                <div className="flex items-center justify-between border-b border-[#f4f3f1] px-4 py-3">
+                  <h3 className="text-sm font-bold text-[#1a1c1a]">Notifications</h3>
+                  <span className="text-[11px] text-[#7f7664]">{new Date().toLocaleDateString('fr-FR')}</span>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto">
+                  {notifLoading && (
+                    <p className="py-6 text-center text-sm text-[#7f7664]">Chargement...</p>
+                  )}
+                  {!notifLoading && notifs.length === 0 && (
+                    <p className="py-6 text-center text-sm text-[#7f7664]">Aucune notification.</p>
+                  )}
+                  {notifs.map((n) => (
+                    <div key={n.id} className="flex items-start gap-3 border-b border-[#f4f3f1] px-4 py-3 last:border-0 hover:bg-[#faf9f6] transition-colors">
+                      <img src={n.avatar} alt={n.name} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-semibold text-[#1a1c1a]">{n.name}</p>
+                          <span className="shrink-0 text-[10px] text-[#7f7664]">{n.time}</span>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-[#7f7664]">
+                          {n.type === 'deliverable' ? '📎 ' : '💬 '}{n.content}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
-            aria-label="Profile"
-          >
-            <User size={16} />
-          </button>
 
           {/* Dark mode toggle */}
           <button

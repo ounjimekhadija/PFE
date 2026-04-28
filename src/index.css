@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Brown scrollbar for chat messages area */
+.chat-messages::-webkit-scrollbar { width: 6px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background-color: #765b00; border-radius: 9999px; }
+.chat-messages::-webkit-scrollbar-thumb:hover { background-color: #594400; }
+
 @layer base {
 	html {
 		font-size: 100%;

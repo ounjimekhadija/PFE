@@ -90,7 +90,6 @@ const AdminProjects: React.FC = () => {
     title: '',
     domaine: '',
     encadrantId: '',
-    nomGroupe: '',
     deadline: '',
   });
 
@@ -221,7 +220,7 @@ const AdminProjects: React.FC = () => {
           titre: form.title,
           domaine: form.domaine || null,
           encadrantId: form.encadrantId || null,
-          nomGroupe: form.nomGroupe || null,
+          nomGroupe: null,
           deadline: form.deadline || null,
         }),
       });
@@ -229,7 +228,7 @@ const AdminProjects: React.FC = () => {
       if (!response.ok) throw new Error(body?.error || 'Creation echouee.');
       setFormSuccess('Projet cree avec succes.');
       setShowModal(false);
-      setForm({ title: '', domaine: '', encadrantId: '', nomGroupe: '', deadline: '' });
+      setForm({ title: '', domaine: '', encadrantId: '', deadline: '' });
       await fetchData();
     } catch (err: unknown) {
       const message =
@@ -294,7 +293,7 @@ const AdminProjects: React.FC = () => {
   const openCreateModal = () => {
     setFormError(null);
     setFormSuccess(null);
-    setForm({ title: '', domaine: '', encadrantId: '', nomGroupe: '', deadline: '' });
+    setForm({ title: '', domaine: '', encadrantId: '', deadline: '' });
     setShowModal(true);
   };
 
@@ -497,10 +496,6 @@ const AdminProjects: React.FC = () => {
                   <option value="">-- Aucun --</option>
                   {encadrantOptions.map((enc) => <option key={enc.id} value={enc.id}>{enc.displayName}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#4d4636]">Nom du groupe</label>
-                <input type="text" className={inputClass} placeholder="ex: EventMaster, LearnAI..." value={form.nomGroupe} onChange={(e) => setForm((f) => ({ ...f, nomGroupe: e.target.value }))} />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-[#4d4636]">Deadline</label>

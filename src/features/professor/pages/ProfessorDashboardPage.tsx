@@ -1,405 +1,408 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Calendar, Download } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
+import * as XLSX from 'xlsx';
+
+interface ProjectBar {
+  name: string;
+  timeProgress: number; // percent of time elapsed relative to start->deadline
+  taskCompletion: number; // percent of tasks done for the project
+  tasks: {
+    completed: number;
+    inProgress: number;
+    late: number;
+  } | null;
+}
+
+interface Member {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
+interface IterationEvent {
+  id: string;
+  label: string;
+  description: string;
+  date: string;
+  statut: string;
+}
+
+const resolveAvatar = (v: string | null | undefined, name: string) => {
+  const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+  if (!v) return fb;
+  const raw = v.trim();
+  if (!raw) return fb;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+  const clean = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
+  const { data } = supabase.storage.from('avatars').getPublicUrl(clean);
+  return data?.publicUrl || fb;
+};
 
 const Dashboard: React.FC = () => {
-  const [selectedProject, setSelectedProject] = useState<ProjectCard | null>(null);
-  const [showProjectModal, setShowProjectModal] = useState(false);
-  const [projects, setProjects] = useState<ProjectCard[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string>('https://ui-avatars.com/api/?name=Professor&background=random');
-  const [sessionDateLabel, setSessionDateLabel] = useState<string>('');
-
-  interface MemberCard {
-    id: string;
-    name: string;
-    avatar: string;
-  }
-
-  interface ProjectCard {
-    id: string;
-    title: string;
-    category: string;
-    progress: number;
-    timeLeft: string;
-    members: MemberCard[];
-    description: string;
-    tasks: Task[];
-  }
-
-  interface NotificationItem {
-    id: string;
-    type: 'message' | 'deliverable';
-    name: string;
-    content: string;
-    time: string;
-    createdAt: string;
-    avatar: string;
-  }
-
-  interface Task {
-    id: string;
-    title: string;
-    etat: 'TERMINE' | 'EN_COURS';
-  }
-
-  const toDaysLeft = (deadline: string | null): string => {
-    if (!deadline) return 'No deadline';
-    const end = new Date(deadline).getTime();
-    const now = Date.now();
-    const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return 'Late';
-    if (diffDays === 0) return 'Due today';
-    if (diffDays === 1) return '1 day left';
-    if (diffDays < 7) return `${diffDays} days left`;
-    const weeks = Math.ceil(diffDays / 7);
-    return `${weeks} week${weeks > 1 ? 's' : ''} left`;
-  };
-
-  const toShortDate = (iso: string): string => {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  };
-
-  const toSessionLabel = (date: Date): string => {
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
-
-  const resolveAvatarUrl = (value: string | null | undefined, fallbackName: string): string => {
-    const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=random`;
-    if (!value) return fallback;
-
-    let raw = value.trim();
-    if (!raw) return fallback;
-
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
-      return raw;
-    }
-
-    raw = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
-    const { data } = supabase.storage.from('avatars').getPublicUrl(raw);
-    return data?.publicUrl || fallback;
-  };
-
-  const getGroupMembers = (project: ProjectCard | null): MemberCard[] => {
-    if (!project) return [];
-    return project.members;
-  };
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [activeProjects, setActiveProjects] = useState(0);
+  const [completionRate, setCompletionRate] = useState(0);
+  const [avgDelay, setAvgDelay] = useState(0);
+  const [projectBars, setProjectBars] = useState<ProjectBar[]>([]);
+  const [iterations, setIterations] = useState<IterationEvent[]>([]);
+  const [recentMembers, setRecentMembers] = useState<Member[]>([]);
+  const [unreadMsgs, setUnreadMsgs] = useState(0);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        setLoading(true);
-
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setProjects([]);
-          setNotifications([]);
-          return;
-        }
+        if (!user) return;
 
-        const { data: userProfile } = await supabase
-          .from('utilisateurs')
-          .select('avatar_url, nom, prenom')
-          .eq('id', user.id)
-          .single();
-
-        const displayName = userProfile ? `${userProfile.prenom || ''} ${userProfile.nom || ''}`.trim() || 'Professor' : 'Professor';
-        setAvatarUrl(resolveAvatarUrl(userProfile?.avatar_url, displayName));
-
-        const { data: projectRows, error: projectError } = await supabase
+        const { data: projects } = await supabase
           .from('projets')
-          .select('id, titre, domaine, description, deadline_globale, created_at')
-          .eq('encadrant_id', user.id)
-          .order('created_at', { ascending: false });
+          .select('id, titre, deadline_globale')
+          .eq('encadrant_id', user.id);
 
-        if (projectError) throw projectError;
+        if (!projects || projects.length === 0) { setLoading(false); return; }
 
-        if (!projectRows || projectRows.length === 0) {
-          setProjects([]);
-          setNotifications([]);
-          return;
-        }
+        const projectIds = projects.map((p: any) => p.id);
+        setActiveProjects(projects.length);
 
-        const projectIds = projectRows.map((p: any) => p.id);
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const startIso = startOfDay.toISOString();
-        const endIso = endOfDay.toISOString();
-        setSessionDateLabel(toSessionLabel(startOfDay));
-
-        const [{ data: memberRows }, { data: iterationRows }, { data: messageRows }, { data: deliverableRows }] = await Promise.all([
-          supabase
-            .from('etudiants')
-            .select('id, projet_id, utilisateurs(nom, prenom)')
-            .in('projet_id', projectIds),
-          supabase
-            .from('iterations')
-            .select('id, projet_id, statut, date_debut, date_fin')
-            .in('projet_id', projectIds)
-            .order('date_debut', { ascending: false }),
-          supabase
-            .from('messages')
-            .select('id, contenu, created_at, projet_id, utilisateurs(nom, prenom)')
-            .in('projet_id', projectIds)
-            .gte('created_at', startIso)
-            .lt('created_at', endIso)
-            .order('created_at', { ascending: false })
-            .limit(8),
-          supabase
-            .from('livrables')
-            .select('id, titre, created_at, projet_id')
-            .in('projet_id', projectIds)
-            .gte('created_at', startIso)
-            .lt('created_at', endIso)
-            .order('created_at', { ascending: false })
-            .limit(8),
+        const [
+          { data: students },
+          { data: iters },
+          { data: msgs },
+        ] = await Promise.all([
+          supabase.from('etudiants').select('id, projet_id, utilisateurs(nom, prenom, avatar_url)').in('projet_id', projectIds),
+          supabase.from('iterations').select('id, projet_id, statut, date_debut, date_fin').in('projet_id', projectIds).order('date_debut', { ascending: true }),
+          supabase.from('messages').select('id').in('projet_id', projectIds).neq('auteur_id', user.id),
         ]);
 
-        const membersByProject: Record<string, MemberCard[]> = {};
-        (memberRows || []).forEach((row: any) => {
-          const u = Array.isArray(row.utilisateurs) ? row.utilisateurs[0] : row.utilisateurs;
-          const name = u ? `${u.prenom} ${u.nom}` : 'Student';
-          if (!membersByProject[row.projet_id]) membersByProject[row.projet_id] = [];
-          membersByProject[row.projet_id].push({
-            id: row.id,
-            name,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-          });
-        });
+        setTotalStudents(students?.length || 0);
+        setUnreadMsgs(msgs?.length || 0);
 
-        const preferredIterationByProject: Record<string, any> = {};
-        (iterationRows || []).forEach((it: any) => {
-          if (!preferredIterationByProject[it.projet_id]) {
-            preferredIterationByProject[it.projet_id] = it;
-          }
-          if (it.statut === 'EN_COURS') {
-            preferredIterationByProject[it.projet_id] = it;
-          }
+        // Recent members (last 4)
+        const memberList: Member[] = (students || []).slice(0, 4).map((s: any) => {
+          const u = Array.isArray(s.utilisateurs) ? s.utilisateurs[0] : s.utilisateurs;
+          const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
+          return { id: s.id, name, avatar: resolveAvatar(u?.avatar_url, name) };
         });
+        setRecentMembers(memberList);
 
-        const iterationIds = Object.values(preferredIterationByProject).map((it: any) => it.id);
-        let taskRows: any[] = [];
-        if (iterationIds.length > 0) {
-          const { data } = await supabase
-            .from('taches')
-            .select('id, iteration_id, etat')
-            .in('iteration_id', iterationIds);
-          taskRows = data || [];
+        // Iterations for timeline (upcoming/active)
+        const now = new Date().toISOString();
+        const timelineIters = (iters || [])
+          .filter((it: any) => it.date_fin >= now || it.statut === 'EN_COURS')
+          .slice(0, 4);
+        setIterations(timelineIters.map((it: any) => ({
+          id: it.id,
+          label: it.statut === 'EN_COURS' ? 'Sprint en cours' : it.statut === 'VALIDE' ? 'Sprint validé' : 'À faire',
+          description: `Du ${new Date(it.date_debut).toLocaleDateString('fr-FR')} au ${new Date(it.date_fin).toLocaleDateString('fr-FR')}`,
+          date: it.date_debut,
+          statut: it.statut,
+        })));
+
+        // Tasks for completion rate + per-project progress
+        const iterIds = (iters || []).map((it: any) => it.id);
+        let tasks: any[] = [];
+        if (iterIds.length > 0) {
+          const { data: taskData } = await supabase.from('taches').select('id, iteration_id, etat').in('iteration_id', iterIds);
+          tasks = taskData || [];
         }
 
-        const tasksByIteration: Record<string, any[]> = {};
-        taskRows.forEach((t: any) => {
-          if (!tasksByIteration[t.iteration_id]) tasksByIteration[t.iteration_id] = [];
-          tasksByIteration[t.iteration_id].push(t);
-        });
+        const total = tasks.length;
+        const done = tasks.filter((t: any) => t.etat === 'TERMINE').length;
+        setCompletionRate(total > 0 ? Math.round((done / total) * 100) : 0);
 
-        const projectCards: ProjectCard[] = projectRows.map((p: any) => {
-          const chosenIteration = preferredIterationByProject[p.id];
-          const relatedTasks = chosenIteration ? (tasksByIteration[chosenIteration.id] || []) : [];
-          const doneTasks = relatedTasks.filter((t: any) => t.etat === 'TERMINE').length;
-          const progress = relatedTasks.length > 0 ? Math.round((doneTasks / relatedTasks.length) * 100) : 0;
+        // Per-project progress
+        const iterByProject: Record<string, string[]> = {};
+        (iters || []).forEach((it: any) => {
+          if (!iterByProject[it.projet_id]) iterByProject[it.projet_id] = [];
+          iterByProject[it.projet_id].push(it.id);
+        });
+        // Build per-project progress relative to deadline using iterations start dates
+        setProjectBars(projects.map((p: any) => {
+          const ids = iterByProject[p.id] || [];
+          const pTasks = tasks.filter((t: any) => ids.includes(t.iteration_id));
+          const pDone = pTasks.filter((t: any) => t.etat === 'TERMINE').length;
+          const taskCompletion = pTasks.length > 0 ? Math.round((pDone / pTasks.length) * 100) : 0;
+
+          // find earliest iteration start for this project
+          const projectIters = (iters || []).filter((it: any) => it.projet_id === p.id && it.date_debut);
+          let timeProgress = 0;
+          if (p.deadline_globale && projectIters.length > 0) {
+            const startDates = projectIters.map((it: any) => new Date(it.date_debut).getTime()).filter((n: number) => !Number.isNaN(n));
+            const startMs = Math.min(...startDates);
+            const deadlineMs = new Date(p.deadline_globale).getTime();
+            const nowMs = Date.now();
+            if (!Number.isNaN(startMs) && !Number.isNaN(deadlineMs) && deadlineMs > startMs) {
+              timeProgress = Math.round(((nowMs - startMs) / (deadlineMs - startMs)) * 100);
+              if (timeProgress < 0) timeProgress = 0;
+              if (timeProgress > 100) timeProgress = 100;
+            }
+          }
+
+          // Get task counts for the current iteration for the tooltip
+          const currentIter = (iters || []).find((it: any) => it.projet_id === p.id && it.statut === 'EN_COURS');
+          let iterTasks: { completed: number; inProgress: number; late: number } | null = null;
+          if (currentIter) {
+            const currentIterTasks = tasks.filter((t: any) => t.iteration_id === currentIter.id);
+            const deadline = new Date(currentIter.date_fin);
+            iterTasks = {
+              completed: currentIterTasks.filter((t: any) => t.etat === 'TERMINE').length,
+              inProgress: currentIterTasks.filter((t: any) => t.etat === 'EN_COURS' || t.etat === 'A_FAIRE').length,
+              late: currentIterTasks.filter((t: any) => t.etat !== 'TERMINE' && new Date() > deadline).length,
+            };
+          }
+
 
           return {
-            id: p.id,
-            title: p.titre,
-            category: p.domaine || 'General',
-            progress,
-            timeLeft: toDaysLeft(p.deadline_globale),
-            members: membersByProject[p.id] || [],
-            description: p.description || 'Projet supervisé par cet encadrant.',
-            tasks: relatedTasks,
+            name: p.titre || 'Projet',
+            timeProgress,
+            taskCompletion,
+            tasks: iterTasks,
           };
-        });
-
-        const messageNotifications: NotificationItem[] = (messageRows || []).map((m: any) => {
-          const u = Array.isArray(m.utilisateurs) ? m.utilisateurs[0] : m.utilisateurs;
-          const name = u ? `${u.prenom} ${u.nom}` : 'Utilisateur';
-          return {
-            id: `msg-${m.id}`,
-            type: 'message',
-            name,
-            content: m.contenu,
-            time: toShortDate(m.created_at),
-            createdAt: m.created_at,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-          };
-        });
-
-        const deliverableNotifications: NotificationItem[] = (deliverableRows || []).map((d: any) => ({
-          id: `del-${d.id}`,
-          type: 'deliverable',
-          name: 'Student',
-          content: `a déposé un livrable : ${d.titre}`,
-          time: toShortDate(d.created_at),
-          createdAt: d.created_at,
-          avatar: 'https://ui-avatars.com/api/?name=Student&background=random',
         }));
 
-        const mergedNotifications = [...messageNotifications, ...deliverableNotifications]
-          .sort((a, b) => {
-            const da = Date.parse(a.createdAt);
-            const db = Date.parse(b.createdAt);
-            if (Number.isNaN(da) || Number.isNaN(db)) return 0;
-            return db - da;
-          })
-          .slice(0, 8);
-
-        setProjects(projectCards);
-        setNotifications(mergedNotifications);
-      } catch (err) {
-        console.error('Erreur chargement dashboard professeur:', err);
-        setProjects([]);
-        setNotifications([]);
+        // Avg delay (days past deadline for late projects)
+        const nowMs = Date.now();
+        const late = (projects || []).filter((p: any) => p.deadline_globale && new Date(p.deadline_globale).getTime() < nowMs);
+        if (late.length > 0) {
+          const avg = late.reduce((s: number, p: any) => s + Math.ceil((nowMs - new Date(p.deadline_globale).getTime()) / 86400000), 0) / late.length;
+          setAvgDelay(Math.round(avg * 10) / 10);
+        }
       } finally {
         setLoading(false);
       }
     };
-
     fetchDashboard();
   }, []);
 
+  const exportReport = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1 — Summary
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Dashboard Report', new Date().toLocaleDateString('fr-FR')],
+      [],
+      ['Metric', 'Value'],
+      ['Total Students',   totalStudents],
+      ['Active Projects',  activeProjects],
+      ['Completion Rate',  `${completionRate}%`],
+      ['Avg. Delay',       avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
+    ]), 'Summary');
+
+    // Sheet 2 — Projects
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Project', 'Task Completion (%)', 'Time Progress (%)', 'Done', 'In Progress', 'Late'],
+      ...projectBars.map(p => [
+        p.name,
+        p.taskCompletion,
+        p.timeProgress,
+        p.tasks?.completed ?? '—',
+        p.tasks?.inProgress ?? '—',
+        p.tasks?.late ?? '—',
+      ]),
+    ]), 'Projects');
+
+    // Sheet 3 — Timeline
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Label', 'Description', 'Date', 'Status'],
+      ...iterations.map(it => [it.label, it.description, it.date, it.statut]),
+    ]), 'Iterations');
+
+    // Sheet 4 — Members
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+      ['Name'],
+      ...recentMembers.map(m => [m.name]),
+    ]), 'Members');
+
+    XLSX.writeFile(wb, `dashboard_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  // Donut chart
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const dashOffset = circ - (completionRate / 100) * circ;
+
+  const stats = [
+    { label: 'TOTAL STUDENTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: '🎓' },
+    { label: 'ACTIVE PROJECTS', value: activeProjects, badge: 'Steady', badgeGreen: false, icon: '🚀' },
+    { label: 'COMPLETION RATE', value: `${completionRate}%`, badge: `${completionRate}%`, badgeGreen: true, icon: '✅' },
+    { label: 'AVG. DELAY', value: `${avgDelay} Days`, badge: avgDelay > 0 ? `+${avgDelay}d` : 'On time', badgeGreen: avgDelay === 0, icon: '⏱' },
+  ];
+
   return (
-    <div className="flex-1 h-full overflow-hidden bg-[#faf9f6] p-6 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <header className="mb-6 flex shrink-0 items-center justify-between">
-        <h1 className="text-2xl font-semibold">My Portfolio</h1>
-        <img
-          src={avatarUrl}
-          alt="Professor"
-          className="h-9 w-9 rounded-full border border-[#d1c5b0] object-cover"
-          onError={(e) => {
-            e.currentTarget.src = 'https://ui-avatars.com/api/?name=Professor&background=random';
-          }}
-        />
+    <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] px-5 py-4" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+
+      {/* Header */}
+      <header className="mb-3 flex shrink-0 items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-[#1a1c1a]">Platform Overview</h1>
+          <p className="text-xs text-[#7f7664]">Real-time performance metrics and team activity</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={exportReport} className="flex items-center gap-1.5 rounded-xl bg-[#ffd464] px-3 py-1.5 text-xs font-semibold text-[#594400] transition hover:bg-[#ebc254]">
+            <Download size={13} /> Export Report
+          </button>
+        </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 min-h-0">
-          <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-            <div className="mb-6 flex shrink-0 items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-semibold text-[#1a1c1a]">My Projects</h2>
-                <p className="mt-1 text-sm text-[#7f7664]">Projects supervised by your account</p>
-              </div>
+      {/* Stats */}
+      <div className="mb-3 grid shrink-0 grid-cols-4 gap-3">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl border border-[#d1c5b0] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xl">{s.icon}</span>
+              <span className={`text-[11px] font-bold ${s.badgeGreen ? 'text-green-500' : 'text-[#f59e0b]'}`}>{s.badge}</span>
             </div>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#7f7664]">{s.label}</p>
+            <p className="mt-0.5 text-2xl font-bold text-[#1a1c1a]">{loading ? '—' : s.value}</p>
+          </div>
+        ))}
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 overflow-y-auto pr-1 min-h-0">
-              {loading && (
-                <div className="col-span-full text-sm text-[#7f7664]">Chargement des projets...</div>
-              )}
-              {!loading && projects.length === 0 && (
-                <div className="col-span-full text-sm text-[#7f7664]">Aucun projet lie a cet encadrant.</div>
-              )}
-              {projects.map((project) => (
-                <motion.div
-                  key={project.id}
-                  whileHover={{ y: -2, boxShadow: '0 6px 24px 0 rgba(118,91,0,0.10)' }}
-                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#d1c5b0] bg-[#f4f3f1] p-4 transition-all duration-200 hover:shadow-lg"
-                  onClick={() => {
-                    setSelectedProject(project);
-                    setShowProjectModal(true);
-                  }}
-                >
-                  <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-[#765b00] to-[#ebc254]"></div>
-                  <h3 className="mb-1 text-xl font-bold tracking-tight text-[#1a1c1a]">{project.title}</h3>
-                  <p className="mb-5 text-xs font-medium text-[#7f7664]">{project.category}</p>
-                  <div className="space-y-2 mb-5">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="font-medium text-[#7f7664]">Progress</span>
-                      <span className="font-semibold text-[#1a1c1a]">{project.progress}%</span>
-                    </div>
-                    <div className="h-1 w-full overflow-hidden rounded-full bg-[#d1c5b0]">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${project.progress}%` }}
-                        transition={{ duration: 1, ease: 'easeOut' }}
-                        className="h-full bg-gradient-to-r from-[#765b00] to-[#ebc254]"
-                      ></motion.div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex -space-x-2">
-                      {getGroupMembers(project).map((m) => (
-                        <img key={m.id} src={m.avatar} className="h-7 w-7 rounded-full border-2 border-white shadow-sm" alt={m.name} />
-                      ))}
-                    </div>
-                    <span className="text-xs font-medium text-[#7f7664]">{project.timeLeft}</span>
-                  </div>
-                </motion.div>
-              ))}
+      {/* Middle row — flex-1 fills remaining space */}
+      <div className="mb-3 grid min-h-0 flex-1 grid-cols-3 gap-3">
+
+        {/* Bar chart */}
+        <div className="col-span-2 flex min-h-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+          <div className="mb-2 flex shrink-0 items-center gap-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Project Distribution</p>
+            <div className="ml-auto flex items-center gap-3 flex-wrap">
+              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#22c55e]"/>≥75% done</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#ffd464]"/>40–74%</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#765b00]"/>&lt;40%</span>
             </div>
+          </div>
+          <div className="min-h-0 flex-1">
+            {loading ? (
+              <p className="text-sm text-[#7f7664]">Chargement...</p>
+            ) : projectBars.length === 0 ? (
+              <p className="text-sm text-[#7f7664]">Aucun projet.</p>
+            ) : (
+              <div className="flex h-full items-end gap-4 pb-1">
+                {projectBars.map((p, i) => {
+                  const taskPct  = Math.max(p.taskCompletion, 0);
+                  const timePct  = Math.max(p.timeProgress, 0);
+                  const barColor = taskPct >= 75 ? '#22c55e' : taskPct >= 40 ? '#ffd464' : '#765b00';
+                  return (
+                    <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end gap-1">
+                      {/* hover label */}
+                      <div className="mb-1 opacity-0 group-hover:opacity-100 transition text-center">
+                        <span className="text-[10px] font-bold" style={{ color: barColor }}>{taskPct}%</span>
+                        {timePct > 0 && (
+                          <span className="ml-1 text-[9px] text-[#7f7664]">· {timePct}% time</span>
+                        )}
+                      </div>
 
-            {showProjectModal && selectedProject && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-                <div className="relative flex min-w-[340px] max-w-[95vw] flex-col overflow-hidden rounded-2xl border border-[#d1c5b0] bg-white p-0 shadow-2xl md:flex-row">
-                  <button className="absolute right-4 top-4 z-10 text-[#7f7664] transition-colors hover:text-[#765b00]" onClick={() => setShowProjectModal(false)}><X size={24} /></button>
-                  <div className="w-full border-r border-[#d1c5b0] bg-[#f4f3f1] p-8 md:w-1/2">
-                    <div className="mb-4 text-2xl font-bold tracking-tight text-[#1a1c1a]">{selectedProject.title}</div>
-                    <div className="mb-2 text-base text-[#4d4636]">{selectedProject.description}</div>
-                  </div>
-                  <div className="flex w-full flex-col justify-center p-8 md:w-1/2">
-                    <div className="flex flex-wrap items-center gap-6">
-                      {getGroupMembers(selectedProject).map((m) => (
-                        <div key={m.id} className="flex flex-col items-center">
-                          <img src={m.avatar} alt={m.name} className="mb-1 h-12 w-12 rounded-full border border-[#d1c5b0] object-cover" />
-                          <span className="text-sm font-semibold text-[#765b00]">{m.name}</span>
+                      {/* bar */}
+                      <div className="relative w-full flex-1 rounded-t-xl bg-[#f4f3f1] overflow-hidden">
+                        {/* time progress ghost bar */}
+                        {timePct > 0 && (
+                          <div
+                            className="absolute bottom-0 w-full rounded-t-xl opacity-20 transition-all"
+                            style={{ height: `${Math.max(timePct, 3)}%`, backgroundColor: '#1a1c1a' }}
+                          />
+                        )}
+                        {/* task completion bar */}
+                        <div
+                          className="absolute bottom-0 w-full rounded-t-xl transition-all duration-700"
+                          style={{ height: `${Math.max(taskPct, 4)}%`, backgroundColor: barColor }}
+                        />
+                      </div>
+
+                      {/* labels */}
+                      <span className="mt-1 w-full truncate text-center text-[9px] text-[#7f7664]" title={p.name}>
+                        {p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name}
+                      </span>
+                      <span className="text-[10px] font-bold" style={{ color: barColor }}>{taskPct}% tasks</span>
+
+                      {/* task breakdown tooltip on hover */}
+                      {p.tasks && (
+                        <div className="hidden group-hover:flex flex-col items-center text-[9px] text-[#7f7664] mt-0.5 gap-0.5">
+                          <span className="text-green-600 font-semibold">✓ {p.tasks.completed} done</span>
+                          <span className="text-[#ffd464] font-semibold">⟳ {p.tasks.inProgress} in progress</span>
+                          {p.tasks.late > 0 && <span className="text-red-500 font-semibold">⚠ {p.tasks.late} late</span>}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </div>
 
-        <div className="mb-6 flex h-full min-h-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-          <div className="mb-6 flex shrink-0 items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-[#1a1c1a]">Notifications</h2>
-              {sessionDateLabel && (
-                <p className="mt-1 text-xs text-[#7f7664]">Session du {sessionDateLabel}</p>
-              )}
-            </div>
-            <div className="flex gap-4 text-[#7f7664]"></div>
+        {/* Right column */}
+        <div className="flex min-h-0 flex-col gap-3">
+
+          {/* Quarterly Progress */}
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl border border-[#d1c5b0] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+            <p className="mb-2 self-start text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Quarterly Progress</p>
+            <svg width="110" height="110" viewBox="0 0 130 130">
+              <circle cx="65" cy="65" r={r} fill="none" stroke="#f4f3f1" strokeWidth="14" />
+              <circle
+                cx="65" cy="65" r={r}
+                fill="none" stroke="#ffd464" strokeWidth="14" strokeLinecap="round"
+                strokeDasharray={String(circ)}
+                strokeDashoffset={dashOffset}
+                transform="rotate(-90 65 65)"
+                style={{ transition: 'stroke-dashoffset 1s ease' }}
+              />
+              <text x="65" y="70" textAnchor="middle" style={{ fontSize: 20, fontWeight: 700, fill: '#1a1c1a' }}>
+                {loading ? '—' : `${completionRate}%`}
+              </text>
+            </svg>
+            <p className="mt-1 text-[10px] text-[#7f7664]">Overall task completion</p>
           </div>
 
-          <div className="space-y-4 overflow-y-auto overflow-x-hidden pr-1 min-h-0">
-            {loading && <div className="text-sm text-[#7f7664]">Chargement des notifications...</div>}
-            {!loading && notifications.length === 0 && <div className="text-sm text-[#7f7664]">Aucune notification recente.</div>}
-            {notifications.map((notif) => (
-              <motion.div
-                key={notif.id}
-                whileHover={{ x: 5 }}
-                className="flex w-full max-w-full cursor-pointer gap-4 overflow-hidden rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-4 transition-all duration-300 hover:bg-white"
-              >
-                <img src={notif.avatar} alt={notif.name} className="h-12 w-12 rounded-full border border-[#d1c5b0] object-cover" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="text-sm font-semibold text-[#1a1c1a]">{notif.name}</h4>
-                    <span className="text-[10px] text-[#7f7664]">{notif.time}</span>
-                  </div>
-                  {notif.type === 'deliverable' ? (
-                    <p className="flex items-center gap-1 text-xs text-[#166534]">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#d1c5b0] text-xs font-semibold text-[#4d4636]">
-                        {notif.name}
-                      </span>
-                      <span className="min-w-0 break-words">{notif.content}</span>
-                    </p>
-                  ) : (
-                    <p className="line-clamp-2 break-words text-xs leading-relaxed text-[#7f7664]">{notif.content}</p>
-                  )}
+          {/* Chat Card */}
+          <div className="shrink-0 rounded-2xl bg-[#1a1c1a] px-4 py-3 text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
+            <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-[#7f7664]">Chat</p>
+            <div className="mb-2 flex -space-x-2">
+              {recentMembers.map((m) => (
+                <img key={m.id} src={m.avatar} alt={m.name} title={m.name} className="h-7 w-7 rounded-full border-2 border-[#1a1c1a] object-cover" />
+              ))}
+              {totalStudents > 4 && (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#1a1c1a] bg-[#765b00] text-[9px] font-bold text-white">
+                  +{totalStudents - 4}
                 </div>
-              </motion.div>
-            ))}
+              )}
+            </div>
+            <p className="mb-3 text-xs font-bold">{unreadMsgs > 0 ? `${unreadMsgs} new messages` : 'No new messages'}</p>
+            <Link to="/chat" className="block w-full rounded-xl bg-white py-1.5 text-center text-xs font-bold text-[#1a1c1a] transition hover:bg-[#f4f3f1]">
+              View
+            </Link>
           </div>
         </div>
       </div>
+
+      {/* Timeline */}
+      <div className="shrink-0 rounded-2xl border border-[#d1c5b0] bg-white px-5 py-3 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Team Sync Timeline (Iterations)</p>
+          <span className="cursor-pointer text-[10px] font-semibold text-[#765b00] hover:underline">See full calendar</span>
+        </div>
+        {loading ? (
+          <p className="text-xs text-[#7f7664]">Chargement...</p>
+        ) : iterations.length === 0 ? (
+          <p className="text-xs text-[#7f7664]">Aucune iteration à venir.</p>
+        ) : (
+          <div className="grid h-[calc(100%-32px)] grid-cols-2 gap-4">
+            {iterations.map((it) => (
+              <div key={it.id} className="border-l-2 pl-3" style={{ borderColor: it.statut === 'EN_COURS' ? '#765b00' : '#d1c5b0' }}>
+                <p className="text-[10px] font-bold" style={{ color: it.statut === 'EN_COURS' ? '#765b00' : '#7f7664' }}>
+                  {new Date(it.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                </p>
+                <p className="text-xs font-semibold text-[#1a1c1a]">{it.label}</p>
+                <p className="text-[10px] leading-relaxed text-[#7f7664]">{it.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+};
 
 export default Dashboard;

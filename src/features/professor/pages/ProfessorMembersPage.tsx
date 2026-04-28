@@ -13,12 +13,19 @@ interface MemberCard {
   linkedin: string;
   github: string;
   avatar: string;
+  projectName: string;
+}
+
+interface Project {
+  id: string;
+  titre: string;
 }
 
 const Members: React.FC = () => {
   const [members, setMembers] = useState<MemberCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const resolveAvatarUrl = (value: string | null | undefined, fallbackName: string): string => {
     const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=random`;
@@ -112,8 +119,17 @@ const Members: React.FC = () => {
         const projectIds = Array.from(projectIdSet);
         if (projectIds.length === 0) {
           setMembers([]);
+          setProjects([]);
           return;
         }
+
+        const { data: projectDetails, error: projectDetailsError } = await supabase
+          .from('projets')
+          .select('id, titre')
+          .in('id', projectIds);
+
+        if (projectDetailsError) throw projectDetailsError;
+        setProjects(projectDetails || []);
 
         const { data: studentRows, error: studentError } = await supabase
           .from('etudiants')
@@ -123,6 +139,7 @@ const Members: React.FC = () => {
             cin,
             github_url,
             linkedin_url,
+            projet_id,
             utilisateurs (
               nom,
               prenom,
@@ -138,6 +155,7 @@ const Members: React.FC = () => {
         const formatted: MemberCard[] = (studentRows || []).map((row: any) => {
           const u = Array.isArray(row.utilisateurs) ? row.utilisateurs[0] : row.utilisateurs;
           const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : `Étudiant ${row.id}`;
+          const project = (projectDetails || []).find(p => p.id === row.projet_id);
 
           return {
             id: row.id,
@@ -149,6 +167,7 @@ const Members: React.FC = () => {
             linkedin: row.linkedin_url || '',
             github: row.github_url || '',
             avatar: resolveAvatarUrl(u?.avatar_url, fullName || 'Student'),
+            projectName: project?.titre || 'N/A',
           };
         });
 
@@ -178,95 +197,102 @@ const Members: React.FC = () => {
       {!loading && loadError && <p className="mb-6 text-sm text-[#ba1a1a]">Erreur de chargement: {loadError}</p>}
       {!loading && members.length === 0 && <p className="mb-6 text-sm text-[#7f7664]">Aucun membre trouve pour vos groupes.</p>}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {members.map((member) => (
-          <motion.div
-            key={member.id}
-            whileHover={{ y: -8 }}
-            className="group relative mb-6 overflow-hidden rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]"
-          >
-            <div className="absolute left-0 top-0 h-24 w-full bg-gradient-to-br from-[#f4f3f1] to-[#efeeeb]"></div>
-
-            <div className="relative flex flex-col items-center pt-4">
-              <div className="relative mb-4">
-                <img
-                  src={member.avatar}
-                  alt={member.name}
-                  className="h-24 w-24 rounded-3xl border-4 border-white object-cover shadow-lg"
-                />
-                <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-white bg-[#22C55E]"></div>
-              </div>
-
-              <h3 className="mb-1 text-xl font-bold text-[#1a1c1a]">{member.name}</h3>
-              <p className="mb-6 text-xs font-medium uppercase tracking-wider text-[#765b00]">Student Member</p>
-
-              <div className="w-full space-y-3 mb-8">
-                <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#ebc254]">
-                  <div className="rounded-lg bg-[#ffd464] p-2 text-[#594400]">
-                    <Mail size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase text-[#7f7664]">Email</p>
-                    <p className="truncate text-xs text-[#4d4636]">{member.email}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#d1c5b0]">
-                  <div className="rounded-lg bg-[#efeeeb] p-2 text-[#765b00]">
-                    <Phone size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase text-[#7f7664]">Phone</p>
-                    <p className="text-xs text-[#4d4636]">{member.phone}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#ebc254]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <GraduationCap size={14} className="text-[#765b00]" />
-                      <p className="text-[10px] font-bold uppercase text-[#7f7664]">CNE</p>
-                    </div>
-                    <p className="text-xs font-mono text-[#4d4636]">{member.cne}</p>
-                  </div>
-                  <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] p-3 transition-colors group-hover:border-[#d1c5b0]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CreditCard size={14} className="text-[#ba1a1a]" />
-                      <p className="text-[10px] font-bold uppercase text-[#7f7664]">CIN</p>
-                    </div>
-                    <p className="text-xs font-mono text-[#4d4636]">{member.cin}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="w-full flex gap-3">
-                <a
-                  href={normalizeExternalUrl(member.linkedin)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] py-3 transition-all hover:bg-white"
+      {projects.map(project => (
+        <div key={project.id} className="mb-8">
+          <h2 className="mb-4 text-xl font-semibold">{project.titre}</h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {members
+              .filter(member => member.projectName === project.titre)
+              .map((member) => (
+                <motion.div
+                  key={member.id}
+                  whileHover={{ y: -8 }}
+                  className="group relative mb-6 overflow-hidden rounded-2xl border border-[#d1c5b0] dark:border-[#3a3836] bg-white dark:bg-[#1e1f1e] p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]"
                 >
-                  <Linkedin size={16} className="text-[#0A66C2]" />
-                  <span className="text-xs font-medium text-[#4d4636]">LinkedIn</span>
-                </a>
-                <a
-                  href={normalizeExternalUrl(member.github)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] py-3 transition-all hover:bg-white"
-                >
-                  <Github size={16} className="text-[#4d4636]" />
-                  <span className="text-xs font-medium text-[#4d4636]">GitHub</span>
-                </a>
-              </div>
-            </div>
+                  <div className="absolute left-0 top-0 h-24 w-full bg-gradient-to-br from-[#f4f3f1] to-[#efeeeb] dark:from-[#2a2927] dark:to-[#1e1f1e]"></div>
 
-            <button className="absolute right-6 top-6 text-[#7f7664] transition-colors hover:text-[#4d4636]">
-              <MoreHorizontal size={20} />
-            </button>
-          </motion.div>
-        ))}
-      </div>
+                  <div className="relative flex flex-col items-center pt-4">
+                    <div className="relative mb-4">
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        className="h-24 w-24 rounded-3xl border-4 border-white object-cover shadow-lg"
+                      />
+                      <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-white bg-[#22C55E]"></div>
+                    </div>
+
+                    <h3 className="mb-1 text-xl font-bold text-[#1a1c1a]">{member.name}</h3>
+                    <p className="mb-6 text-xs font-medium uppercase tracking-wider text-[#765b00]">Student Member</p>
+
+                    <div className="w-full space-y-3 mb-8">
+                      <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#ebc254]">
+                        <div className="rounded-lg bg-[#ffd464] p-2 text-[#594400]">
+                          <Mail size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase text-[#7f7664]">Email</p>
+                          <p className="truncate text-xs text-[#4d4636]">{member.email}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#d1c5b0]">
+                        <div className="rounded-lg bg-[#efeeeb] p-2 text-[#765b00]">
+                          <Phone size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase text-[#7f7664]">Phone</p>
+                          <p className="text-xs text-[#4d4636]">{member.phone}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#ebc254]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <GraduationCap size={14} className="text-[#765b00]" />
+                            <p className="text-[10px] font-bold uppercase text-[#7f7664]">CNE</p>
+                          </div>
+                          <p className="text-xs font-mono text-[#4d4636]">{member.cne}</p>
+                        </div>
+                        <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#d1c5b0]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CreditCard size={14} className="text-[#ba1a1a]" />
+                            <p className="text-[10px] font-bold uppercase text-[#7f7664]">CIN</p>
+                          </div>
+                          <p className="text-xs font-mono text-[#4d4636]">{member.cin}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full flex gap-3">
+                      <a
+                        href={normalizeExternalUrl(member.linkedin)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] dark:border-[#3a3836] bg-[#f4f3f1] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231]"
+                      >
+                        <Linkedin size={16} className="text-[#0A66C2]" />
+                        <span className="text-xs font-medium text-[#4d4636]">LinkedIn</span>
+                      </a>
+                      <a
+                        href={normalizeExternalUrl(member.github)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] dark:border-[#3a3836] bg-[#f4f3f1] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231]"
+                      >
+                        <Github size={16} className="text-[#4d4636]" />
+                        <span className="text-xs font-medium text-[#4d4636]">GitHub</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <button className="absolute right-6 top-6 text-[#7f7664] transition-colors hover:text-[#4d4636]">
+                    <MoreHorizontal size={20} />
+                  </button>
+                </motion.div>
+              ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

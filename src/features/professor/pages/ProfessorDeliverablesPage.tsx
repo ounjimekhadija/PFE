@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, FileArchive, Link as LinkIcon, File, Download, ExternalLink, MoreVertical } from 'lucide-react';
-import { motion } from 'motion/react';
+import { FileText, FileArchive, Link as LinkIcon, File, Download, ExternalLink, Send, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
+
+interface Comment {
+  id: string;
+  author: string;
+  content: string;
+  time: string;
+}
 
 interface DeliverableItem {
   id: string;
@@ -20,133 +27,71 @@ interface DeliverableGroup {
   deliverables: DeliverableItem[];
 }
 
+const STATUS_OPTIONS = [
+  { value: 'VALIDATED', label: 'Validated' },
+  { value: 'REJECTED',  label: 'Rejected'  },
+  { value: 'LATE',      label: 'Late'      },
+];
+
+const STATUS_SELECT_CLASS: Record<string, string> = {
+  VALIDATED: 'bg-[#dcfce7] text-[#166534] border-[#bbf7d0]',
+  REJECTED:  'bg-[#ffdad6] text-[#ba1a1a] border-[#ffb4ab]',
+  LATE:      'bg-[#ffdad6] text-[#ba1a1a] border-[#ffb4ab]',
+};
+
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+
 const Deliverables: React.FC = () => {
-  const [groups, setGroups] = useState<DeliverableGroup[]>([]);
+  const [groups, setGroups]   = useState<DeliverableGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
+
+  const [comments,       setComments]       = useState<Record<string, Comment[]>>({});
+  const [commentInputs,  setCommentInputs]  = useState<Record<string, string>>({});
+  const [loadingCmts,    setLoadingCmts]    = useState<Record<string, boolean>>({});
+  const [sendingComment, setSendingComment] = useState<Record<string, boolean>>({});
+  const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
+  const [showComments,   setShowComments]   = useState<Record<string, boolean>>({});
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'PDF': return <FileText className="text-red-500" size={24} />;
-      case 'ZIP': return <FileArchive className="text-amber-500" size={24} />;
-      case 'LINK': return <LinkIcon className="text-[#765b00]" size={24} />;
-      case 'DOC': return <File className="text-[#594400]" size={24} />;
-      default: return <File className="text-[#7f7664]" size={24} />;
+      case 'PDF':  return <FileText    className="text-red-500"    size={22} />;
+      case 'ZIP':  return <FileArchive className="text-amber-500"  size={22} />;
+      case 'LINK': return <LinkIcon    className="text-[#765b00]"  size={22} />;
+      default:     return <File        className="text-[#7f7664]"  size={22} />;
     }
-  };
-
-  const getStatusClass = (status: string) => {
-    const normalized = (status || '').toUpperCase();
-    if (normalized === 'SUBMITTED' || normalized === 'SOUMIS' || normalized === 'TERMINE') {
-      return 'bg-green-100 text-green-600';
-    }
-    if (normalized === 'LATE' || normalized === 'EN_RETARD') {
-      return 'bg-[#ffdad6] text-[#ba1a1a]';
-    }
-    return 'bg-[#ffd464] text-[#594400]';
   };
 
   const fetchProfessorProjectIds = async (authUserId: string): Promise<string[]> => {
-    const projectIdSet = new Set<string>();
-
-    const { data: directRows, error: directError } = await supabase
-      .from('projets')
-      .select('id')
-      .eq('encadrant_id', authUserId);
-
-    if (directError) throw directError;
-    (directRows || []).forEach((row: any) => {
-      if (row?.id) projectIdSet.add(String(row.id));
-    });
-
-    if (projectIdSet.size > 0) {
-      return Array.from(projectIdSet);
-    }
-
-    const encadrantIdCandidates = new Set<string>();
-    const { data: encById } = await supabase
-      .from('encadrants')
-      .select('id')
-      .eq('id', authUserId)
-      .limit(1);
-
-    (encById || []).forEach((row: any) => {
-      if (row?.id) encadrantIdCandidates.add(String(row.id));
-    });
-
-    const mappingColumns = ['utilisateur_id', 'user_id', 'auth_user_id'];
-    for (const column of mappingColumns) {
-      const { data } = await supabase
-        .from('encadrants')
-        .select('id')
-        .eq(column, authUserId)
-        .limit(1);
-
-      (data || []).forEach((row: any) => {
-        if (row?.id) encadrantIdCandidates.add(String(row.id));
-      });
-    }
-
-    if (encadrantIdCandidates.size === 0) {
-      return [];
-    }
-
-    const { data: fallbackRows, error: fallbackError } = await supabase
-      .from('projets')
-      .select('id')
-      .in('encadrant_id', Array.from(encadrantIdCandidates));
-
-    if (fallbackError) throw fallbackError;
-    (fallbackRows || []).forEach((row: any) => {
-      if (row?.id) projectIdSet.add(String(row.id));
-    });
-
-    return Array.from(projectIdSet);
+    const ids = new Set<string>();
+    const { data } = await supabase.from('projets').select('id').eq('encadrant_id', authUserId);
+    (data || []).forEach((r: any) => { if (r?.id) ids.add(String(r.id)); });
+    return Array.from(ids);
   };
 
   const formatDate = (iso: string | null | undefined): string => {
     if (!iso) return 'N/A';
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return 'N/A';
-    return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    return Number.isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
   };
 
   useEffect(() => {
-    const loadDeliverables = async () => {
+    const load = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
+        setLoading(true); setError(null);
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setGroups([]);
-          return;
-        }
+        if (!user) { setGroups([]); return; }
 
         const projectIds = await fetchProfessorProjectIds(user.id);
-        if (projectIds.length === 0) {
-          setGroups([]);
-          return;
-        }
+        if (projectIds.length === 0) { setGroups([]); return; }
 
         const { data: rows, error: rowsError } = await supabase
           .from('livrables')
           .select(`
-            id,
-            titre,
-            type_document,
-            statut,
-            created_at,
-            projet_id,
+            id, titre, type_document, statut, created_at, projet_id,
             projets(titre),
-            livrable_versions(
-              id,
-              created_at,
-              est_lien_externe,
-              url_externe,
-              chemin_fichier,
-              taille_fichier
-            )
+            livrable_versions(id, created_at, est_lien_externe, url_externe, chemin_fichier, taille_fichier)
           `)
           .in('projet_id', projectIds)
           .order('created_at', { ascending: false });
@@ -154,120 +99,199 @@ const Deliverables: React.FC = () => {
         if (rowsError) throw rowsError;
 
         const grouped: Record<string, DeliverableItem[]> = {};
-
         (rows || []).forEach((row: any) => {
           const projectObj = Array.isArray(row.projets) ? row.projets[0] : row.projets;
-          const groupName = projectObj?.titre || `Projet ${row.projet_id}`;
+          const groupName  = projectObj?.titre || `Projet ${row.projet_id}`;
 
           const versions = Array.isArray(row.livrable_versions) ? [...row.livrable_versions] : [];
           versions.sort((a: any, b: any) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
-          const latestVersion = versions[0] || null;
+          const v = versions[0] || null;
 
           const item: DeliverableItem = {
             id: String(row.id),
-            title: row.titre || 'Untitled deliverable',
+            title: row.titre || 'Untitled',
             type: row.type_document || 'DOC',
-            date: formatDate(latestVersion?.created_at || row.created_at),
+            date: formatDate(v?.created_at || row.created_at),
             status: row.statut || 'PENDING',
-            size: latestVersion?.taille_fichier || undefined,
-            isExternal: Boolean(latestVersion?.est_lien_externe),
-            externalUrl: latestVersion?.url_externe || undefined,
-            filePath: latestVersion?.chemin_fichier || undefined,
+            size: v?.taille_fichier || undefined,
+            isExternal: Boolean(v?.est_lien_externe),
+            externalUrl: v?.url_externe || undefined,
+            filePath: v?.chemin_fichier || undefined,
           };
 
           if (!grouped[groupName]) grouped[groupName] = [];
           grouped[groupName].push(item);
         });
 
-        const dataGroups: DeliverableGroup[] = Object.entries(grouped).map(([groupName, deliverables]) => ({
-          groupName,
-          deliverables,
-        }));
+        const result = Object.entries(grouped).map(([groupName, deliverables]) => ({ groupName, deliverables }));
+        setGroups(result);
 
-        setGroups(dataGroups);
+        // Load all comments in bulk
+        const allIds = (rows || []).map((r: any) => String(r.id));
+        if (allIds.length > 0) {
+          const { data: cmtRows, error: cmtErr } = await supabase
+            .from('livrable_commentaires')
+            .select('id, livrable_id, contenu, created_at, auteur_id')
+            .in('livrable_id', allIds)
+            .order('created_at', { ascending: true });
+
+          console.log('[load comments]', cmtRows, cmtErr);
+
+          if (cmtRows && cmtRows.length > 0) {
+            // Fetch author names in one query
+            const authorIds = [...new Set(cmtRows.map((c: any) => c.auteur_id))];
+            const { data: users } = await supabase
+              .from('utilisateurs')
+              .select('id, nom, prenom')
+              .in('id', authorIds);
+
+            const userMap: Record<string, string> = {};
+            (users || []).forEach((u: any) => {
+              userMap[u.id] = `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Utilisateur';
+            });
+
+            const byId: Record<string, Comment[]> = {};
+            cmtRows.forEach((c: any) => {
+              const lid = String(c.livrable_id);
+              if (!byId[lid]) byId[lid] = [];
+              byId[lid].push({
+                id:      String(c.id),
+                author:  userMap[c.auteur_id] || 'Utilisateur',
+                content: c.contenu,
+                time:    fmt(c.created_at),
+              });
+            });
+            setComments(byId);
+          }
+        }
       } catch (err) {
-        console.error('Erreur chargement livrables encadrant:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load deliverables.');
+        setError(err instanceof Error ? err.message : 'Failed to load.');
         setGroups([]);
       } finally {
         setLoading(false);
       }
     };
-
-    loadDeliverables();
+    load();
   }, []);
 
   const totalCount = useMemo(() => groups.reduce((acc, g) => acc + g.deliverables.length, 0), [groups]);
 
-  const normalizeStoragePath = (rawPath: string): string => {
-    return rawPath
-      .trim()
-      .replace(/^https?:\/\/[^/]+\//, '')
-      .replace(/^storage\/v1\/object\/public\//, '')
-      .replace(/^storage\/v1\/object\/sign\//, '')
-      .replace(/^\/+/g, '')
-      .replace(/^documents\//, '')
-      .replace(/^livrables\//, '');
+  const handleStatusChange = async (deliverableId: string, newStatus: string) => {
+    setUpdatingStatus(prev => ({ ...prev, [deliverableId]: true }));
+    const { data, error } = await supabase
+      .from('livrables')
+      .update({ statut: newStatus })
+      .eq('id', deliverableId)
+      .select('id, statut')
+      .single();
+
+    console.log('[status update] id:', deliverableId, 'new:', newStatus, '| data:', data, '| error:', error);
+
+    if (error) {
+      setError(`Erreur mise à jour statut: ${error.message}`);
+    } else {
+      setGroups(prev => prev.map(g => ({
+        ...g,
+        deliverables: g.deliverables.map(d => d.id === deliverableId ? { ...d, status: newStatus } : d),
+      })));
+    }
+    setUpdatingStatus(prev => ({ ...prev, [deliverableId]: false }));
   };
 
-  const triggerBrowserDownload = (blob: Blob, suggestedName: string) => {
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl;
-    anchor.download = suggestedName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+  const sendComment = async (deliverableId: string) => {
+    const text = (commentInputs[deliverableId] || '').trim();
+    if (!text) return;
+    setSendingComment(prev => ({ ...prev, [deliverableId]: true }));
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSendingComment(prev => ({ ...prev, [deliverableId]: false })); return; }
+
+    // Step 1: insert
+    const { data: inserted, error: insertError } = await supabase
+      .from('livrable_commentaires')
+      .insert({ livrable_id: deliverableId, auteur_id: user.id, contenu: text })
+      .select('id, created_at')
+      .single();
+
+    console.log('[sendComment] insert result:', inserted, insertError);
+
+    if (insertError) {
+      setError(`Erreur commentaire: ${insertError.message}`);
+      setSendingComment(prev => ({ ...prev, [deliverableId]: false }));
+      return;
+    }
+
+    // Step 2: get author name from utilisateurs
+    const { data: utilData } = await supabase
+      .from('utilisateurs')
+      .select('nom, prenom')
+      .eq('id', user.id)
+      .single();
+
+    const authorName = utilData
+      ? `${utilData.prenom || ''} ${utilData.nom || ''}`.trim() || 'Moi'
+      : 'Moi';
+
+    const newComment: Comment = {
+      id:      String(inserted.id),
+      author:  authorName,
+      content: text,
+      time:    fmt(inserted.created_at),
+    };
+
+    setComments(prev => ({ ...prev, [deliverableId]: [...(prev[deliverableId] || []), newComment] }));
+    setCommentInputs(prev => ({ ...prev, [deliverableId]: '' }));
+    setSendingComment(prev => ({ ...prev, [deliverableId]: false }));
+  };
+
+  const triggerBrowserDownload = (blob: Blob, name: string) => {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
 
   const openDeliverable = async (deliverable: DeliverableItem) => {
     try {
       setError(null);
-
       if (deliverable.isExternal && deliverable.externalUrl) {
-        const url = deliverable.externalUrl.startsWith('http://') || deliverable.externalUrl.startsWith('https://')
-          ? deliverable.externalUrl
-          : `https://${deliverable.externalUrl}`;
-        window.open(url, '_blank', 'noopener,noreferrer');
-        return;
+        const url = deliverable.externalUrl.startsWith('http') ? deliverable.externalUrl : `https://${deliverable.externalUrl}`;
+        window.open(url, '_blank', 'noopener,noreferrer'); return;
+      }
+      if (!deliverable.filePath) { setError('Aucun fichier associé à ce livrable.'); return; }
+
+      const raw = deliverable.filePath.trim()
+        .replace(/^https?:\/\/[^/]+\//, '')
+        .replace(/^storage\/v1\/object\/(public|sign)\//, '')
+        .replace(/^\/+/, '');
+
+      // Build (bucket, path) candidates from most-specific to least
+      const candidates: [string, string][] = [];
+      const uploadsMatch = raw.match(/^uploads\/(.+)$/);
+      if (uploadsMatch) {
+        candidates.push(['uploads', uploadsMatch[1]]); // bucket=uploads, path=filename
+        candidates.push(['documents', raw]);            // bucket=documents, path=uploads/filename
+        candidates.push(['livrables', raw]);
+      } else {
+        candidates.push(['documents', raw]);
+        candidates.push(['livrables', raw]);
+        candidates.push(['uploads',   raw]);
       }
 
-      if (!deliverable.filePath) {
-        setError('Aucun fichier associe a ce livrable.');
-        return;
+      const fileName = raw.split('/').pop() || `${deliverable.title}.bin`;
+
+      for (const [bucket, path] of candidates) {
+        const { data: blob, error: dlErr } = await supabase.storage.from(bucket).download(path);
+        if (!dlErr && blob) { triggerBrowserDownload(blob, fileName); return; }
       }
-
-      const cleanPath = normalizeStoragePath(deliverable.filePath);
-      const fallbackFileName = cleanPath.split('/').pop() || `${deliverable.title}.bin`;
-
-      const bucketCandidates = ['documents', 'livrables'];
-      for (const bucket of bucketCandidates) {
-        const { data: fileBlob, error: downloadError } = await supabase.storage
-          .from(bucket)
-          .download(cleanPath);
-
-        if (!downloadError && fileBlob) {
-          triggerBrowserDownload(fileBlob, fallbackFileName);
-          return;
-        }
+      for (const [bucket, path] of candidates) {
+        const { data, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 120);
+        if (!signErr && data?.signedUrl) { window.open(data.signedUrl, '_blank', 'noopener,noreferrer'); return; }
       }
-
-      for (const bucket of bucketCandidates) {
-        const { data, error: signedError } = await supabase.storage
-          .from(bucket)
-          .createSignedUrl(cleanPath, 120);
-
-        if (!signedError && data?.signedUrl) {
-          window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
-          return;
-        }
-      }
-
-      throw new Error('Fichier introuvable dans les buckets documents/livrables ou acces refuse.');
+      throw new Error('Fichier introuvable.');
     } catch (err) {
-      console.error('Erreur ouverture livrable:', err);
-      setError(err instanceof Error ? err.message : 'Impossible d ouvrir ce livrable.');
+      setError(err instanceof Error ? err.message : 'Impossible d\'ouvrir ce livrable.');
     }
   };
 
@@ -285,71 +309,163 @@ const Deliverables: React.FC = () => {
         {loading && <p className="mb-4 text-sm text-[#7f7664]">Chargement des livrables...</p>}
         {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a]">Erreur: {error}</p>}
         {!loading && !error && groups.length === 0 && (
-          <p className="mb-4 text-sm text-[#7f7664]">Aucun livrable trouve pour les projets assignes a cet encadrant.</p>
+          <p className="mb-4 text-sm text-[#7f7664]">Aucun livrable trouvé pour les projets assignés à cet encadrant.</p>
         )}
 
         <div className="space-y-7">
           {groups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#d1c5b0]"></div>
+                <div className="h-px flex-1 bg-[#d1c5b0]" />
                 <h2 className="rounded-full border border-[#ebc254] bg-[#ffd464] px-3 py-1.5 text-lg font-bold text-[#594400]">
                   {group.groupName}
                 </h2>
-                <div className="h-px flex-1 bg-[#d1c5b0]"></div>
+                <div className="h-px flex-1 bg-[#d1c5b0]" />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {group.deliverables.map((deliverable) => (
-                  <motion.div
-                    key={deliverable.id}
-                    whileHover={{ scale: 1.01 }}
-                    className="group relative mb-6 rounded-2xl border border-[#d1c5b0] bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-[#ebc254]"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="rounded-2xl bg-[#f4f3f1] p-2.5">
-                        {getIcon(deliverable.type)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${getStatusClass(deliverable.status)}`}>
-                          {deliverable.status}
-                        </span>
-                        <button className="text-[#7f7664] hover:text-[#4d4636] transition-colors">
-                          <MoreVertical size={18} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                {group.deliverables.map((deliverable) => {
+                  const delivComments = comments[deliverable.id] ?? [];
+                  const statusClass   = STATUS_SELECT_CLASS[deliverable.status] ?? STATUS_SELECT_CLASS.PENDING;
+                  const isOpen        = showComments[deliverable.id] ?? false;
+
+                  return (
+                    <motion.div
+                      key={deliverable.id}
+                      whileHover={{ scale: 1.01 }}
+                      className="group relative flex flex-col rounded-2xl border border-[#d1c5b0] bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-[#ebc254] overflow-hidden"
+                    >
+                      <div className="p-4 flex-1 flex flex-col">
+
+                        {/* Top row: icon + status select */}
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="rounded-2xl bg-[#f4f3f1] p-2.5">
+                            {getIcon(deliverable.type)}
+                          </div>
+
+                          {/* Status dropdown */}
+                          <div className="relative">
+                            <select
+                              value={deliverable.status}
+                              onChange={e => handleStatusChange(deliverable.id, e.target.value)}
+                              disabled={updatingStatus[deliverable.id]}
+                              className={`appearance-none cursor-pointer rounded-lg border pl-2.5 pr-6 py-1 text-[11px] font-bold outline-none transition disabled:opacity-50 ${statusClass}`}
+                            >
+                              {STATUS_OPTIONS.map(o => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                              ))}
+                            </select>
+                            <ChevronDown size={11} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60" />
+                          </div>
+                        </div>
+
+                        <h3 className="mb-1.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#765b00]">
+                          {deliverable.title}
+                        </h3>
+
+                        <div className="mb-4 flex items-center gap-3 text-xs text-[#7f7664]">
+                          <span>{deliverable.date}</span>
+                          {deliverable.size && (
+                            <>
+                              <span className="h-1 w-1 rounded-full bg-[#d1c5b0]" />
+                              <span>{deliverable.size}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Download */}
+                        <button
+                          onClick={() => openDeliverable(deliverable)}
+                          disabled={!deliverable.externalUrl && !deliverable.filePath}
+                          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all mb-4 ${
+                            deliverable.isExternal
+                              ? 'bg-[#765b00] text-white shadow-md hover:bg-[#594400] disabled:bg-[#ebc254]'
+                              : 'border border-[#d1c5b0] bg-[#f4f3f1] text-[#4d4636] hover:bg-white disabled:opacity-50'
+                          }`}
+                        >
+                          {deliverable.isExternal ? <ExternalLink size={15} /> : <Download size={15} />}
+                          {deliverable.isExternal ? 'Open Link' : 'Download'}
                         </button>
+
+                        {/* Comments toggle button */}
+                        <button
+                          onClick={() => setShowComments(prev => {
+                            const alreadyOpen = prev[deliverable.id];
+                            // close all, then toggle this one
+                            const reset: Record<string, boolean> = {};
+                            return alreadyOpen ? reset : { ...reset, [deliverable.id]: true };
+                          })}
+                          className="mt-2 w-full flex items-center justify-between border-t border-[#f4f3f1] pt-3 text-[10px] font-bold uppercase tracking-widest text-[#7f7664] hover:text-[#4d4636] transition"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <MessageSquare size={12} />
+                            Commentaires {delivComments.length > 0 ? `(${delivComments.length})` : ''}
+                          </span>
+                          {isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        </button>
+
+                        {/* Collapsible panel */}
+                        <AnimatePresence initial={false}>
+                          {isOpen && (
+                            <motion.div
+                              key="comments"
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="space-y-2 max-h-40 overflow-y-auto pt-2">
+                                {loadingCmts[deliverable.id] && (
+                                  <p className="text-[11px] text-[#7f7664]">Chargement...</p>
+                                )}
+                                {!loadingCmts[deliverable.id] && delivComments.length === 0 && (
+                                  <p className="text-[11px] text-[#d1c5b0] text-center py-1">Aucun commentaire.</p>
+                                )}
+                                {delivComments.map(c => (
+                                  <div key={c.id} className="flex gap-2">
+                                    <img
+                                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(c.author)}&size=22&background=random`}
+                                      className="h-5 w-5 shrink-0 rounded-full mt-0.5"
+                                      alt=""
+                                    />
+                                    <div className="flex-1 rounded-xl bg-[#faf9f6] px-2.5 py-1.5">
+                                      <div className="flex items-center justify-between mb-0.5">
+                                        <span className="text-[11px] font-bold text-[#1a1c1a]">{c.author}</span>
+                                        <span className="text-[10px] text-[#7f7664]">{c.time}</span>
+                                      </div>
+                                      <p className="text-[11px] text-[#4d4636]">{c.content}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="flex items-center gap-2 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-3 py-2 focus-within:border-[#765b00] transition mt-2">
+                                <input
+                                  type="text"
+                                  placeholder="Laisser un commentaire..."
+                                  value={commentInputs[deliverable.id] || ''}
+                                  onChange={e => setCommentInputs(prev => ({ ...prev, [deliverable.id]: e.target.value }))}
+                                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(deliverable.id); } }}
+                                  className="flex-1 bg-transparent text-xs text-[#4d4636] outline-none placeholder:text-[#d1c5b0]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => sendComment(deliverable.id)}
+                                  disabled={!commentInputs[deliverable.id]?.trim() || sendingComment[deliverable.id]}
+                                  className="text-[#765b00] hover:text-[#594400] disabled:opacity-30 transition"
+                                >
+                                  <Send size={13} />
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
                       </div>
-                    </div>
-
-                    <h3 className="mb-1.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#765b00]">
-                      {deliverable.title}
-                    </h3>
-
-                    <div className="mb-4 flex items-center gap-3 text-xs text-[#7f7664]">
-                      <span>{deliverable.date}</span>
-                      {deliverable.size && (
-                        <>
-                          <span className="h-1 w-1 rounded-full bg-[#d1c5b0]"></span>
-                          <span>{deliverable.size}</span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => openDeliverable(deliverable)}
-                        disabled={!deliverable.externalUrl && !deliverable.filePath}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all ${
-                          deliverable.isExternal
-                            ? 'bg-[#765b00] text-white shadow-md hover:bg-[#594400] disabled:bg-[#ebc254]'
-                            : 'border border-[#d1c5b0] bg-[#f4f3f1] text-[#4d4636] hover:bg-white disabled:bg-[#efeeeb] disabled:text-[#7f7664]'
-                        }`}
-                      >
-                        {deliverable.isExternal ? <ExternalLink size={16} /> : <Download size={16} />}
-                        {deliverable.isExternal ? 'Open Link' : 'Download'}
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           ))}

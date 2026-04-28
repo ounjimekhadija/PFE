@@ -456,11 +456,6 @@ const AdminUsers: React.FC = () => {
     () => Array.from(new Set(projectOptions.map((p) => p.domaine).filter((d) => d !== 'N/A'))),
     [projectOptions]
   );
-  const groupes = useMemo(
-    () => Array.from(new Set(projectOptions.map((p) => p.nom_groupe).filter((g) => g !== 'N/A'))),
-    [projectOptions]
-  );
-  const projets = useMemo(() => projectOptions, [projectOptions]);
 
   const stats = useMemo(() => {
     const total = rows.length;
@@ -883,41 +878,6 @@ const AdminUsers: React.FC = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom du groupe</label>
-                        <select
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.projetId ? projets.find((p) => p.id === form.projetId)?.nom_groupe || '' : ''}
-                          onChange={(e) => {
-                            const selected = projets.find((p) => p.nom_groupe === e.target.value);
-                            setForm((f) => ({ ...f, projetId: selected?.id || '' }));
-                          }}
-                        >
-                          <option value="">Choisir...</option>
-                          {groupes.map((g) => (
-                            <option key={g} value={g}>
-                              {g}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom du projet</label>
-                        <select
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.projetId}
-                          onChange={(e) => setForm((f) => ({ ...f, projetId: e.target.value }))}
-                        >
-                          <option value="">Choisir...</option>
-                          {projets.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.titre}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
                   </>
                 )}
               </div>

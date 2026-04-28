@@ -48,12 +48,20 @@ const StudentDashboard: React.FC = () => {
           supervisor = prof;
         }
 
-        const { data: iteration } = await supabase
+        const { data: iterRows } = await supabase
           .from('iterations')
           .select('*')
           .eq('projet_id', student.projet_id)
-          .eq('statut', 'EN_COURS')
-          .single();
+          .order('date_debut', { ascending: false });
+
+        // Pick EN_COURS first, then A_FAIRE, then VALIDE
+        const priority = ['EN_COURS', 'A_FAIRE', 'VALIDE'];
+        const iteration = iterRows?.sort((a, b) => {
+          const ai = priority.indexOf(a.statut);
+          const bi = priority.indexOf(b.statut);
+          if (ai !== bi) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+          return new Date(b.date_debut).getTime() - new Date(a.date_debut).getTime();
+        })[0] ?? null;
 
         let completedTasks: any[] = [];
         let pendingTasks: any[] = [];

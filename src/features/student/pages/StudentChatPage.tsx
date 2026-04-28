@@ -9,6 +9,7 @@ interface Message {
   text: string;
   time: string;
   isMe: boolean;
+  isRead: boolean;
   avatar: string;
   created_at: string;
 }
@@ -114,6 +115,15 @@ const StudentChat: React.FC = () => {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const markMessagesAsRead = async (projId: string, myUserId: string) => {
+    await supabase
+      .from('messages')
+      .update({ lu: true })
+      .eq('projet_id', projId)
+      .neq('auteur_id', myUserId)
+      .eq('lu', false);
+  };
+
   const fetchMessages = async (projId: string, currentUserId: string) => {
     const { data: msgs } = await supabase
       .from('messages')
@@ -129,12 +139,14 @@ const StudentChat: React.FC = () => {
         text: m.contenu,
         time: formatTime(m.created_at),
         isMe: m.auteur_id === currentUserId,
+        isRead: m.lu === true,
         avatar: m.utilisateurs?.avatar_url || `https://ui-avatars.com/api/?name=${m.utilisateurs?.prenom}+${m.utilisateurs?.nom}&background=random`,
         created_at: m.created_at
       }));
       setMessages(formattedMsgs);
     }
     setLoading(false);
+    await markMessagesAsRead(projId, currentUserId);
   };
 
   const setupRealtimeSubscription = (projId: string, myUserId: string) => {
@@ -148,6 +160,7 @@ const StudentChat: React.FC = () => {
           .single();
 
         if (newMsgData) {
+          const isMe = newMsgData.auteur_id === myUserId;
           setMessages((prev) => {
             if (prev.some(p => p.id === newMsgData.id)) return prev;
             return [...prev, {
@@ -156,11 +169,20 @@ const StudentChat: React.FC = () => {
               senderName: newMsgData.utilisateurs ? `${newMsgData.utilisateurs.prenom} ${newMsgData.utilisateurs.nom}` : 'Inconnu',
               text: newMsgData.contenu,
               time: formatTime(newMsgData.created_at),
-              isMe: newMsgData.auteur_id === myUserId,
+              isMe,
+              isRead: newMsgData.lu === true,
               avatar: newMsgData.utilisateurs?.avatar_url || `https://ui-avatars.com/api/?name=${newMsgData.utilisateurs?.prenom}+${newMsgData.utilisateurs?.nom}&background=random`,
               created_at: newMsgData.created_at
             }];
           });
+          if (!isMe) markMessagesAsRead(projId, myUserId);
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `projet_id=eq.${projId}` }, (payload) => {
+        if (payload.new.lu === true) {
+          setMessages((prev) =>
+            prev.map((m) => m.id === String(payload.new.id) ? { ...m, isRead: true } : m)
+          );
         }
       })
       .subscribe();
@@ -303,7 +325,7 @@ const StudentChat: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-10 space-y-6 md:space-y-10 bg-[#faf9f6]/50">
+        <div className="chat-messages flex-1 overflow-y-auto p-4 md:p-10 space-y-6 md:space-y-10 bg-[#faf9f6]/50">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex gap-3 md:gap-4 ${msg.isMe ? 'flex-row-reverse' : ''}`}>
               <img src={msg.avatar} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-2xl object-cover shadow-sm ring-white ring-2" />
@@ -319,6 +341,12 @@ const StudentChat: React.FC = () => {
                 }`}>
                   {msg.text}
                 </div>
+                {msg.isMe && msg.isRead && (
+                  <div className="mt-1.5 flex gap-1 items-center">
+                    <CheckCheck size={14} className="text-[#765b00]" />
+                    <span className="text-[10px] text-[#7f7664] font-bold uppercase">Lu</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
