@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, User, Users } from 'lucide-react';
+import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDarkMode } from '../hooks/useDarkMode';
 
@@ -69,14 +69,6 @@ const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
-            aria-label="Profile"
-          >
-            <User size={16} />
-          </button>
 
           {/* Dark mode toggle */}
           <button

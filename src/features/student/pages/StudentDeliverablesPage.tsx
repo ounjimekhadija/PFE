@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, History, Download, Trash2, Plus, ExternalLink, Eye, PlusCircle } from 'lucide-react';
+import { Upload, FileText, History, Download, Trash2, Plus, ExternalLink, Eye, PlusCircle, FileCode, FileImage } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 
@@ -216,6 +216,14 @@ const StudentDeliverables: React.FC = () => {
     return 'bg-[#ffd464] text-[#594400]';
   };
 
+  const getDocIcon = (type: string) => {
+    const t = (type || '').toUpperCase();
+    if (t.includes('PDF')) return <FileText className="text-[#ba1a1a]" size={24} />;
+    if (t.includes('DIAGRAM') || t.includes('SCHEMA')) return <FileImage className="text-[#765b00]" size={24} />;
+    if (t.includes('PROGRAM') || t.includes('CODE')) return <FileCode className="text-[#1a1c1a]" size={24} />;
+    return <FileText className="text-[#765b00]" size={24} />;
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <div className="relative flex h-full w-full flex-col">
@@ -235,27 +243,27 @@ const StudentDeliverables: React.FC = () => {
 
         {showUploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center border border-[#d1c5b0]">
+            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center border border-transparent">
               <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Nouveau document</h2>
               <input
                 type="text"
                 placeholder="Titre du document..."
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
-                className="w-full mb-4 px-4 py-2 border border-[#d1c5b0] rounded-xl focus:outline-none focus:border-[#765b00] text-center"
+                className="w-full mb-4 px-4 py-2 border border-transparent rounded-xl focus:outline-none focus:border-transparent text-center"
                 autoFocus
               />
               <select
                 value={newType}
                 onChange={e => setNewType(e.target.value)}
-                className="w-full mb-4 px-4 py-2 border border-[#d1c5b0] rounded-xl focus:outline-none focus:border-[#765b00] text-center bg-white"
+                className="w-full mb-4 px-4 py-2 border border-transparent rounded-xl focus:outline-none focus:border-transparent text-center bg-white"
               >
                 <option value="Report">Report / Rapport</option>
                 <option value="Diagram">Diagram / Schéma</option>
                 <option value="PDF">Document PDF</option>
               </select>
 
-              <div className="w-full mb-6 border-2 border-dashed border-[#d1c5b0] rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
+              <div className="w-full mb-6 border-2 border-dashed border-transparent rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
                 <input
                   type="file"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -297,20 +305,20 @@ const StudentDeliverables: React.FC = () => {
 
         <div className="flex flex-1 gap-8 overflow-hidden">
           <div className="flex-1 overflow-y-auto pr-4">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {deliverables.map((doc) => (
                 <motion.div
                   key={doc.id}
                   onClick={() => setSelectedDoc(doc)}
                   className={`mb-6 cursor-pointer rounded-2xl border-2 p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all ${
                     selectedDoc?.id === doc.id
-                      ? 'border-[#765b00] bg-[#ffd464]/10'
-                      : 'border-[#d1c5b0] bg-white hover:border-[#ebc254]'
+                      ? 'border-transparent bg-[#ffd464]/10'
+                      : 'border-transparent bg-white hover:border-transparent'
                   }`}
                 >
                   <div className="flex items-start justify-between mb-6">
                     <div className="rounded-2xl bg-[#f4f3f1] p-4 shadow-sm">
-                      <FileText className="text-[#765b00]" size={24} />
+                      {getDocIcon(doc.type)}
                     </div>
                     <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getStatusClass(doc.status)}`}>
                       {doc.status}
@@ -327,21 +335,21 @@ const StudentDeliverables: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        className="rounded-xl border border-[#d1c5b0] bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                        className="rounded-xl border border-transparent bg-[#765b00] p-2 text-white transition-all hover:bg-[#594400]"
                         title="View versions"
                         onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
                       >
                         <Eye size={18} />
                       </button>
                       <button
-                        className="rounded-xl border border-[#d1c5b0] bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                        className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
                         title="Upload new version"
                         onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
                       >
                         <PlusCircle size={18} />
                       </button>
                       <button
-                        className="rounded-xl border border-[#d1c5b0] bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                        className="rounded-xl border border-transparent bg-[#ffd464] p-2 text-white transition-all hover:bg-[#ebc254]"
                         title="Download latest version"
                         onClick={e => {
                           e.stopPropagation();
@@ -374,7 +382,7 @@ const StudentDeliverables: React.FC = () => {
                         <Download size={18} />
                       </button>
                       <button
-                        className="rounded-xl border border-[#d1c5b0] bg-white p-2 text-[#7f7664] transition-all hover:text-[#ba1a1a]"
+                        className="rounded-xl border border-transparent bg-[#ba1a1a] p-2 text-white transition-all hover:bg-[#8c1d18]"
                         title="Delete deliverable"
                         onClick={async e => {
                           e.stopPropagation();
@@ -414,7 +422,7 @@ const StudentDeliverables: React.FC = () => {
 
         {showModal && selectedDoc && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-[40px] p-8 border border-[#d1c5b0] flex flex-col w-full max-w-lg relative">
+            <div className="bg-white rounded-[40px] p-8 border border-transparent flex flex-col w-full max-w-lg relative">
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-xl font-bold text-[#1a1c1a]">Version History</h3>
                 <button onClick={() => setShowModal(false)} className="text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold" aria-label="Close">&times;</button>
@@ -426,7 +434,7 @@ const StudentDeliverables: React.FC = () => {
                   {selectedDoc.versions.map((v, i) => (
                     <div key={i} className="relative pl-8 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-0.5 before:bg-[#d1c5b0] last:before:hidden">
                       <div className="absolute left-[-4px] top-2 w-2.5 h-2.5 rounded-full bg-[#765b00] border-2 border-white"></div>
-                      <div className="bg-white p-5 rounded-2xl border border-[#d1c5b0] shadow-sm hover:shadow-md transition-shadow">
+                      <div className="bg-white p-5 rounded-2xl border border-transparent shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-bold text-[#765b00]">{v.version}</span>
                           <span className="text-[10px] font-bold text-[#7f7664] uppercase tracking-widest">{v.date}</span>
@@ -447,11 +455,11 @@ const StudentDeliverables: React.FC = () => {
 
         {showAddVersionModal && selectedDoc && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center border border-[#d1c5b0]">
+            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center border border-transparent">
               <h2 className="text-xl font-bold mb-2 text-[#1a1c1a]">Nouvelle version</h2>
               <p className="text-sm text-[#7f7664] mb-6 text-center">{selectedDoc.title}</p>
 
-              <div className="w-full mb-6 border-2 border-dashed border-[#d1c5b0] rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
+              <div className="w-full mb-6 border-2 border-dashed border-transparent rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
                 <input
                   type="file"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"

@@ -26,6 +26,7 @@ interface Member {
 const StudentChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectTitle, setProjectTitle] = useState('Mon Groupe');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -212,6 +213,13 @@ const StudentChat: React.FC = () => {
     if (projectId) window.open(`https://meet.jit.si/StudentHub_Project_${projectId}`, '_blank');
   };
 
+  const emojis = ['😀', '😂', '😍', '😊', '👍', '👏', '🙏', '🔥', '🎉', '✅', '😅', '😎', '🤝', '💡', '🚀', '📌'];
+
+  const handleEmojiClick = (emoji: string) => {
+    setNewMessage((prev) => `${prev}${emoji}`);
+    setShowEmojiPicker(false);
+  };
+
   if (loading) {
     return <div className="flex flex-1 items-center justify-center bg-[#faf9f6] text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>Chargement du chat...</div>;
   }
@@ -228,7 +236,7 @@ const StudentChat: React.FC = () => {
     <div className="flex min-h-0 w-full flex-1 overflow-hidden bg-[#faf9f6] antialiased text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Left Sidebar */}
-      <div className="shrink-0 w-80 border-r border-[#d1c5b0] bg-white shadow-sm hidden md:flex md:flex-col h-full">
+      <div className="shrink-0 w-80 border-r border-transparent bg-white shadow-sm hidden md:flex md:flex-col h-full">
         <div className="p-8 pb-6">
           <h2 className="text-2xl font-extrabold tracking-tight mb-6">Messages</h2>
           <div className="relative">
@@ -248,11 +256,11 @@ const StudentChat: React.FC = () => {
               Encadrant
             </h3>
             {supervisor ? (
-              <div className="mx-4 px-3 py-2 flex items-center gap-3 bg-white rounded-xl hover:bg-[#f4f3f1] transition-colors border border-transparent hover:border-[#d1c5b0] cursor-pointer group">
+              <div className="mx-4 px-3 py-2 flex items-center gap-3 bg-white rounded-xl hover:bg-[#f4f3f1] transition-colors border border-transparent hover:border-transparent cursor-pointer group">
                 <img
                   src={supervisor.avatar_url || `https://ui-avatars.com/api/?name=${supervisor.prenom}+${supervisor.nom}&background=random`}
                   alt="Encadrant"
-                  className="w-10 h-10 rounded-xl object-cover shadow-sm border border-[#d1c5b0] bg-white group-hover:scale-105 transition-transform"
+                  className="w-10 h-10 rounded-xl object-cover shadow-sm border border-transparent bg-white group-hover:scale-105 transition-transform"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-[#1a1c1a] truncate">{supervisor.prenom} {supervisor.nom}</p>
@@ -271,11 +279,11 @@ const StudentChat: React.FC = () => {
             </h3>
             <div className="space-y-1 mx-4">
               {members.map(member => (
-                <div key={member.id} className="px-3 py-2.5 flex items-center gap-3 bg-white rounded-xl hover:bg-[#f4f3f1] transition-colors border border-transparent hover:border-[#d1c5b0] cursor-pointer group">
+                <div key={member.id} className="px-3 py-2.5 flex items-center gap-3 bg-white rounded-xl hover:bg-[#f4f3f1] transition-colors border border-transparent hover:border-transparent cursor-pointer group">
                   <img
                     src={member.avatar_url || `https://ui-avatars.com/api/?name=${member.prenom}+${member.nom}&background=random`}
                     alt="Membre"
-                    className="w-10 h-10 rounded-xl object-cover shadow-sm border border-[#d1c5b0] bg-white group-hover:scale-105 transition-transform"
+                    className="w-10 h-10 rounded-xl object-cover shadow-sm border border-transparent bg-white group-hover:scale-105 transition-transform"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-[#1a1c1a] truncate flex items-center gap-2">
@@ -298,7 +306,7 @@ const StudentChat: React.FC = () => {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white">
-        <header className="h-24 border-b border-[#d1c5b0] px-6 md:px-10 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 w-full">
+        <header className="h-24 border-b border-transparent px-6 md:px-10 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 w-full">
           <div className="flex items-center gap-4 cursor-pointer md:cursor-default">
             <div className="w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-2xl bg-[#765b00] flex items-center justify-center text-white font-bold text-xl shadow-sm">
               {projectTitle.charAt(0).toUpperCase()}
@@ -337,7 +345,7 @@ const StudentChat: React.FC = () => {
                 <div className={`px-5 py-3 md:px-6 md:py-4 shadow-sm transition-all text-[14px] md:text-[15px] leading-relaxed font-medium break-words ${
                   msg.isMe
                     ? 'bg-[#765b00] text-white rounded-3xl rounded-tr-none'
-                    : 'bg-white text-[#4d4636] border border-[#d1c5b0] rounded-3xl rounded-tl-none'
+                    : 'bg-white text-[#4d4636] border border-transparent rounded-3xl rounded-tl-none'
                 }`}>
                   {msg.text}
                 </div>
@@ -353,11 +361,34 @@ const StudentChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 md:p-8 bg-white border-t border-[#d1c5b0] w-full">
-          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative flex items-center gap-2 md:gap-4 bg-[#f4f3f1] p-2 rounded-[2rem] border border-[#d1c5b0] shadow-inner">
-            <button type="button" className="p-2 md:p-3 text-[#7f7664] hover:text-[#765b00] transition-colors hidden md:block">
+        <div className="p-4 md:p-8 bg-white border-t border-transparent w-full">
+          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto relative flex items-center gap-2 md:gap-4 bg-[#f4f3f1] p-2 rounded-[2rem] border border-transparent shadow-inner">
+            <div className="relative hidden md:block">
+              <button
+                type="button"
+                className="p-2 md:p-3 text-[#7f7664] hover:text-[#765b00] transition-colors"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                aria-label="Open emoji picker"
+              >
               <Smile size={24} />
-            </button>
+              </button>
+              {showEmojiPicker && (
+                <div className="absolute bottom-14 left-0 z-20 w-56 rounded-2xl border border-transparent bg-white p-3 shadow-xl">
+                  <div className="grid grid-cols-8 gap-2">
+                    {emojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className="h-8 w-8 rounded-xl hover:bg-[#fff4cc] text-lg"
+                        onClick={() => handleEmojiClick(emoji)}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <input
               type="text"
               placeholder="Écrivez votre message..."

@@ -278,7 +278,7 @@ const StudentTasks: React.FC = () => {
 
       {showCreateTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative border border-[#d1c5b0]">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative border border-transparent">
             <button
               className="absolute top-4 right-4 text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold"
               onClick={() => setShowCreateTask(false)}
@@ -292,7 +292,7 @@ const StudentTasks: React.FC = () => {
                 <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Titre de la tâche</label>
                 <input
                   type="text"
-                  className="w-full border border-[#d1c5b0] rounded-xl px-4 py-2 focus:outline-none focus:border-[#765b00]"
+                  className="w-full border border-transparent rounded-xl px-4 py-2 focus:outline-none focus:border-transparent"
                   value={newTask.title}
                   onChange={e => setNewTask({ ...newTask, title: e.target.value })}
                   required
@@ -301,7 +301,7 @@ const StudentTasks: React.FC = () => {
               <div>
                 <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Description</label>
                 <textarea
-                  className="w-full border border-[#d1c5b0] rounded-xl px-4 py-2 focus:outline-none focus:border-[#765b00] resize-none min-h-[60px]"
+                  className="w-full border border-transparent rounded-xl px-4 py-2 focus:outline-none focus:border-transparent resize-none min-h-[60px]"
                   value={newTask.description}
                   onChange={e => setNewTask({ ...newTask, description: e.target.value })}
                   required
@@ -310,7 +310,7 @@ const StudentTasks: React.FC = () => {
               <div>
                 <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Assigner à</label>
                 <select
-                  className="w-full border border-[#d1c5b0] rounded-xl px-4 py-2 focus:outline-none focus:border-[#765b00]"
+                  className="w-full border border-transparent rounded-xl px-4 py-2 focus:outline-none focus:border-transparent"
                   value={newTask.assignee}
                   onChange={e => setNewTask({ ...newTask, assignee: e.target.value })}
                 >
@@ -362,7 +362,7 @@ const StudentTasks: React.FC = () => {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className={`bg-white rounded-[24px] p-6 border border-[#d1c5b0] transition-all ${
+                            className={`bg-white rounded-[24px] p-6 border border-transparent transition-all ${
                               snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#765b00]/20 scale-105 rotate-2 z-50' : 'shadow-sm hover:shadow-md'
                             }`}
                           >
@@ -371,7 +371,7 @@ const StudentTasks: React.FC = () => {
                             <h4 className="font-bold text-[#1a1c1a] mb-2">{task.title}</h4>
                             <p className="text-sm text-[#7f7664] mb-6 line-clamp-2">{task.description}</p>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-[#d1c5b0]">
+                            <div className="flex items-center justify-between pt-4 border-t border-transparent">
                               <div className="flex items-center gap-2">
                                 <img
                                   src={`https://picsum.photos/seed/${task.assignee}/100/100`}
