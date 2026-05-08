@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, History, Download, Trash2, Plus, ExternalLink, Eye, PlusCircle, FileCode, FileImage } from 'lucide-react';
+import { Upload, FileText, History, Download, Trash2, Plus, ExternalLink, Eye, PlusCircle, FileCode, FileImage, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 
@@ -25,8 +25,12 @@ const StudentDeliverables: React.FC = () => {
   const [deliverables, setDeliverables] = useState<StudentDeliverable[]>([]);
   const [loading, setLoading] = useState(true);
 
+
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [comments, setComments] = useState<{ id: string; contenu: string; created_at: string; auteur_nom: string; auteur_prenom: string; }[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<StudentDeliverable | null>(null);
   const [showModal, setShowModal] = useState(false);
+
 
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showAddVersionModal, setShowAddVersionModal] = useState(false);
@@ -104,6 +108,28 @@ const StudentDeliverables: React.FC = () => {
       console.error('Erreur:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  const handleShowComments = async (doc: StudentDeliverable) => {
+    setSelectedDoc(doc);
+    setShowCommentModal(true);
+    try {
+      const { data, error } = await supabase.rpc('get_comments_with_author', {
+        p_livrable_id: doc.id
+      });
+
+      if (error) {
+        console.error("Supabase RPC error:", error);
+        throw error;
+      }
+      
+      console.log('Comments received from database:', data); // Debugging line
+      setComments(data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des commentaires:", error);
+      setComments([]);
     }
   };
 
@@ -335,6 +361,13 @@ const StudentDeliverables: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                        title="View comments"
+                        onClick={e => { e.stopPropagation(); handleShowComments(doc); }}
+                      >
+                        <MessageSquare size={18} />
+                      </button>
+                      <button
                         className="rounded-xl border border-transparent bg-[#765b00] p-2 text-white transition-all hover:bg-[#594400]"
                         title="View versions"
                         onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
@@ -419,6 +452,32 @@ const StudentDeliverables: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {showCommentModal && selectedDoc && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="bg-white rounded-[40px] p-8 border border-transparent flex flex-col w-full max-w-lg relative">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-xl font-bold text-[#1a1c1a]">Commentaires sur "{selectedDoc.title}"</h3>
+                <button onClick={() => setShowCommentModal(false)} className="text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold" aria-label="Close">&times;</button>
+              </div>
+              {comments.length === 0 ? (
+                <p className="text-center text-[#7f7664] py-4">Aucun commentaire pour ce livrable.</p>
+              ) : (
+                <div className="flex-1 space-y-4 overflow-y-auto pr-2">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="bg-[#f4f3f1] p-4 rounded-xl">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm font-bold text-[#4d4636]">{`${comment.auteur_prenom} ${comment.auteur_nom}`}</p>
+                        <p className="text-xs text-right text-[#7f7664]">{new Date(comment.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <p className="text-sm text-[#4d4636]">{comment.contenu}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {showModal && selectedDoc && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">

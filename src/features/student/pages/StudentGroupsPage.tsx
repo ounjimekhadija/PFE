@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, UserPlus, Mail, Github, Linkedin, MoreVertical, Filter, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
+import EmailModal from '../../../shared/components/EmailModal';
 
 interface Student {
   id: string;
@@ -25,6 +26,26 @@ const StudentGroups: React.FC = () => {
   const [groupName, setGroupName] = useState('');
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<Student | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData } = await supabase
+          .from('utilisateurs')
+          .select('nom, prenom')
+          .eq('id', user.id)
+          .single();
+        if (userData) {
+          setCurrentUser({ id: user.id, name: `${userData.prenom} ${userData.nom}` });
+        }
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -32,7 +53,7 @@ const StudentGroups: React.FC = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from('etudiants')
-          .select(`id, projet_id, filiere, github_url, linkedin_url, utilisateurs (nom, prenom, email)`);
+          .select(`id, projet_id, filiere, github_url, linkedin_url, utilisateurs (nom, prenom, email, avatar_url)`);
 
         if (error) throw error;
 
@@ -41,19 +62,25 @@ const StudentGroups: React.FC = () => {
         projects?.forEach(p => projectMap[p.id] = p.titre);
 
         if (data) {
-          const formattedStudents: Student[] = data.map((student: any) => ({
-            id: student.id,
-            name: student.utilisateurs ? `${student.utilisateurs.prenom} ${student.utilisateurs.nom}` : student.id,
-            role: student.filiere || 'Étudiant',
-            email: student.utilisateurs?.email || '',
-            avatar: `https://ui-avatars.com/api/?name=${student.utilisateurs?.prenom}+${student.utilisateurs?.nom}&background=random`,
-            status: student.projet_id ? 'In Group' : 'Available',
-            skills: ['React', 'Node.js', 'SQL'],
-            groupName: student.projet_id ? projectMap[student.projet_id] || `Projet #${student.projet_id}` : undefined,
-            projet_id: student.projet_id,
-            githubUrl: student.github_url,
-            linkedinUrl: student.linkedin_url
-          }));
+          const formattedStudents: Student[] = data.map((student: any) => {
+            const avatarUrl = student.utilisateurs?.avatar_url
+              ? student.utilisateurs.avatar_url
+              : `https://ui-avatars.com/api/?name=${student.utilisateurs?.prenom}+${student.utilisateurs?.nom}&background=random`;
+
+            return {
+              id: student.id,
+              name: student.utilisateurs ? `${student.utilisateurs.prenom} ${student.utilisateurs.nom}` : student.id,
+              role: student.filiere || 'Étudiant',
+              email: student.utilisateurs?.email || '',
+              avatar: avatarUrl,
+              status: student.projet_id ? 'In Group' : 'Available',
+              skills: ['React', 'Node.js', 'SQL'],
+              groupName: student.projet_id ? projectMap[student.projet_id] || `Projet #${student.projet_id}` : undefined,
+              projet_id: student.projet_id,
+              githubUrl: student.github_url,
+              linkedinUrl: student.linkedin_url
+            };
+          });
           setStudents(formattedStudents);
         }
       } catch (err) {
@@ -65,6 +92,11 @@ const StudentGroups: React.FC = () => {
 
     fetchStudents();
   }, []);
+
+  const handleOpenEmailModal = (student: Student) => {
+    setEmailRecipient(student);
+    setIsEmailModalOpen(true);
+  };
 
   let filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -309,9 +341,9 @@ const StudentGroups: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-transparent mt-auto">
                   <div className="flex gap-4">
-                    <a href={`mailto:${student.email}`} className="text-[#7f7664] hover:text-[#765b00] transition-colors">
+                    <button onClick={() => handleOpenEmailModal(student)} className="text-[#7f7664] hover:text-[#765b00] transition-colors">
                       <Mail size={20} strokeWidth={2} />
-                    </a>
+                    </button>
                     {student.githubUrl ? (
                       <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-[#7f7664] hover:text-[#1a1c1a] transition-colors">
                         <Github size={20} strokeWidth={2} />
@@ -353,6 +385,22 @@ const StudentGroups: React.FC = () => {
           </div>
         </div>
       </div>
+      {isEmailModalOpen && emailRecipient && currentUser && (
+        <EmailModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          user={{
+            nom: emailRecipient.name.split(' ')[1] || '',
+            prenom: emailRecipient.name.split(' ')[0] || '',
+            email: emailRecipient.email,
+          }}
+          fromUser={{
+            nom: currentUser.name.split(' ')[1] || '',
+            prenom: currentUser.name.split(' ')[0] || '',
+            email: '', // Not needed on the frontend for sending
+          }}
+        />
+      )}
     </div>
   );
 };

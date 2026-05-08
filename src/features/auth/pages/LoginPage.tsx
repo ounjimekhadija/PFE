@@ -131,42 +131,39 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-800 to-black relative overflow-hidden">
-      {/* Blurred circles for background */}
-      <div className="absolute w-[600px] h-[600px] bg-blue-700/40 rounded-full opacity-40 blur-3xl top-[-200px] left-[-200px] z-0"></div>
-      <div className="absolute w-[400px] h-[400px] bg-blue-400/40 rounded-full opacity-40 blur-3xl bottom-[-100px] right-[-100px] z-0"></div>
-      <div className="absolute w-[200px] h-[200px] bg-black/40 rounded-full opacity-30 blur-2xl top-20 right-32 z-0"></div>
-      <div className="absolute w-[120px] h-[120px] bg-white/20 rounded-xl opacity-20 blur-2xl top-32 left-1/2 z-0"></div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-warm-surface relative overflow-hidden">
+      {/* Background texture and gradients */}
+      <div
+        className="absolute inset-0 opacity-50"
+        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23d1c5b0\' fill-opacity=\'0.1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}
+      ></div>
+      <div className="absolute top-[-20%] left-[-20%] w-2/5 h-2/5 bg-gradient-radial from-warm-primary-container/40 to-transparent to-70% animate-pulse"></div>
+      <div className="absolute bottom-[-20%] right-[-20%] w-2/5 h-2/5 bg-gradient-radial from-warm-tertiary-container/40 to-transparent to-70% animate-pulse-slow"></div>
 
-      {/* Blurred translucent squares for glassmorphism effect, plus variés et nombreux */}
-      <div className="absolute w-28 h-28 bg-blue-200/30 rounded-3xl backdrop-blur-md top-8 left-1/4 z-10 shadow-xl"></div>
-      <div className="absolute w-12 h-12 bg-blue-100/30 rounded-3xl backdrop-blur-md top-1/2 left-32 z-10 shadow-xl"></div>
-      <div className="absolute w-24 h-24 bg-white/20 rounded-3xl backdrop-blur-md bottom-16 right-24 z-10 shadow-xl"></div>
-      <div className="absolute w-16 h-16 bg-blue-300/30 rounded-3xl backdrop-blur-md top-20 right-16 z-10 shadow-xl"></div>
-      <div className="absolute w-10 h-10 bg-white/20 rounded-3xl backdrop-blur-md bottom-24 left-1/3 z-10 shadow-xl"></div>
-      {/* Petits carrés ronds */}
-      <div className="absolute w-8 h-8 bg-blue-100/20 rounded-full backdrop-blur-md top-40 left-10 z-10 shadow-lg"></div>
-      <div className="absolute w-6 h-6 bg-blue-200/20 rounded-full backdrop-blur-md bottom-40 right-10 z-10 shadow-lg"></div>
-      <div className="absolute w-10 h-10 bg-white/10 rounded-full backdrop-blur-md top-1/3 right-1/4 z-10 shadow-lg"></div>
-      <div className="absolute w-14 h-14 bg-blue-100/20 rounded-full backdrop-blur-md bottom-1/4 left-1/5 z-10 shadow-lg"></div>
-      {/* Carrés bleutés pour effet varié */}
-      <div className="absolute w-20 h-20 bg-blue-400/40 rounded-3xl backdrop-blur-md bottom-10 right-40 z-10 shadow-xl"></div>
-      <div className="absolute w-10 h-10 bg-blue-900/40 rounded-3xl backdrop-blur-md bottom-8 right-20 z-10 shadow-xl"></div>
-      <div className="absolute w-16 h-16 bg-blue-800/30 rounded-3xl backdrop-blur-md top-10 right-1/5 z-10 shadow-xl"></div>
-      {/* Autres tailles et positions */}
-      <div className="absolute w-14 h-14 bg-white/30 rounded-3xl backdrop-blur-md top-1/4 left-10 z-10 shadow-xl"></div>
-      <div className="absolute w-7 h-7 bg-white/30 rounded-3xl backdrop-blur-md bottom-1/3 left-1/6 z-10 shadow-xl"></div>
+      {/* Decorative shapes */}
+      <div className="absolute w-28 h-28 bg-warm-primary-container/30 rounded-3xl backdrop-blur-sm top-8 left-1/4 z-10 shadow-lg animate-spin-slow"></div>
+      <div className="absolute w-24 h-24 bg-warm-secondary-container/20 rounded-2xl backdrop-blur-md bottom-16 right-24 z-10 shadow-xl"></div>
+      <div className="absolute w-16 h-16 bg-warm-primary/20 rounded-full backdrop-blur-sm top-20 right-16 z-10 shadow-lg animate-pulse"></div>
+      <div className="absolute w-14 h-14 bg-warm-surface-container/40 rounded-xl backdrop-blur-sm top-1/4 left-10 z-10 shadow-md"></div>
+      {/* More rounded squares */}
+      <div className="absolute w-20 h-20 bg-warm-tertiary-container/20 rounded-2xl backdrop-blur-lg top-1/2 right-1/3 z-10 shadow-lg animate-pulse"></div>
+      <div className="absolute w-12 h-12 bg-warm-primary-container/20 rounded-full backdrop-blur-sm bottom-10 left-1/3 z-10 shadow-md animate-spin-slow"></div>
+      <div className="absolute w-32 h-32 bg-warm-secondary-container/10 rounded-3xl backdrop-blur-xl bottom-[-50px] left-[-50px] z-10 shadow-2xl"></div>
+      <div className="absolute w-16 h-16 bg-warm-primary/10 rounded-2xl backdrop-blur-md top-[-30px] right-1/4 z-10 shadow-lg"></div>
+      <div className="absolute w-8 h-8 bg-warm-tertiary-container/30 rounded-full backdrop-blur-sm bottom-20 right-10 z-10 shadow-sm animate-pulse"></div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-xl bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl p-16 flex flex-col items-center border border-white/30"
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-xl bg-warm-surface-container-lowest/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-16 flex flex-col items-center border border-warm-surface-container-high/30 shadow-warm-secondary/10"
       >
-        <h1 className="text-3xl font-bold text-white mb-2 text-center">Login Form</h1>
-        <div className="w-16 h-1 bg-white/80 rounded-full mb-8 mx-auto"></div>
+        <div className="absolute inset-0 rounded-3xl shadow-inner-lg shadow-warm-surface-container-high/50 pointer-events-none"></div>
+        <h1 className="text-4xl font-bold text-warm-on-surface mb-2 text-center font-jakarta">Login Form</h1>
+        <div className="w-20 h-1.5 bg-warm-primary rounded-full mb-10 mx-auto"></div>
 
         {/* Role Selector */}
-        <div className="flex gap-3 mb-8 w-full">
+        <div className="flex gap-4 mb-10 w-full">
           {[
             { id: 'student', icon: GraduationCap, label: 'Student' },
             { id: 'professor', icon: UserCog, label: 'Professor' },
@@ -176,53 +173,68 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               key={r.id}
               type="button"
               onClick={() => setRole(r.id as UserRole)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-all text-xs font-bold uppercase tracking-wider ${
+              className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-2xl border-2 transition-all duration-300 text-sm font-bold uppercase tracking-wider shadow-md hover:shadow-xl hover:-translate-y-1 ${
                 role === r.id
-                  ? 'bg-white text-black border-white shadow-lg'
-                  : 'bg-white/10 text-white/70 border-white/10 hover:bg-white/20'
+                  ? 'bg-warm-secondary text-warm-on-secondary border-warm-secondary/80 shadow-warm-secondary/30'
+                  : 'bg-warm-surface-container text-warm-on-surface-variant border-warm-surface-container-high hover:bg-warm-surface-container-high'
               }`}
             >
-              <r.icon size={18} />
+              <r.icon size={20} />
               {r.label}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
-          {error && <div className="text-red-300 text-sm text-center font-semibold bg-red-900/40 p-2 border border-red-500/50 rounded-lg">{error}</div>}
-          {info && <div className="text-green-200 text-sm text-center font-semibold bg-green-900/30 p-2 border border-green-500/40 rounded-lg">{info}</div>}
-          <input
-            type="email"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full bg-transparent rounded-none py-4 px-2 text-white placeholder-white/80 text-base font-medium focus:outline-none focus:ring-0 shadow-none border-b border-white/40 focus:border-white transition-all"
-            placeholder="Adresse email"
-            required
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-transparent rounded-none py-4 px-2 text-white placeholder-white/80 text-base font-medium focus:outline-none focus:ring-0 shadow-none border-b border-white/40 focus:border-white transition-all"
-            placeholder="Mot de passe"
-            required
-          />
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8">
+          {error && <div className="text-warm-on-error text-sm text-center font-semibold bg-warm-error-container/80 p-3 border border-warm-error/50 rounded-lg">{error}</div>}
+          {info && <div className="text-green-800 text-sm text-center font-semibold bg-green-200/80 p-3 border border-green-500/40 rounded-lg">{info}</div>}
+          <div className="relative">
+            <input
+              type="email"
+              id="email"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="peer w-full bg-warm-surface-container rounded-lg py-4 px-4 text-warm-on-surface placeholder-transparent text-base font-medium focus:outline-none transition-all"
+              placeholder="Adresse email"
+              required
+            />
+            <label
+              htmlFor="email"
+              className={`absolute left-4 pointer-events-none transition-all duration-300 
+                ${username ? 'text-sm -top-3.5 text-warm-primary' : 'text-base top-4 text-warm-on-surface-variant/80'}
+                peer-focus:text-sm peer-focus:-top-3.5 peer-focus:text-warm-primary`}
+            >
+              Adresse email
+            </label>
+          </div>
+          <div className="relative">
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="peer w-full bg-warm-surface-container rounded-lg py-4 px-4 text-warm-on-surface placeholder-transparent text-base font-medium focus:outline-none transition-all"
+              placeholder="Mot de passe"
+              required
+            />
+            <label
+              htmlFor="password"
+              className={`absolute left-4 pointer-events-none transition-all duration-300 
+                ${password ? 'text-sm -top-3.5 text-warm-primary' : 'text-base top-4 text-warm-on-surface-variant/80'}
+                peer-focus:text-sm peer-focus:-top-3.5 peer-focus:text-warm-primary`}
+            >
+              Mot de passe
+            </label>
+          </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-1/2 mx-auto bg-white text-black font-bold py-3 px-6 rounded-full text-lg shadow-lg hover:bg-pink-100 transition-all disabled:opacity-50"
+            className="w-full bg-warm-primary text-warm-on-primary font-bold py-4 px-6 rounded-xl text-lg shadow-lg shadow-warm-primary/30 hover:bg-warm-primary-dim transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl hover:-translate-y-1"
           >
             {loading ? 'Connexion...' : 'Login'}
           </button>
         </form>
-        <div className="w-full flex flex-col items-center mt-6 gap-2">
-          <span className="text-white/80 text-sm">
-            Forgot Password? <button type="button" onClick={handleForgotPassword} className="underline hover:text-white ml-1">Click Here</button>
-          </span>
-          <span className="text-white/80 text-sm">
-            Don’t have an account ? <button className="underline hover:text-white ml-1">Sign up</button>
-          </span>
-        </div>
+        
       </motion.div>
     </div>
   );

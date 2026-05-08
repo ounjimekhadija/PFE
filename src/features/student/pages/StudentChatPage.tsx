@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import MessageContent from '../../../shared/components/MessageContent';
 import { Send, Video, Search, Smile, CheckCheck, Users, Crown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -347,7 +348,7 @@ const StudentChat: React.FC = () => {
                     ? 'bg-[#765b00] text-white rounded-3xl rounded-tr-none'
                     : 'bg-white text-[#4d4636] border border-transparent rounded-3xl rounded-tl-none'
                 }`}>
-                  {msg.text}
+                  <MessageContent text={msg.text} />
                 </div>
                 {msg.isMe && msg.isRead && (
                   <div className="mt-1.5 flex gap-1 items-center">
