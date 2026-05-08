@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const { validate } = require('../middleware/validateMiddleware');
+const { loginSchema, registerSchema } = require('../../../src/shared/schemas');
 const { createClient } = require('@supabase/supabase-js');
+const { tryInsertRoleRow } = require('./helpers');
 
 // On instancie un client Supabase avec la clé secrete du service (backend uniquement)
 // pour pourvoir interroger la base sans dépendre de l'authentification client.
@@ -464,6 +467,85 @@ router.delete('/admin/users/:id', authMiddleware, async (req, res) => {
     console.error('Erreur suppression utilisateur:', error);
     return res.status(500).json({ error: 'Erreur serveur lors de la suppression.' });
   }
+});
+
+// Route API : "Inscription"
+// Elle demande un token valide via le middleware
+router.post('/register', validate({ body: registerSchema }), async (req, res) => {
+  try {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY manquant.' });
+    }
+
+    const { email, password } = req.body;
+
+    const { data: newUser, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nom,
+          prenom,
+          role,
+          telephone,
+        },
+      },
+    });
+
+    if (signUpError) {
+      return res.status(400).json({ error: signUpError.message });
+    }
+
+    const userId = newUser?.user?.id;
+    if (!userId) {
+      return res.status(500).json({ error: 'Erreur lors de la création de l’utilisateur.' });
+    }
+
+    const roleTableName = ROLE_TABLE_BY_ROLE[role];
+    if (!roleTableName) {
+      return res.status(400).json({ error: `Role invalide: ${role}` });
+    }
+
+    const { ok, error: insertError } = await tryInsertRoleRow(
+      roleTableName,
+      userId,
+      role,
+      req.body
+    );
+
+    if (!ok) {
+      // Si l'insertion dans la table de rôle échoue, on supprime l'utilisateur créé
+      await supabase.auth.admin.deleteUser(userId);
+      return res.status(500).json({
+        error: `Erreur lors de l'insertion dans la table ${roleTableName}: ${insertError.message}`,
+      });
+    }
+
+    res.status(201).json({ message: 'Utilisateur créé avec succès', userId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route API : "Connexion"
+// Elle demande un token valide via le middleware
+router.post('/login', validate({ body: loginSchema }), async (req, res) => {
+  const { email, password } = req.body;
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return res.status(401).json({ error: error.message });
+  }
+
+  res.json({
+    message: 'Connexion réussie',
+    session: data.session,
+    user: data.user,
+  });
 });
 
 module.exports = router;

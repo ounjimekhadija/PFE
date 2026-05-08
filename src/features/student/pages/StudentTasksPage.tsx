@@ -3,6 +3,8 @@ import { Plus, MessageSquare } from 'lucide-react';
 import CommentModal from '../../../shared/components/CommentModal';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { supabase } from '../../../lib/supabase';
+import { taskSchema, Task as TaskType } from '../../../shared/schemas';
+import { z } from 'zod';
 
 interface TaskS {
   id: string;
@@ -22,6 +24,11 @@ interface Column {
   tasks: TaskS[];
 }
 
+interface AssigneeOption {
+  id: string;
+  name: string;
+}
+
 const DraggableComponent = Draggable as any;
 const DroppableComponent = Droppable as any;
 
@@ -30,8 +37,9 @@ const StudentTasks: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const [showCreateTask, setShowCreateTask] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', assignee: '', description: '' });
-  const [assigneeOptions, setAssigneeOptions] = useState<{id: string, name: string}[]>([]);
+  const [newTask, setNewTask] = useState<Partial<TaskType>>({ title: '', description: '', priority: 'Moyenne', assignee: '' });
+  const [errors, setErrors] = useState<z.ZodError | null>(null);
+  const [assigneeOptions, setAssigneeOptions] = useState<AssigneeOption[]>([]);
   const [currentIterationId, setCurrentIterationId] = useState<string | null>(null);
 
   const [columns, setColumns] = useState<Column[]>([
@@ -151,9 +159,13 @@ const StudentTasks: React.FC = () => {
     fetchTasksAndStudents();
   }, []);
 
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTask.title) return;
+  const handleCreateTask = async () => {
+    const validationResult = taskSchema.safeParse(newTask);
+    if (!validationResult.success) {
+      setErrors(validationResult.error);
+      return;
+    }
+    setErrors(null);
 
     if (!currentIterationId) {
       alert("Impossible de créer la tâche : Il n'y a pas d'itération (Sprint) active 'EN_COURS' pour votre projet.");
@@ -209,7 +221,7 @@ const StudentTasks: React.FC = () => {
       ));
 
       setShowCreateTask(false);
-      setNewTask({ title: '', assignee: '', description: '' });
+      setNewTask({ title: '', description: '', priority: 'Moyenne', assignee: '' });
     } catch (err) {
       console.error(err);
     }
@@ -277,59 +289,42 @@ const StudentTasks: React.FC = () => {
       </header>
 
       {showCreateTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative border border-transparent">
-            <button
-              className="absolute top-4 right-4 text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold"
-              onClick={() => setShowCreateTask(false)}
-              aria-label="Fermer"
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-bold mb-6 text-[#1a1c1a]">Créer une tâche</h2>
-            <form onSubmit={handleCreateTask} className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Titre de la tâche</label>
-                <input
-                  type="text"
-                  className="w-full border border-transparent rounded-xl px-4 py-2 focus:outline-none focus:border-transparent"
-                  value={newTask.title}
-                  onChange={e => setNewTask({ ...newTask, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Description</label>
-                <textarea
-                  className="w-full border border-transparent rounded-xl px-4 py-2 focus:outline-none focus:border-transparent resize-none min-h-[60px]"
-                  value={newTask.description}
-                  onChange={e => setNewTask({ ...newTask, description: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-[#4d4636]">Assigner à</label>
-                <select
-                  className="w-full border border-transparent rounded-xl px-4 py-2 focus:outline-none focus:border-transparent"
-                  value={newTask.assignee}
-                  onChange={e => setNewTask({ ...newTask, assignee: e.target.value })}
-                >
-                  <option value="">Non assigné</option>
-                  {assigneeOptions.map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  className="bg-[#765b00] text-white px-6 py-2 rounded-xl font-bold hover:bg-[#594400] transition-all"
-                >
-                  Créer
-                </button>
-              </div>
-            </form>
-          </div>
+        <div className="create-task-form">
+          <input
+            type="text"
+            placeholder="Titre de la tâche"
+            value={newTask.title || ''}
+            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+          />
+          {errors?.flatten().fieldErrors.title && <p className="error">{errors.flatten().fieldErrors.title[0]}</p>}
+          
+          <textarea
+            placeholder="Description"
+            value={newTask.description || ''}
+            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+          />
+          
+          <select
+            value={newTask.priority || 'Moyenne'}
+            onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as 'Faible' | 'Moyenne' | 'Haute' })}
+          >
+            <option value="Faible">Faible</option>
+            <option value="Moyenne">Moyenne</option>
+            <option value="Haute">Haute</option>
+          </select>
+
+          <select
+            value={newTask.assignee || ''}
+            onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
+          >
+            <option value="">Assigner à</option>
+            {assigneeOptions.map((option: AssigneeOption) => (
+              <option key={option.id} value={option.id}>{option.name}</option>
+            ))}
+          </select>
+          
+          <button onClick={handleCreateTask}>Créer</button>
+          <button onClick={() => setShowCreateTask(false)}>Annuler</button>
         </div>
       )}
 
