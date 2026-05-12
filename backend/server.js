@@ -10,6 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const mailRoutes = require('./routes/mailRoutes');
+const meetingRoutes = require('./routes/meetingRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,6 +34,7 @@ const mailLimiter = rateLimit({
 // Routes de base
 app.use('/api/auth', authRoutes);
 app.use('/api/mail', mailLimiter, mailRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 app.get('/', (req, res) => {
   res.send('API Backend fonctionnelle');

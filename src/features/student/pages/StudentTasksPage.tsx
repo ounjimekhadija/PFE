@@ -221,7 +221,7 @@ const StudentTasks: React.FC = () => {
       ));
 
       setShowCreateTask(false);
-      setNewTask({ title: '', description: '', priority: 'Moyenne', assignee: '' });
+      setNewTask({ title: '', description: '', priority: 'Moyenne' });
     } catch (err) {
       console.error(err);
     }
