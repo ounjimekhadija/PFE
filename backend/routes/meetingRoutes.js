@@ -3,7 +3,7 @@ const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
 const authMiddleware = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validateMiddleware');
-const { meetingSchema } = require('../../src/shared/schemas');
+const { meetingSchema } = require('../shared/schemas');
 const { sendEmail } = require('../services/emailService');
 
 // Initialisation du client Supabase

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const { validate } = require('../middleware/validateMiddleware');
-const { loginSchema, registerSchema } = require('../../../src/shared/schemas');
+const { loginSchema, registerSchema } = require('../shared/schemas');
 const { createClient } = require('@supabase/supabase-js');
 const { tryInsertRoleRow } = require('./helpers');
 
@@ -107,21 +107,7 @@ const buildRoleInsertCandidates = (role, userId, payload) => {
   ];
 };
 
-const tryInsertRoleRow = async (tableName, userId, role, payload) => {
-  const candidates = buildRoleInsertCandidates(role, userId, payload);
 
-  let lastError = null;
-
-  for (const row of candidates) {
-    const { error } = await supabase.from(tableName).insert(row);
-    if (!error) {
-      return { ok: true, usedPayload: row };
-    }
-    lastError = error;
-  }
-
-  return { ok: false, error: lastError };
-};
 
 // Route API : "Qui suis-je ?"
 // Elle demande un token valide via le middleware
