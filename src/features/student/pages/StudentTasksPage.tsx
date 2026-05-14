@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MessageSquare } from 'lucide-react';
 import CommentModal from '../../../shared/components/CommentModal';
+import TaskCreateModal from '../../../shared/components/TaskCreateModal';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { supabase } from '../../../lib/supabase';
 import { taskSchema, Task as TaskType } from '../../../shared/schemas';
@@ -35,10 +36,8 @@ const DroppableComponent = Droppable as any;
 const StudentTasks: React.FC = () => {
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const [showCreateTask, setShowCreateTask] = useState(false);
-  const [newTask, setNewTask] = useState<Partial<TaskType>>({ title: '', description: '', priority: 'Moyenne', assignee: '' });
-  const [errors, setErrors] = useState<z.ZodError | null>(null);
   const [assigneeOptions, setAssigneeOptions] = useState<AssigneeOption[]>([]);
   const [currentIterationId, setCurrentIterationId] = useState<string | null>(null);
 
@@ -159,72 +158,25 @@ const StudentTasks: React.FC = () => {
     fetchTasksAndStudents();
   }, []);
 
-  const handleCreateTask = async () => {
-    const validationResult = taskSchema.safeParse(newTask);
-    if (!validationResult.success) {
-      setErrors(validationResult.error);
-      return;
-    }
-    setErrors(null);
+  const handleTaskCreated = (newDbTask: any, assignedStudentId: string | undefined) => {
+    const selectedAssignee = assigneeOptions.find((opt) => opt.id === assignedStudentId);
+    const assigneeName = selectedAssignee?.name || 'Non assigné';
 
-    if (!currentIterationId) {
-      alert("Impossible de créer la tâche : Il n'y a pas d'itération (Sprint) active 'EN_COURS' pour votre projet.");
-      return;
-    }
+    const taskObj: TaskS = {
+      id: newDbTask.id.toString(),
+      db_id: newDbTask.id,
+      title: newDbTask.titre,
+      description: newDbTask.description || 'Aucune description',
+      assigneeStudentId: assignedStudentId,
+      priority: 'Medium', // This should be mapped correctly
+      assignee: assigneeName,
+      comments: 0,
+      attachments: 0,
+    };
 
-    try {
-      const { data: newDbTask, error } = await supabase
-        .from('taches')
-        .insert({
-          iteration_id: currentIterationId,
-          titre: newTask.title,
-          description: newTask.description,
-          priorite: 'MEDIUM',
-          etat: 'A_FAIRE'
-        })
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error("Erreur lors de la création", error);
-        alert("Erreur de création de tâche.");
-        return;
-      }
-
-      if (newTask.assignee) {
-        const { error: assignError } = await supabase
-          .from('tache_assignations')
-          .insert({ tache_id: newDbTask.id, etudiant_id: newTask.assignee });
-
-        if (assignError) {
-          console.error("Erreur lors de l'assignation", assignError);
-        }
-      }
-
-      const selectedAssignee = assigneeOptions.find((opt) => opt.id === newTask.assignee);
-      const assigneeName = selectedAssignee?.name || 'Non assigné';
-
-      const taskObj: TaskS = {
-        id: newDbTask.id.toString(),
-        db_id: newDbTask.id,
-        title: newDbTask.titre,
-        description: newDbTask.description || 'Aucune description',
-        assigneeStudentId: newTask.assignee || undefined,
-        priority: 'Medium',
-        assignee: assigneeName,
-        comments: 0,
-        attachments: 0,
-      };
-
-      setColumns(cols => cols.map(col =>
-        col.id === 'todo' ? { ...col, tasks: [...col.tasks, taskObj] } : col
-      ));
-
-      setShowCreateTask(false);
-      setNewTask({ title: '', description: '', priority: 'Moyenne' });
-    } catch (err) {
-      console.error(err);
-    }
+    setColumns(cols => cols.map(col =>
+      col.id === 'todo' ? { ...col, tasks: [...col.tasks, taskObj] } : col
+    ));
   };
 
   const onDragEnd = async (result: DropResult) => {
@@ -281,52 +233,20 @@ const StudentTasks: React.FC = () => {
         </div>
         <button
           className="bg-[#1a1c1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-[#4d4636] transition-all shadow-md min-w-0"
-          onClick={() => setShowCreateTask(true)}
+          onClick={() => setIsCreateModalOpen(true)}
         >
           <Plus size={16} />
           <span>Créer une tâche</span>
         </button>
       </header>
 
-      {showCreateTask && (
-        <div className="create-task-form">
-          <input
-            type="text"
-            placeholder="Titre de la tâche"
-            value={newTask.title || ''}
-            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-          />
-          {errors?.flatten().fieldErrors.title && <p className="error">{errors.flatten().fieldErrors.title[0]}</p>}
-          
-          <textarea
-            placeholder="Description"
-            value={newTask.description || ''}
-            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-          />
-          
-          <select
-            value={newTask.priority || 'Moyenne'}
-            onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as 'Faible' | 'Moyenne' | 'Haute' })}
-          >
-            <option value="Faible">Faible</option>
-            <option value="Moyenne">Moyenne</option>
-            <option value="Haute">Haute</option>
-          </select>
-
-          <select
-            value={newTask.assignee || ''}
-            onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-          >
-            <option value="">Assigner à</option>
-            {assigneeOptions.map((option: AssigneeOption) => (
-              <option key={option.id} value={option.id}>{option.name}</option>
-            ))}
-          </select>
-          
-          <button onClick={handleCreateTask}>Créer</button>
-          <button onClick={() => setShowCreateTask(false)}>Annuler</button>
-        </div>
-      )}
+      <TaskCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        assigneeOptions={assigneeOptions}
+        currentIterationId={currentIterationId}
+        onTaskCreated={handleTaskCreated}
+      />
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 flex gap-6 overflow-x-auto pb-4 justify-center">

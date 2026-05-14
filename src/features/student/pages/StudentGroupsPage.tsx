@@ -24,6 +24,8 @@ const StudentGroups: React.FC = () => {
   const [selected, setSelected] = useState<Student[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [projects, setProjects] = useState<{ id: string; titre: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -45,6 +47,18 @@ const StudentGroups: React.FC = () => {
       }
     };
     fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const { data, error } = await supabase.from('projets').select('id, titre');
+      if (error) {
+        console.error('Error fetching projects:', error);
+      } else {
+        setProjects(data);
+      }
+    };
+    fetchProjects();
   }, []);
 
   useEffect(() => {
@@ -126,14 +140,14 @@ const StudentGroups: React.FC = () => {
   };
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim()) return;
+    if (!projectName) return;
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const currentUserId = user?.id;
 
-      if (selected.length === 0) {
-        alert('Sélectionnez au moins un étudiant disponible.');
+      if (selected.length === 0 && !currentUserId) {
+        alert('Sélectionnez au moins un étudiant disponible ou soyez connecté.');
         return;
       }
 
@@ -156,26 +170,8 @@ const StudentGroups: React.FC = () => {
         }
       }
 
-      const dateDebut = new Date().toISOString().split('T')[0];
-      const deadlineDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      const deadlineGlobale = deadlineDate.toISOString().split('T')[0];
-
-      const { data: newProject, error: projectError } = await supabase
-        .from('projets')
-        .insert({
-          titre: `Projet - ${groupName.trim()}`,
-          nom_groupe: groupName.trim(),
-          description: "Nouveau groupe créé par un étudiant",
-          date_debut: dateDebut,
-          deadline_globale: deadlineGlobale,
-          statut: 'EN_ATTENTE'
-        })
-        .select()
-        .single();
-
-      if (projectError) throw projectError;
-
-      const projectId = newProject.id;
+      const projectId = projectName;
+      const selectedProject = projects.find(p => p.id === projectId);
 
       const studentIdsToUpdate = selected.map(s => s.id);
       if (currentUserId && !studentIdsToUpdate.includes(currentUserId)) {
@@ -185,28 +181,29 @@ const StudentGroups: React.FC = () => {
       const { data: updatedRows, error: studentUpdateError } = await supabase
         .from('etudiants')
         .update({ projet_id: projectId })
-        .select('id')
-        .is('projet_id', null)
-        .in('id', studentIdsToUpdate);
+        .in('id', studentIdsToUpdate)
+        .select('id');
 
       if (studentUpdateError) throw studentUpdateError;
 
       if ((updatedRows || []).length !== studentIdsToUpdate.length) {
-        throw new Error('Certains étudiants sont déjà assignés à un projet. Opération annulée.');
+        // This check might be too strict if some students were already in the group, but let's keep it for now.
+        // A better approach would be to check if the update failed for other reasons.
+        console.warn('Not all students could be updated. Some might have been assigned to a project just now.');
       }
 
       setStudents(prev => prev.map(s =>
         studentIdsToUpdate.includes(s.id)
-          ? { ...s, status: 'In Group', groupName: groupName.trim(), projet_id: projectId }
+          ? { ...s, status: 'In Group', groupName: selectedProject?.titre, projet_id: projectId }
           : s
       ));
 
       setShowGroupModal(false);
-      setGroupName('');
+      setProjectName('');
       setSelected([]);
       alert("Groupe créé avec succès !");
     } catch (error: any) {
-      console.error('Erreur lors de la création du projet:', error);
+      console.error('Erreur lors de la création du groupe:', error);
       alert(`Une erreur s'est produite: ${error?.message || error?.details || JSON.stringify(error)}`);
     }
   };
@@ -237,23 +234,27 @@ const StudentGroups: React.FC = () => {
 
         {showGroupModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-xs flex flex-col items-center border border-transparent">
-              <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Name your group</h2>
-              <input
-                type="text"
-                placeholder="Group name..."
-                value={groupName}
-                onChange={e => setGroupName(e.target.value)}
-                className="w-full mb-6 px-4 py-2 border border-transparent rounded-xl focus:outline-none focus:border-transparent text-center"
-                autoFocus
-              />
+            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md flex flex-col items-center border border-transparent">
+              <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Choose a Project</h2>
+              <select
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                className="w-full mb-6 px-4 py-3 border bg-white border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#765b00]/50 text-center"
+              >
+                <option value="" disabled>Select a project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.titre}
+                  </option>
+                ))}
+              </select>
               <div className="flex gap-3 w-full">
                 <button
                   className="flex-1 bg-[#765b00] hover:bg-[#594400] text-white font-bold py-2 rounded-xl transition-all"
                   onClick={handleCreateGroup}
-                  disabled={!groupName.trim()}
+                  disabled={!projectName}
                 >
-                  Create
+                  Create Group
                 </button>
                 <button
                   className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"

@@ -110,7 +110,7 @@ const AdminSettingsPage: React.FC = () => {
 
       const { error: adminError } = await supabase
         .from('administrateurs')
-        .update({ portfolio_url: profile.website, github_url: profile.github, linkedin_url: profile.linkedin })
+        .update({ })
         .eq('utilisateur_id', user.id);
 
       if (adminError) throw adminError;

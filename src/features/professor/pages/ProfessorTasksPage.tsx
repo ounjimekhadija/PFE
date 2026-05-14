@@ -386,14 +386,24 @@ const Tasks: React.FC = () => {
       {/* Iterations strip */}
       {!loading && currentIteration && (
         <div className="mb-4 flex shrink-0 items-center gap-3 overflow-x-auto pb-1">
-          {tasks.filter(t => t.iterationId === currentIteration.id).every(t => t.status === 'DONE') && (
-            <button
-              onClick={handleValidateIteration}
-              className="rounded-xl bg-green-500 px-4 py-2 text-xs font-bold text-white"
-            >
-              Valider l'itération
-            </button>
-          )}
+          {
+            (() => {
+              const iterationTasks = tasks.filter(t => t.iterationId === currentIteration.id);
+              const allTasksDone = iterationTasks.length > 0 && iterationTasks.every(t => t.status === 'DONE');
+              
+              if (allTasksDone) {
+                return (
+                  <button
+                    onClick={handleValidateIteration}
+                    className="rounded-xl bg-green-500 px-4 py-2 text-xs font-bold text-white"
+                  >
+                    Valider l'itération
+                  </button>
+                );
+              }
+              return null;
+            })()
+          }
         </div>
       )}
 

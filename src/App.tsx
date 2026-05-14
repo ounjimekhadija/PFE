@@ -23,6 +23,8 @@ import AdminMembersPage from './features/admin/pages/AdminMembersPage';
 import AdminProjectsPage from './features/admin/pages/AdminProjectsPage';
 import AdminUsersPage from './features/admin/pages/AdminUsersPage';
 import { useAppController } from './shared/hooks/useAppController';
+import SplashScreen from './shared/components/SplashScreen';
+import { useState } from 'react';
 
 const App: React.FC = () => {
   const { 
@@ -32,6 +34,12 @@ const App: React.FC = () => {
     login, 
     logout
   } = useAppController();
+
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
 
   return (
     <Router>

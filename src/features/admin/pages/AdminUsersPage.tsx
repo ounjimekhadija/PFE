@@ -292,17 +292,23 @@ const AdminUsers: React.FC = () => {
   };
 
   const getAccessToken = async (): Promise<string> => {
-    let { data: sessionData } = await supabase.auth.getSession();
-    let token = sessionData.session?.access_token;
-
-    if (!token) {
-      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw new Error('Session invalide. Reconnectez-vous.');
-      token = refreshed.session?.access_token;
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Utilisateur non authentifié. Reconnectez-vous.');
     }
 
-    if (!token) throw new Error('Session invalide. Reconnectez-vous.');
-    return token;
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) {
+      throw new Error('Session invalide ou expirée. Reconnectez-vous.');
+    }
+
+    return session.access_token;
   };
 
   const handleDeleteUser = async (id: string) => {
