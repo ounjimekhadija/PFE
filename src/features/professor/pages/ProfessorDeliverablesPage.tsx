@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { FileText, FileArchive, Link as LinkIcon, File, Download, ExternalLink, Send, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
@@ -53,6 +53,8 @@ const Deliverables: React.FC = () => {
   const [sendingComment, setSendingComment] = useState<Record<string, boolean>>({});
   const [updatingStatus, setUpdatingStatus] = useState<Record<string, boolean>>({});
   const [showComments,   setShowComments]   = useState<Record<string, boolean>>({});
+  const [openStatusId,   setOpenStatusId]   = useState<string | null>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -295,6 +297,16 @@ const Deliverables: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setOpenStatusId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <div>
@@ -333,7 +345,7 @@ const Deliverables: React.FC = () => {
                     <motion.div
                       key={deliverable.id}
                       whileHover={{ scale: 1.01 }}
-                      className="group relative flex flex-col rounded-2xl border border-[#d1c5b0] bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-[#ebc254] overflow-hidden"
+                      className="group relative flex flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-[#ebc254] overflow-hidden"
                     >
                       <div className="p-4 flex-1 flex flex-col">
 
@@ -344,18 +356,40 @@ const Deliverables: React.FC = () => {
                           </div>
 
                           {/* Status dropdown */}
-                          <div className="relative">
-                            <select
-                              value={deliverable.status}
-                              onChange={e => handleStatusChange(deliverable.id, e.target.value)}
+                          <div className="relative" ref={openStatusId === deliverable.id ? statusDropdownRef : null}>
+                            <button
+                              type="button"
+                              onClick={() => setOpenStatusId(openStatusId === deliverable.id ? null : deliverable.id)}
                               disabled={updatingStatus[deliverable.id]}
-                              className={`appearance-none cursor-pointer rounded-lg border pl-2.5 pr-6 py-1 text-[11px] font-bold outline-none transition disabled:opacity-50 ${statusClass}`}
+                              className={`flex items-center gap-1.5 rounded-lg border pl-2.5 pr-1.5 py-1 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-50 ${statusClass}`}
                             >
-                              {STATUS_OPTIONS.map(o => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                              ))}
-                            </select>
-                            <ChevronDown size={11} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60" />
+                              {STATUS_OPTIONS.find(o => o.value === deliverable.status)?.label || deliverable.status}
+                              <ChevronDown size={11} className={`transition-transform duration-200 ${openStatusId === deliverable.id ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {openStatusId === deliverable.id && (
+                              <div className="absolute right-0 top-full z-50 mt-1 w-32 origin-top-right rounded-xl border border-transparent bg-white p-1 shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-in fade-in zoom-in-95 duration-200">
+                                {STATUS_OPTIONS.map(o => {
+                                  const isSel = deliverable.status === o.value;
+                                  // Color mapping for options based on their value
+                                  const optColors: Record<string, string> = {
+                                    VALIDATED: isSel ? 'bg-[#dcfce7] text-[#166534]' : 'hover:bg-[#dcfce7]/40 text-[#166534]',
+                                    REJECTED:  isSel ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'hover:bg-[#ffdad6]/40 text-[#ba1a1a]',
+                                    LATE:      isSel ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'hover:bg-[#ffdad6]/40 text-[#ba1a1a]',
+                                  };
+                                  return (
+                                    <button
+                                      key={o.value}
+                                      type="button"
+                                      onClick={() => { handleStatusChange(deliverable.id, o.value); setOpenStatusId(null); }}
+                                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11px] font-bold transition-colors ${optColors[o.value] || 'hover:bg-[#f4f3f1]'}`}
+                                    >
+                                      {o.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
 

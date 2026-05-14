@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageSquare } from 'lucide-react';
+import { Plus, MessageSquare, Flag } from 'lucide-react';
 import CommentModal from '../../../shared/components/CommentModal';
 import TaskCreateModal from '../../../shared/components/TaskCreateModal';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -162,13 +162,18 @@ const StudentTasks: React.FC = () => {
     const selectedAssignee = assigneeOptions.find((opt) => opt.id === assignedStudentId);
     const assigneeName = selectedAssignee?.name || 'Non assigné';
 
+    const dbPriority = (newDbTask.priorite || 'MEDIUM') as string;
+    let uiPriority: TaskS['priority'] = 'Medium';
+    if (dbPriority === 'HIGH') uiPriority = 'High';
+    if (dbPriority === 'LOW') uiPriority = 'Low';
+
     const taskObj: TaskS = {
       id: newDbTask.id.toString(),
       db_id: newDbTask.id,
       title: newDbTask.titre,
       description: newDbTask.description || 'Aucune description',
       assigneeStudentId: assignedStudentId,
-      priority: 'Medium', // This should be mapped correctly
+      priority: uiPriority,
       assignee: assigneeName,
       comments: 0,
       attachments: 0,
@@ -281,7 +286,18 @@ const StudentTasks: React.FC = () => {
                               snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#765b00]/20 scale-105 rotate-2 z-50' : 'shadow-sm hover:shadow-md'
                             }`}
                           >
-                            <div className="mb-4"></div>
+                            <div className="mb-3 flex items-center justify-between">
+                              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                task.priority === 'High' ? 'text-rose-600 bg-rose-50' : 
+                                task.priority === 'Medium' ? 'text-amber-600 bg-amber-50' : 
+                                'text-blue-600 bg-blue-50'
+                              }`}>
+                                <Flag size={10} strokeWidth={3} />
+                                {task.priority === 'High' ? 'Haute' : 
+                                 task.priority === 'Medium' ? 'Moyenne' : 
+                                 'Faible'}
+                              </div>
+                            </div>
 
                             <h4 className="font-bold text-[#1a1c1a] mb-2">{task.title}</h4>
                             <p className="text-sm text-[#7f7664] mb-6 line-clamp-2">{task.description}</p>
@@ -289,7 +305,7 @@ const StudentTasks: React.FC = () => {
                             <div className="flex items-center justify-between pt-4 border-t border-transparent">
                               <div className="flex items-center gap-2">
                                 <img
-                                  src={`https://picsum.photos/seed/${task.assignee}/100/100`}
+                                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(task.assignee)}&background=random`}
                                   alt={task.assignee}
                                   className="w-8 h-8 rounded-full border-2 border-white object-cover"
                                 />

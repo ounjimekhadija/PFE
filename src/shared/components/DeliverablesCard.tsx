@@ -23,7 +23,7 @@ const DeliverablesCard: React.FC<DeliverablesCardProps> = ({ iterationNumber, de
   }
 
   return (
-    <div className="flex w-80 shrink-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+    <div className="flex w-80 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
       <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-[#f4f3f1] px-4 py-3">
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-[#765b00]" />

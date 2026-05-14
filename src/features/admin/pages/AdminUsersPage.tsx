@@ -131,6 +131,43 @@ const AdminUsers: React.FC = () => {
     projetId: '',
   });
 
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target as Node)) {
+        setShowRoleDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const roles = [
+    { value: 'ADMINISTRATEUR', label: 'Admin' },
+    { value: 'ENCADRANT', label: 'Encadrant' },
+    { value: 'ETUDIANT', label: 'Etudiant' },
+  ];
+
+  const [showAccessDropdown, setShowAccessDropdown] = useState(false);
+  const accessDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (accessDropdownRef.current && !accessDropdownRef.current.contains(e.target as Node)) {
+        setShowAccessDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const accessLevels = [
+    { value: 'ADMIN', label: 'ADMIN' },
+    { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN' },
+  ];
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -410,8 +447,8 @@ const AdminUsers: React.FC = () => {
       return;
     }
 
-    if (form.role === 'ETUDIANT' && (!form.numeroEtudiant.trim() || !form.niveau.trim() || !form.filiere.trim())) {
-      setCreateError('Pour Etudiant: numero etudiant, niveau et filiere sont obligatoires.');
+    if (form.role === 'ETUDIANT' && !form.numeroEtudiant.trim()) {
+      setCreateError('Pour Etudiant: numero etudiant est obligatoire.');
       return;
     }
 
@@ -637,17 +674,40 @@ const AdminUsers: React.FC = () => {
                 {createError && <div className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm text-[#B91C1C]">{createError}</div>}
                 {createSuccess && <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
 
-                <div>
+                <div className="relative" ref={roleDropdownRef}>
                   <label className="mb-1 block text-sm font-medium text-[#4d4636]">Role</label>
-                  <select
-                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                    value={form.role}
-                    onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                  <button
+                    type="button"
+                    onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                    className="flex w-full items-center justify-between rounded-xl border border-[#dcd6c1] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
                   >
-                    <option value="ADMINISTRATEUR">Admin</option>
-                    <option value="ENCADRANT">Encadrant</option>
-                    <option value="ETUDIANT">Etudiant</option>
-                  </select>
+                    <span>{roles.find(r => r.value === form.role)?.label}</span>
+                    <svg className={`h-4 w-4 text-[#7f7664] transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {showRoleDropdown && (
+                    <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(118,91,0,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
+                      {roles.map((role) => (
+                        <button
+                          key={role.value}
+                          type="button"
+                          onClick={() => {
+                            setForm((f) => ({ ...f, role: role.value }));
+                            setShowRoleDropdown(false);
+                          }}
+                          className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${
+                            form.role === role.value
+                              ? 'bg-[#765b00] text-white'
+                              : 'text-[#1a1c1a] hover:bg-[#765b00]/5'
+                          }`}
+                        >
+                          {role.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -655,7 +715,7 @@ const AdminUsers: React.FC = () => {
                     <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.nom}
                       onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
                       required
@@ -665,7 +725,7 @@ const AdminUsers: React.FC = () => {
                     <label className="mb-1 block text-sm font-medium text-[#4d4636]">Prenom</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.prenom}
                       onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
                       required
@@ -673,33 +733,48 @@ const AdminUsers: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero de telephone</label>
-                    <input
-                      type="tel"
-                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                      value={form.phone}
-                      onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                    />
+                {form.role !== 'ETUDIANT' && (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero de telephone</label>
+                      <input
+                        type="tel"
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        value={form.phone}
+                        onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Email</label>
+                      <input
+                        type="email"
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                        required
+                      />
+                    </div>
                   </div>
+                )}
+
+                {form.role === 'ETUDIANT' && (
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[#4d4636]">Email</label>
                     <input
                       type="email"
-                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
                     />
                   </div>
-                </div>
+                )}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#4d4636]">Mot de passe</label>
                   <input
                     type="password"
-                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                    className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                     value={form.password}
                     onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                     required
@@ -712,22 +787,46 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom organisation</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.nomOrganisation}
                         onChange={(e) => setForm((f) => ({ ...f, nomOrganisation: e.target.value }))}
                         required
                       />
                     </div>
-                    <div>
+                    <div className="relative" ref={accessDropdownRef}>
                       <label className="mb-1 block text-sm font-medium text-[#4d4636]">Niveau acces</label>
-                      <select
-                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                        value={form.niveauAcces}
-                        onChange={(e) => setForm((f) => ({ ...f, niveauAcces: e.target.value }))}
+                      <button
+                        type="button"
+                        onClick={() => setShowAccessDropdown(!showAccessDropdown)}
+                        className="flex w-full items-center justify-between rounded-xl border border-[#dcd6c1] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
                       >
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-                      </select>
+                        <span>{accessLevels.find(a => a.value === form.niveauAcces)?.label}</span>
+                        <svg className={`h-4 w-4 text-[#7f7664] transition-transform ${showAccessDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {showAccessDropdown && (
+                        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(118,91,0,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
+                          {accessLevels.map((lvl) => (
+                            <button
+                              key={lvl.value}
+                              type="button"
+                              onClick={() => {
+                                setForm((f) => ({ ...f, niveauAcces: lvl.value }));
+                                setShowAccessDropdown(false);
+                              }}
+                              className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${
+                                form.niveauAcces === lvl.value
+                                  ? 'bg-[#765b00] text-white'
+                                  : 'text-[#1a1c1a] hover:bg-[#765b00]/5'
+                              }`}
+                            >
+                              {lvl.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -739,7 +838,7 @@ const AdminUsers: React.FC = () => {
                         <label className="mb-1 block text-sm font-medium text-[#4d4636]">Grade</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                          className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.grade}
                           onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))}
                           required
@@ -749,7 +848,7 @@ const AdminUsers: React.FC = () => {
                         <label className="mb-1 block text-sm font-medium text-[#4d4636]">Specialite</label>
                         <input
                           type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                          className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                           value={form.specialite}
                           onChange={(e) => setForm((f) => ({ ...f, specialite: e.target.value }))}
                           required
@@ -760,7 +859,7 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#4d4636]">Bureau</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
                         value={form.bureau}
                         onChange={(e) => setForm((f) => ({ ...f, bureau: e.target.value }))}
                         required
@@ -770,128 +869,34 @@ const AdminUsers: React.FC = () => {
                 )}
 
                 {form.role === 'ETUDIANT' && (
-                  <>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero etudiant</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.numeroEtudiant}
-                          onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Niveau</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.niveau}
-                          onChange={(e) => setForm((f) => ({ ...f, niveau: e.target.value }))}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Filiere</label>
-                        <input
-                          type="text"
-                          list="filiere-options"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.filiere}
-                          onChange={(e) => setForm((f) => ({ ...f, filiere: e.target.value }))}
-                          required
-                        />
-                        <datalist id="filiere-options">
-                          {filieres.map((f) => (
-                            <option key={f} value={f} />
-                          ))}
-                        </datalist>
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Titre profil</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.titreProfil}
-                          onChange={(e) => setForm((f) => ({ ...f, titreProfil: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">CNE</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.cne}
-                          onChange={(e) => setForm((f) => ({ ...f, cne: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">CIN</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.cin}
-                          onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Competences (separees par virgule)</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero etudiant</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                        value={form.competences}
-                        onChange={(e) => setForm((f) => ({ ...f, competences: e.target.value }))}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                        value={form.numeroEtudiant}
+                        onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
+                        required
                       />
                     </div>
-
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">GitHub URL</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.githubUrl}
-                          onChange={(e) => setForm((f) => ({ ...f, githubUrl: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">LinkedIn URL</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.linkedinUrl}
-                          onChange={(e) => setForm((f) => ({ ...f, linkedinUrl: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Portfolio URL</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">CIN</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                        value={form.portfolioUrl}
-                        onChange={(e) => setForm((f) => ({ ...f, portfolioUrl: e.target.value }))}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                        value={form.cin}
+                        onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
                       />
                     </div>
-
-                  </>
+                  </div>
                 )}
               </div>
 
-              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-transparent bg-white pt-4">
+              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white pt-4">
                 <button
                   type="button"
-                  className="rounded-xl border border-transparent bg-white px-5 py-2 text-sm font-semibold text-[#4d4636]"
+                  className="rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-5 py-2 text-sm font-semibold text-[#4d4636]"
                   onClick={() => setShowAddModal(false)}
                 >
                   Annuler

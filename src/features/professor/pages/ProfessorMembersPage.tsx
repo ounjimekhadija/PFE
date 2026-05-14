@@ -207,7 +207,7 @@ const Members: React.FC = () => {
                 <motion.div
                   key={member.id}
                   whileHover={{ y: -8 }}
-                  className="group relative mb-6 overflow-hidden rounded-2xl border border-[#d1c5b0] dark:border-[#3a3836] bg-white dark:bg-[#1e1f1e] p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]"
+                  className="group relative mb-6 overflow-hidden rounded-2xl border border-transparent bg-white dark:bg-[#1e1f1e] p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]"
                 >
                   <div className="absolute left-0 top-0 h-24 w-full bg-gradient-to-br from-[#f4f3f1] to-[#efeeeb] dark:from-[#2a2927] dark:to-[#1e1f1e]"></div>
 
@@ -225,7 +225,7 @@ const Members: React.FC = () => {
                     <p className="mb-6 text-xs font-medium uppercase tracking-wider text-[#765b00]">Student Member</p>
 
                     <div className="w-full space-y-3 mb-8">
-                      <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#ebc254]">
+                      <div className="flex items-center gap-3 rounded-2xl border border-transparent bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#ebc254] shadow-sm">
                         <div className="rounded-lg bg-[#ffd464] p-2 text-[#594400]">
                           <Mail size={16} />
                         </div>
@@ -235,7 +235,7 @@ const Members: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#d1c5b0]">
+                      <div className="flex items-center gap-3 rounded-2xl border border-transparent bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#d1c5b0] shadow-sm">
                         <div className="rounded-lg bg-[#efeeeb] p-2 text-[#765b00]">
                           <Phone size={16} />
                         </div>
@@ -246,14 +246,14 @@ const Members: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#ebc254]">
+                        <div className="rounded-2xl border border-transparent bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#ebc254] shadow-sm">
                           <div className="flex items-center gap-2 mb-1">
                             <GraduationCap size={14} className="text-[#765b00]" />
                             <p className="text-[10px] font-bold uppercase text-[#7f7664]">CNE</p>
                           </div>
                           <p className="text-xs font-mono text-[#4d4636]">{member.cne}</p>
                         </div>
-                        <div className="rounded-2xl border border-[#d1c5b0] bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#d1c5b0]">
+                        <div className="rounded-2xl border border-transparent bg-[#f4f3f1] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#d1c5b0] shadow-sm">
                           <div className="flex items-center gap-2 mb-1">
                             <CreditCard size={14} className="text-[#ba1a1a]" />
                             <p className="text-[10px] font-bold uppercase text-[#7f7664]">CIN</p>
@@ -268,7 +268,7 @@ const Members: React.FC = () => {
                         href={normalizeExternalUrl(member.linkedin)}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] dark:border-[#3a3836] bg-[#f4f3f1] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231]"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent dark:border-[#3a3836] bg-[#f4f3f1] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231] shadow-sm"
                       >
                         <Linkedin size={16} className="text-[#0A66C2]" />
                         <span className="text-xs font-medium text-[#4d4636]">LinkedIn</span>
@@ -277,7 +277,7 @@ const Members: React.FC = () => {
                         href={normalizeExternalUrl(member.github)}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-[#d1c5b0] dark:border-[#3a3836] bg-[#f4f3f1] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231]"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent dark:border-[#3a3836] bg-[#f4f3f1] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231] shadow-sm"
                       >
                         <Github size={16} className="text-[#4d4636]" />
                         <span className="text-xs font-medium text-[#4d4636]">GitHub</span>

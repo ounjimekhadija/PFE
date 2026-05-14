@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { Send, Video, Search, Smile, CheckCheck, Users, Crown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
@@ -32,6 +32,7 @@ const StudentChat: React.FC = () => {
   const [projectTitle, setProjectTitle] = useState('Mon Groupe');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [members, setMembers] = useState<Member[]>([]);
@@ -210,6 +211,12 @@ const StudentChat: React.FC = () => {
     }
   };
 
+  const filteredMessages = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return messages;
+    return messages.filter(m => m.text.toLowerCase().includes(q));
+  }, [messages, search]);
+
   const handleJoinVideo = () => {
     if (projectId) window.open(`https://meet.jit.si/StudentHub_Project_${projectId}`, '_blank');
   };
@@ -245,6 +252,8 @@ const StudentChat: React.FC = () => {
             <input
               type="text"
               placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-[#f4f3f1] border-none rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#765b00]/20 transition-all outline-none"
             />
           </div>
@@ -335,7 +344,7 @@ const StudentChat: React.FC = () => {
         </header>
 
         <div className="chat-messages flex-1 overflow-y-auto p-4 md:p-10 space-y-6 md:space-y-10 bg-[#faf9f6]/50">
-          {messages.map((msg) => (
+          {filteredMessages.map((msg) => (
             <div key={msg.id} className={`flex gap-3 md:gap-4 ${msg.isMe ? 'flex-row-reverse' : ''}`}>
               <img src={msg.avatar} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-2xl object-cover shadow-sm ring-white ring-2" />
               <div className={`max-w-[85%] md:max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MessageSquare, Send, X, ChevronDown, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import DeliverablesCard from '../../../shared/components/DeliverablesCard';
@@ -76,6 +76,12 @@ const Tasks: React.FC = () => {
   const [selectedValidatedIter, setSelectedValidatedIter] = useState<Iteration | null>(null);
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [loadingDeliverables, setLoadingDeliverables] = useState(false);
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+  const [openIterProjectDropdown, setOpenIterProjectDropdown] = useState(false);
+  const [openIterStatusDropdown, setOpenIterStatusDropdown] = useState(false);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
+  const iterProjectDropdownRef = useRef<HTMLDivElement>(null);
+  const iterStatusDropdownRef = useRef<HTMLDivElement>(null);
 
   const [showIterModal, setShowIterModal] = useState(false);
   const [iterForm, setIterForm] = useState({ projectId: '', numero: 1, objectif: '', dateDebut: '', dateFin: '', statut: 'A_FAIRE' });
@@ -258,6 +264,22 @@ const Tasks: React.FC = () => {
       );
     }
   }, [selectedIterationId, selectedProjectId, allTasks]);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target as Node)) {
+        setIsProjectDropdownOpen(false);
+      }
+      if (iterProjectDropdownRef.current && !iterProjectDropdownRef.current.contains(e.target as Node)) {
+        setOpenIterProjectDropdown(false);
+      }
+      if (iterStatusDropdownRef.current && !iterStatusDropdownRef.current.contains(e.target as Node)) {
+        setOpenIterStatusDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
 
   const visibleIterations = selectedProjectId === 'all' || !selectedProjectId
     ? allIterations
@@ -355,16 +377,44 @@ const Tasks: React.FC = () => {
 
         <div className="flex items-center gap-2">
           {projects.length > 1 && (
-            <div className="relative">
-              <select
-                value={selectedProjectId || 'all'}
-                onChange={(e) => handleProjectFilter(e.target.value)}
-                className="appearance-none rounded-xl border border-[#d1c5b0] bg-white py-2 pl-4 pr-9 text-sm font-semibold text-[#4d4636] outline-none focus:border-[#765b00]"
+            <div className="relative" ref={projectDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                className="flex items-center justify-between gap-3 min-w-[160px] rounded-xl border border-[#d1c5b0] bg-white py-2 px-4 text-sm font-semibold text-[#4d4636] shadow-sm transition hover:border-[#765b00] hover:shadow-md active:scale-95"
               >
-                <option value="all">All Projects</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
-              <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#7f7664]" />
+                <span className="truncate">
+                  {selectedProjectId === 'all' || !selectedProjectId 
+                    ? 'All Projects' 
+                    : projects.find(p => p.id === selectedProjectId)?.title || 'All Projects'}
+                </span>
+                <ChevronDown size={14} className={`text-[#7f7664] transition-transform duration-200 ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isProjectDropdownOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right rounded-2xl border border-transparent bg-white/95 p-1.5 shadow-[0_8px_32px_rgba(118,91,0,0.12)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
+                  <button
+                    type="button"
+                    onClick={() => { handleProjectFilter('all'); setIsProjectDropdownOpen(false); }}
+                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${selectedProjectId === 'all' ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                  >
+                    <div className={`h-1.5 w-1.5 rounded-full ${selectedProjectId === 'all' ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                    All Projects
+                  </button>
+                  <div className="my-1 border-t border-[#f4f3f1]" />
+                  {projects.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { handleProjectFilter(p.id); setIsProjectDropdownOpen(false); }}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${selectedProjectId === p.id ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                    >
+                      <div className={`h-1.5 w-1.5 rounded-full ${selectedProjectId === p.id ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                      <span className="truncate">{p.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           <button
@@ -413,7 +463,7 @@ const Tasks: React.FC = () => {
           {columns.map(col => {
             const colTasks = tasks.filter(t => t.status === col.key);
             return (
-              <div key={col.key} className="flex w-72 shrink-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+              <div key={col.key} className="flex w-72 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
                 {/* Column header */}
                 <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-[#f4f3f1] px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -475,7 +525,7 @@ const Tasks: React.FC = () => {
       {/* Create Iteration Modal */}
       {showIterModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]" onClick={() => setShowIterModal(false)}>
-          <div className="w-full max-w-sm rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(118,91,0,0.15)]" onClick={e => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#1a1c1a]">New Iteration</h2>
               <button onClick={() => setShowIterModal(false)} className="text-[#7f7664] hover:text-[#1a1c1a]"><X size={18} /></button>
@@ -484,15 +534,32 @@ const Tasks: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Group / Project</label>
-                <div className="relative">
-                  <select
-                    value={iterForm.projectId}
-                    onChange={e => setIterForm(f => ({ ...f, projectId: e.target.value }))}
-                    className="w-full appearance-none rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-9 text-sm font-semibold text-[#4d4636] outline-none focus:border-[#765b00]"
+                <div className="relative" ref={iterProjectDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenIterProjectDropdown(!openIterProjectDropdown)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#4d4636] outline-none transition hover:border-[#765b00]"
                   >
-                    {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                  </select>
-                  <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#7f7664]" />
+                    <span className="truncate">
+                      {projects.find(p => p.id === iterForm.projectId)?.title || 'Select Project'}
+                    </span>
+                    <ChevronDown size={14} className={`text-[#7f7664] transition-transform ${openIterProjectDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openIterProjectDropdown && (
+                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#f4f3f1] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                      {projects.map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { setIterForm(f => ({ ...f, projectId: p.id })); setOpenIterProjectDropdown(false); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.projectId === p.id ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                        >
+                          <div className={`h-1.5 w-1.5 rounded-full ${iterForm.projectId === p.id ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                          <span className="truncate">{p.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -542,17 +609,36 @@ const Tasks: React.FC = () => {
 
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Status</label>
-                <div className="relative">
-                  <select
-                    value={iterForm.statut}
-                    onChange={e => setIterForm(f => ({ ...f, statut: e.target.value }))}
-                    className="w-full appearance-none rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-9 text-sm font-semibold text-[#4d4636] outline-none focus:border-[#765b00]"
+                <div className="relative" ref={iterStatusDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenIterStatusDropdown(!openIterStatusDropdown)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#4d4636] outline-none transition hover:border-[#765b00]"
                   >
-                    <option value="A_FAIRE">À faire</option>
-                    <option value="EN_COURS">En cours</option>
-                    <option value="VALIDE">Validé</option>
-                  </select>
-                  <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#7f7664]" />
+                    <span className="truncate">
+                      {iterForm.statut === 'A_FAIRE' ? 'À faire' : iterForm.statut === 'EN_COURS' ? 'En cours' : 'Validé'}
+                    </span>
+                    <ChevronDown size={14} className={`text-[#7f7664] transition-transform ${openIterStatusDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openIterStatusDropdown && (
+                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#f4f3f1] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                      {[
+                        { v: 'A_FAIRE', l: 'À faire' },
+                        { v: 'EN_COURS', l: 'En cours' },
+                        { v: 'VALIDE', l: 'Validé' }
+                      ].map(o => (
+                        <button
+                          key={o.v}
+                          type="button"
+                          onClick={() => { setIterForm(f => ({ ...f, statut: o.v })); setOpenIterStatusDropdown(false); }}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.statut === o.v ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                        >
+                          <div className={`h-1.5 w-1.5 rounded-full ${iterForm.statut === o.v ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                          {o.l}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -574,7 +660,7 @@ const Tasks: React.FC = () => {
       {/* Task detail panel */}
       {selectedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]" onClick={() => setSelectedTask(null)}>
-          <div className="relative flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#d1c5b0] bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]" onClick={e => e.stopPropagation()}>
 
             {/* Panel header */}
             <div className="flex shrink-0 items-start justify-between border-b border-[#f4f3f1] px-6 py-4">

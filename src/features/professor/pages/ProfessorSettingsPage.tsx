@@ -199,7 +199,7 @@ const ProfessorSettingsPage: React.FC = () => {
       )}
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-[260px,1fr]">
-        <aside className="mb-6 rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+        <aside className="mb-6 rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           <div className="space-y-2">
             {[
               { id: 'profile', icon: User, label: 'Edit Profile' },
@@ -221,7 +221,7 @@ const ProfessorSettingsPage: React.FC = () => {
           </div>
         </aside>
 
-        <article className="mb-6 rounded-2xl border border-[#d1c5b0] bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+        <article className="mb-6 rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           {activeTab === 'profile' && (
             <form onSubmit={handleSave} className="space-y-6">
               <div className="flex flex-col items-center gap-4 rounded-xl border border-[#d1c5b0] bg-[#f4f3f1] p-4 sm:flex-row sm:items-center">
@@ -255,7 +255,7 @@ const ProfessorSettingsPage: React.FC = () => {
                       type={type}
                       value={profile[key as keyof typeof profile]}
                       onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                      className="w-full rounded-xl border border-[#efeeeb] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/15"
                     />
                   </div>
                 ))}
@@ -288,7 +288,7 @@ const ProfessorSettingsPage: React.FC = () => {
                     type="password"
                     value={passwords[key as keyof typeof passwords]}
                     onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
-                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                    className="w-full rounded-xl border border-[#efeeeb] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
                   />
                 </div>
               ))}

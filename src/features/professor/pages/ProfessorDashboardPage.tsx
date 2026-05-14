@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
 
 interface ProjectBar {
+  id: string;
   name: string;
-  timeProgress: number; // percent of time elapsed relative to start->deadline
-  taskCompletion: number; // percent of tasks done for the project
+  timeProgress: number; 
+  taskCompletion: number; 
   tasks: {
     completed: number;
     inProgress: number;
     late: number;
   } | null;
+  recentCompleted: any[];
 }
 
 interface Member {
@@ -80,7 +82,6 @@ const Dashboard: React.FC = () => {
         setTotalStudents(students?.length || 0);
         setUnreadMsgs(msgs?.length || 0);
 
-        // Recent members (last 4)
         const memberList: Member[] = (students || []).slice(0, 4).map((s: any) => {
           const u = Array.isArray(s.utilisateurs) ? s.utilisateurs[0] : s.utilisateurs;
           const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
@@ -88,7 +89,6 @@ const Dashboard: React.FC = () => {
         });
         setRecentMembers(memberList);
 
-        // Iterations for timeline (upcoming/active)
         const now = new Date().toISOString();
         const timelineIters = (iters || [])
           .filter((it: any) => it.date_fin >= now || it.statut === 'EN_COURS')
@@ -101,11 +101,10 @@ const Dashboard: React.FC = () => {
           statut: it.statut,
         })));
 
-        // Tasks for completion rate + per-project progress
         const iterIds = (iters || []).map((it: any) => it.id);
         let tasks: any[] = [];
         if (iterIds.length > 0) {
-          const { data: taskData } = await supabase.from('taches').select('id, iteration_id, etat').in('iteration_id', iterIds);
+          const { data: taskData } = await supabase.from('taches').select('id, iteration_id, etat, titre, created_at').in('iteration_id', iterIds);
           tasks = taskData || [];
         }
 
@@ -113,20 +112,18 @@ const Dashboard: React.FC = () => {
         const done = tasks.filter((t: any) => t.etat === 'TERMINE').length;
         setCompletionRate(total > 0 ? Math.round((done / total) * 100) : 0);
 
-        // Per-project progress
         const iterByProject: Record<string, string[]> = {};
         (iters || []).forEach((it: any) => {
           if (!iterByProject[it.projet_id]) iterByProject[it.projet_id] = [];
           iterByProject[it.projet_id].push(it.id);
         });
-        // Build per-project progress relative to deadline using iterations start dates
+
         setProjectBars(projects.map((p: any) => {
           const ids = iterByProject[p.id] || [];
           const pTasks = tasks.filter((t: any) => ids.includes(t.iteration_id));
           const pDone = pTasks.filter((t: any) => t.etat === 'TERMINE').length;
           const taskCompletion = pTasks.length > 0 ? Math.round((pDone / pTasks.length) * 100) : 0;
 
-          // find earliest iteration start for this project
           const projectIters = (iters || []).filter((it: any) => it.projet_id === p.id && it.date_debut);
           let timeProgress = 0;
           if (p.deadline_globale && projectIters.length > 0) {
@@ -141,7 +138,6 @@ const Dashboard: React.FC = () => {
             }
           }
 
-          // Get task counts for the current iteration for the tooltip
           const currentIter = (iters || []).find((it: any) => it.projet_id === p.id && it.statut === 'EN_COURS');
           let iterTasks: { completed: number; inProgress: number; late: number } | null = null;
           if (currentIter) {
@@ -154,16 +150,21 @@ const Dashboard: React.FC = () => {
             };
           }
 
+          const pRecentDone = pTasks
+            .filter((t: any) => t.etat === 'TERMINE')
+            .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+            .slice(0, 3);
 
           return {
+            id: p.id,
             name: p.titre || 'Projet',
             timeProgress,
             taskCompletion,
             tasks: iterTasks,
+            recentCompleted: pRecentDone,
           };
         }));
 
-        // Avg delay (days past deadline for late projects)
         const nowMs = Date.now();
         const late = (projects || []).filter((p: any) => p.deadline_globale && new Date(p.deadline_globale).getTime() < nowMs);
         if (late.length > 0) {
@@ -177,10 +178,13 @@ const Dashboard: React.FC = () => {
     fetchDashboard();
   }, []);
 
+  const allRecentCompleted = projectBars
+    .flatMap(p => p.recentCompleted.map(t => ({ ...t, projectName: p.name })))
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+    .slice(0, 10);
+
   const exportReport = () => {
     const wb = XLSX.utils.book_new();
-
-    // Sheet 1 — Summary
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
       ['Dashboard Report', new Date().toLocaleDateString('fr-FR')],
       [],
@@ -191,7 +195,6 @@ const Dashboard: React.FC = () => {
       ['Avg. Delay',       avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
     ]), 'Summary');
 
-    // Sheet 2 — Projects
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
       ['Project', 'Task Completion (%)', 'Time Progress (%)', 'Done', 'In Progress', 'Late'],
       ...projectBars.map(p => [
@@ -204,22 +207,9 @@ const Dashboard: React.FC = () => {
       ]),
     ]), 'Projects');
 
-    // Sheet 3 — Timeline
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-      ['Label', 'Description', 'Date', 'Status'],
-      ...iterations.map(it => [it.label, it.description, it.date, it.statut]),
-    ]), 'Iterations');
-
-    // Sheet 4 — Members
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-      ['Name'],
-      ...recentMembers.map(m => [m.name]),
-    ]), 'Members');
-
     XLSX.writeFile(wb, `dashboard_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
-  // Donut chart
   const r = 54;
   const circ = 2 * Math.PI * r;
   const dashOffset = circ - (completionRate / 100) * circ;
@@ -233,8 +223,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] px-5 py-4" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-
-      {/* Header */}
       <header className="mb-3 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#1a1c1a]">Platform Overview</h1>
@@ -247,10 +235,9 @@ const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Stats */}
       <div className="mb-3 grid shrink-0 grid-cols-4 gap-3">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl border border-[#d1c5b0] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+          <div key={s.label} className="rounded-2xl border border-transparent bg-white px-4 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xl">{s.icon}</span>
               <span className={`text-[11px] font-bold ${s.badgeGreen ? 'text-green-500' : 'text-[#f59e0b]'}`}>{s.badge}</span>
@@ -261,11 +248,8 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Middle row — flex-1 fills remaining space */}
       <div className="mb-3 grid min-h-0 flex-1 grid-cols-3 gap-3">
-
-        {/* Bar chart */}
-        <div className="col-span-2 flex min-h-0 flex-col rounded-2xl border border-[#d1c5b0] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+        <div className="col-span-2 flex min-h-0 flex-col rounded-2xl border border-transparent bg-white px-5 py-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           <div className="mb-2 flex shrink-0 items-center gap-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Project Distribution</p>
             <div className="ml-auto flex items-center gap-3 flex-wrap">
@@ -274,70 +258,99 @@ const Dashboard: React.FC = () => {
               <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#765b00]"/>&lt;40%</span>
             </div>
           </div>
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 px-2">
             {loading ? (
               <p className="text-sm text-[#7f7664]">Chargement...</p>
             ) : projectBars.length === 0 ? (
               <p className="text-sm text-[#7f7664]">Aucun projet.</p>
             ) : (
-              <div className="flex h-full items-end gap-4 pb-1">
-                {projectBars.map((p, i) => {
-                  const taskPct  = Math.max(p.taskCompletion, 0);
-                  const timePct  = Math.max(p.timeProgress, 0);
-                  const barColor = taskPct >= 75 ? '#22c55e' : taskPct >= 40 ? '#ffd464' : '#765b00';
-                  return (
-                    <div key={i} className="group flex h-full flex-1 flex-col items-center justify-end gap-1">
-                      {/* hover label */}
-                      <div className="mb-1 opacity-0 group-hover:opacity-100 transition text-center">
-                        <span className="text-[10px] font-bold" style={{ color: barColor }}>{taskPct}%</span>
-                        {timePct > 0 && (
-                          <span className="ml-1 text-[9px] text-[#7f7664]">· {timePct}% time</span>
-                        )}
-                      </div>
+              <div className="flex h-full min-h-0 flex-1 gap-8">
+                <div className="flex flex-1 flex-col justify-end min-w-0">
+                  <div className="flex h-full items-end justify-center gap-10 border-r border-[#f4f3f1] pb-2 pr-8">
+                    {projectBars.map((p, i) => {
+                      const taskPct = Math.max(p.taskCompletion, 0);
+                      const timePct = Math.max(p.timeProgress, 0);
+                      const barColors = taskPct >= 75 
+                        ? { from: '#22c55e', to: '#16a34a', glow: 'rgba(34,197,94,0.3)' } 
+                        : taskPct >= 40 
+                        ? { from: '#ffd464', to: '#facc15', glow: 'rgba(255,212,100,0.3)' } 
+                        : { from: '#765b00', to: '#594400', glow: 'rgba(118,91,0,0.3)' };
 
-                      {/* bar */}
-                      <div className="relative w-full flex-1 rounded-t-xl bg-[#f4f3f1] overflow-hidden">
-                        {/* time progress ghost bar */}
-                        {timePct > 0 && (
-                          <div
-                            className="absolute bottom-0 w-full rounded-t-xl opacity-20 transition-all"
-                            style={{ height: `${Math.max(timePct, 3)}%`, backgroundColor: '#1a1c1a' }}
-                          />
-                        )}
-                        {/* task completion bar */}
-                        <div
-                          className="absolute bottom-0 w-full rounded-t-xl transition-all duration-700"
-                          style={{ height: `${Math.max(taskPct, 4)}%`, backgroundColor: barColor }}
-                        />
-                      </div>
-
-                      {/* labels */}
-                      <span className="mt-1 w-full truncate text-center text-[9px] text-[#7f7664]" title={p.name}>
-                        {p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name}
-                      </span>
-                      <span className="text-[10px] font-bold" style={{ color: barColor }}>{taskPct}% tasks</span>
-
-                      {/* task breakdown tooltip on hover */}
-                      {p.tasks && (
-                        <div className="hidden group-hover:flex flex-col items-center text-[9px] text-[#7f7664] mt-0.5 gap-0.5">
-                          <span className="text-green-600 font-semibold">✓ {p.tasks.completed} done</span>
-                          <span className="text-[#ffd464] font-semibold">⟳ {p.tasks.inProgress} in progress</span>
-                          {p.tasks.late > 0 && <span className="text-red-500 font-semibold">⚠ {p.tasks.late} late</span>}
+                      return (
+                        <div key={i} className="group relative flex h-full w-full max-w-[220px] flex-col items-center justify-end">
+                          <div className="mb-2 opacity-0 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 group-hover:opacity-100">
+                            <div className="rounded-lg bg-[#1a1c1a] px-3 py-1.5 shadow-lg">
+                              <span className="text-xs font-bold text-white whitespace-nowrap">{taskPct}% Complete</span>
+                            </div>
+                          </div>
+                          <div className="relative w-full flex-1 overflow-hidden rounded-3xl border border-[#efeeeb] bg-[#f4f3f1] shadow-inner">
+                            {timePct > 0 && (
+                              <div className="absolute bottom-0 w-full opacity-10 transition-all duration-1000" style={{ height: `${timePct}%`, background: 'linear-gradient(to top, #1a1c1a, transparent)' }} />
+                            )}
+                            <div className="absolute bottom-0 w-full transition-all duration-700 ease-out rounded-t-xl"
+                              style={{ 
+                                height: `${Math.max(taskPct, 6)}%`, 
+                                background: `linear-gradient(to top, ${barColors.to}, ${barColors.from})`,
+                                boxShadow: `0 -4px 12px ${barColors.glow}, inset 0 2px 4px rgba(255,255,255,0.3)`
+                              }}
+                            />
+                          </div>
+                          <div className="mt-3 flex w-full flex-col items-center">
+                            <span className="w-full truncate text-center text-[10px] font-bold text-[#1a1c1a]" title={p.name}>{p.name}</span>
+                            <div className="mt-0.5 flex items-center gap-1">
+                               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: barColors.from }} />
+                               <span className="text-[9px] font-bold text-[#7f7664]">{taskPct}%</span>
+                            </div>
+                          </div>
+                          <div className="absolute bottom-full left-1/2 z-30 mb-4 hidden w-40 -translate-x-1/2 animate-in fade-in zoom-in-95 flex-col rounded-xl border border-[#f4f3f1] bg-white p-3 shadow-2xl duration-200 group-hover:flex">
+                             <p className="mb-2 border-b border-[#f4f3f1] pb-1 text-[10px] font-bold text-[#1a1c1a]">{p.name}</p>
+                             <div className="space-y-1.5">
+                                <div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">Tasks Done</span><span className="font-bold text-green-600">{p.tasks?.completed || 0}</span></div>
+                                <div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">In Progress</span><span className="font-bold text-[#ffd464]">{p.tasks?.inProgress || 0}</span></div>
+                                {p.tasks && p.tasks.late > 0 && (<div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">Late Tasks</span><span className="font-bold text-red-500">{p.tasks.late}</span></div>)}
+                                <div className="mt-2 flex justify-between border-t border-[#f4f3f1] pt-1 text-[9px]"><span className="text-[#7f7664]">Time Spent</span><span className="font-bold text-[#1a1c1a]">{timePct}%</span></div>
+                             </div>
+                             <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#f4f3f1] bg-white"></div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex w-72 flex-col min-w-0">
+                  <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Latest Achievements</p>
+                  <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+                    {allRecentCompleted.length === 0 ? (
+                      <div className="flex h-full flex-col items-center justify-center p-4 text-center">
+                        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#f4f3f1]"><span className="text-lg">🎉</span></div>
+                        <p className="text-xs font-medium text-[#7f7664]">No tasks completed yet.</p>
+                      </div>
+                    ) : (
+                      allRecentCompleted.map((task, idx) => (
+                        <div key={idx} className="group flex flex-col rounded-xl border border-[#f4f3f1] bg-[#faf9f6] p-3 transition-all hover:border-[#22c55e]/30 hover:bg-white hover:shadow-md">
+                          <div className="mb-1.5 flex items-start gap-2.5">
+                            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-600">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </div>
+                            <p className="line-clamp-2 text-xs font-bold leading-tight text-[#1a1c1a]">{task.titre}</p>
+                          </div>
+                          <div className="mt-auto flex items-center justify-between">
+                            <span className="max-w-[120px] truncate rounded-md bg-[#ffd464]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#765b00]">{task.projectName}</span>
+                            <span className="text-[9px] font-medium text-[#7f7664]">Done</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right column */}
         <div className="flex min-h-0 flex-col gap-3">
-
-          {/* Quarterly Progress */}
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl border border-[#d1c5b0] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl border border-transparent bg-white px-4 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
             <p className="mb-2 self-start text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Quarterly Progress</p>
             <svg width="110" height="110" viewBox="0 0 130 130">
               <circle cx="65" cy="65" r={r} fill="none" stroke="#f4f3f1" strokeWidth="14" />
@@ -353,21 +366,15 @@ const Dashboard: React.FC = () => {
                 {loading ? '—' : `${completionRate}%`}
               </text>
             </svg>
-            <p className="mt-1 text-[10px] text-[#7f7664]">Overall task completion</p>
+            <p className="mt-1 text-[10px] text-[#7f7664]">Overall completion</p>
           </div>
 
-          {/* Chat Card */}
           <div className="shrink-0 rounded-2xl bg-[#1a1c1a] px-4 py-3 text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
             <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-[#7f7664]">Chat</p>
             <div className="mb-2 flex -space-x-2">
               {recentMembers.map((m) => (
                 <img key={m.id} src={m.avatar} alt={m.name} title={m.name} className="h-7 w-7 rounded-full border-2 border-[#1a1c1a] object-cover" />
               ))}
-              {totalStudents > 4 && (
-                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#1a1c1a] bg-[#765b00] text-[9px] font-bold text-white">
-                  +{totalStudents - 4}
-                </div>
-              )}
             </div>
             <p className="mb-3 text-xs font-bold">{unreadMsgs > 0 ? `${unreadMsgs} new messages` : 'No new messages'}</p>
             <Link to="/chat" className="block w-full rounded-xl bg-white py-1.5 text-center text-xs font-bold text-[#1a1c1a] transition hover:bg-[#f4f3f1]">
@@ -377,25 +384,21 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="shrink-0 rounded-2xl border border-[#d1c5b0] bg-white px-5 py-3 shadow-[0_2px_8px_rgba(118,91,0,0.05)]">
+      <div className="shrink-0 rounded-2xl border border-transparent bg-white px-5 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Team Sync Timeline (Iterations)</p>
-          <span className="cursor-pointer text-[10px] font-semibold text-[#765b00] hover:underline">See full calendar</span>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Team Sync Timeline</p>
+          <span className="cursor-pointer text-[10px] font-semibold text-[#765b00] hover:underline">See calendar</span>
         </div>
         {loading ? (
           <p className="text-xs text-[#7f7664]">Chargement...</p>
-        ) : iterations.length === 0 ? (
-          <p className="text-xs text-[#7f7664]">Aucune iteration à venir.</p>
         ) : (
-          <div className="grid h-[calc(100%-32px)] grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {iterations.map((it) => (
               <div key={it.id} className="border-l-2 pl-3" style={{ borderColor: it.statut === 'EN_COURS' ? '#765b00' : '#d1c5b0' }}>
                 <p className="text-[10px] font-bold" style={{ color: it.statut === 'EN_COURS' ? '#765b00' : '#7f7664' }}>
-                  {new Date(it.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                  {new Date(it.date).toLocaleDateString('fr-FR')}
                 </p>
                 <p className="text-xs font-semibold text-[#1a1c1a]">{it.label}</p>
-                <p className="text-[10px] leading-relaxed text-[#7f7664]">{it.description}</p>
               </div>
             ))}
           </div>

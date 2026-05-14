@@ -214,7 +214,7 @@ const StudentSettingsPage: React.FC = () => {
                         type={type}
                         value={profile[key as keyof typeof profile]}
                         onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                        className="w-full rounded-xl border border-transparent bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-[#765b00]/15"
+                        className="w-full rounded-xl border border-[#efeeeb] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/15"
                       />
                     </label>
                   ))}
@@ -244,7 +244,7 @@ const StudentSettingsPage: React.FC = () => {
                       type="password"
                       value={passwords[key as keyof typeof passwords]}
                       onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
-                      className="w-full rounded-xl border border-transparent bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-[#765b00]/15"
+                      className="w-full rounded-xl border border-[#efeeeb] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/15"
                     />
                   </label>
                 ))}

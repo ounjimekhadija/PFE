@@ -110,7 +110,11 @@ const AdminSettingsPage: React.FC = () => {
 
       const { error: adminError } = await supabase
         .from('administrateurs')
-        .update({ })
+        .update({
+          portfolio_url: profile.website,
+          github_url: profile.github,
+          linkedin_url: profile.linkedin,
+        })
         .eq('utilisateur_id', user.id);
 
       if (adminError) throw adminError;
@@ -217,7 +221,7 @@ const AdminSettingsPage: React.FC = () => {
                       type={type}
                       value={profile[key as keyof typeof profile]}
                       onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                      className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                      className="w-full rounded-xl border border-[#efeeeb] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
                     />
                   </div>
                 ))}
@@ -250,7 +254,7 @@ const AdminSettingsPage: React.FC = () => {
                     type="password"
                     value={passwords[key as keyof typeof passwords]}
                     onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
-                    className="w-full rounded-xl border border-transparent bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                    className="w-full rounded-xl border border-[#efeeeb] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
                   />
                 </div>
               ))}

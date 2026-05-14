@@ -291,7 +291,7 @@ const Chat: React.FC = () => {
         async (payload) => {
           const { data: row } = await supabase
             .from('messages')
-            .select('id, auteur_id, contenu, created_at, utilisateurs(nom, prenom, avatar_url)')
+            .select('id, auteur_id, contenu, created_at, lu, utilisateurs(nom, prenom, avatar_url)')
             .eq('id', payload.new.id)
             .single();
 
@@ -344,13 +344,14 @@ const Chat: React.FC = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const filteredContacts = useMemo(() => {
+  const filteredMessages = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return contacts;
-    return contacts.filter((c) => c.name.toLowerCase().includes(q));
-  }, [contacts, search]);
+    if (!q) return messages;
+    return messages.filter((m) => m.text.toLowerCase().includes(q));
+  }, [messages, search]);
 
   const selectedContact = contacts.find((c) => c.id === selectedProjectId) || null;
+  const filteredContacts = contacts; // No sidebar filtering as per user request
 
   const onSelectProject = async (project: ContactItem) => {
     if (!currentUserId) return;
@@ -423,7 +424,7 @@ const Chat: React.FC = () => {
     <div className="flex min-h-0 flex-1 overflow-hidden bg-[#faf9f6] antialiased text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Sidebar */}
-      <div className="z-10 flex w-96 flex-col border-r border-[#d1c5b0] bg-white shadow-sm">
+      <div className="z-10 flex w-96 flex-col border-r border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
         <div className="p-8 pb-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-extrabold tracking-tight">Messages</h2>
@@ -491,7 +492,7 @@ const Chat: React.FC = () => {
       <div className="flex-1 flex flex-col relative bg-white">
 
         {/* Header */}
-        <header className="sticky top-0 z-20 flex items-center justify-between px-10 py-6 bg-white/80 backdrop-blur-md border-b border-[#d1c5b0]">
+        <header className="sticky top-0 z-20 flex items-center justify-between px-10 py-6 bg-white/80 backdrop-blur-md border-b border-transparent shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-[#765b00] flex items-center justify-center text-white font-bold text-xl shadow-sm">G</div>
             <div>
@@ -523,7 +524,7 @@ const Chat: React.FC = () => {
           {error && <div className="text-sm text-[#ba1a1a]">Erreur: {error}</div>}
           {!loading && !selectedProjectId && <div className="text-sm text-[#7f7664]">Aucun projet assigné à cet encadrant.</div>}
           {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#7f7664]">Aucun message pour ce projet.</div>}
-          {messages.map((msg) => (
+          {filteredMessages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} group`}>
               <div className={`max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
                 <div className="flex items-center gap-2 mb-2 px-1">
@@ -566,8 +567,8 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-8 bg-white border-t border-[#d1c5b0]">
-          <div className="max-w-4xl mx-auto relative flex items-center gap-4 bg-[#f4f3f1] p-2 rounded-[2rem] border border-[#d1c5b0] shadow-inner">
+        <div className="p-8 bg-white border-t border-transparent">
+          <div className="max-w-4xl mx-auto relative flex items-center gap-4 bg-[#f4f3f1] p-2 rounded-[2rem] border border-transparent shadow-inner">
 
             {/* Emoji picker */}
             <div className="relative" ref={emojiRef}>

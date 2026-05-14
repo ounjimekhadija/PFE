@@ -209,9 +209,9 @@ router.post('/admin/users', authMiddleware, async (req, res) => {
       });
     }
 
-    if (role === 'ETUDIANT' && (!numeroEtudiant || !niveau || !filiere)) {
+    if (role === 'ETUDIANT' && !numeroEtudiant) {
       return res.status(400).json({
-        error: 'Pour ETUDIANT, numeroEtudiant, niveau et filiere sont requis.',
+        error: 'Pour ETUDIANT, numeroEtudiant est requis.',
       });
     }
 
