@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { MessageSquare, Send, X, ChevronDown, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { notifyProjectStudents } from '../../../lib/notifications';
 import DeliverablesCard from '../../../shared/components/DeliverablesCard';
 
 interface TaskCard {
@@ -126,6 +127,25 @@ const Tasks: React.FC = () => {
       setCurrentIteration(null);
       // Add to validated list
       setValidatedIterations(prev => [...prev, { ...currentIteration, statut: 'VALIDE' }]);
+
+      // Create notification for admins
+      await supabase.from('notifications').insert({
+        title: 'Itération Validée',
+        message: `L'itération ${currentIteration.numero} du projet "${currentIteration.projectTitle}" a été validée.`,
+        type: 'ITERATION_VALIDATED'
+      });
+
+      // Notify students
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await notifyProjectStudents({
+          projectId: currentIteration.projectId,
+          senderId: user.id,
+          title: 'Iteration Validated',
+          message: `Iteration ${currentIteration.numero} of "${currentIteration.projectTitle}" has been validated.`,
+          type: 'VALIDATION_ITERATION'
+        });
+      }
     }
   };
 
@@ -355,6 +375,15 @@ const Tasks: React.FC = () => {
       setSelectedTask(t => t ? { ...t, commentCount: t.commentCount + 1 } : t);
       setTasks(prev => prev.map(t => t.id === selectedTask.id ? { ...t, commentCount: t.commentCount + 1 } : t));
       setCommentInput('');
+
+      // Notify students
+      await notifyProjectStudents({
+        projectId: selectedTask.projectId,
+        senderId: user.id,
+        title: 'New Comment on Task',
+        message: `Professor added a comment on task "${selectedTask.title}".`,
+        type: 'COMMENT_TACHE'
+      });
     }
     setSending(false);
   };

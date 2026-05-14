@@ -43,7 +43,23 @@ const App: React.FC = () => {
   return (
     <Router>
       {isInitializing ? (
-        <div className="h-screen w-full flex items-center justify-center bg-blue-900 text-white font-bold text-xl">Chargement de la session...</div>
+        <div className="h-screen w-full flex flex-col items-center justify-center bg-[#0f0f0e]">
+          <div className="relative flex flex-col items-center">
+            <div className="absolute -inset-20 bg-[#765b00] opacity-10 blur-[100px] animate-pulse"></div>
+            <div className="mb-12 relative">
+              <h1 className="text-6xl font-bold tracking-tighter text-white">
+                Bar<span className="text-[#765b00]">Oun</span>
+              </h1>
+              <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#765b00] to-transparent"></div>
+            </div>
+            <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
+              <div className="h-full bg-gradient-to-r from-[#765b00] to-[#b88c00] animate-pulse" style={{ width: '100%' }}></div>
+            </div>
+            <p className="mt-4 text-[#7f7664] text-sm tracking-[0.2em] uppercase animate-pulse">
+              Initialisation de votre espace
+            </p>
+          </div>
+        </div>
       ) : !isAuthenticated ? (
         <Routes>
           <Route path="/login" element={<LoginPage onLogin={login} />} />

@@ -260,6 +260,7 @@ const AdminDashboard: React.FC = () => {
       .map((p) => ({
         id: p.id,
         title: p.title,
+        progress: p.progress,
         subtitle: delayedIds.has(p.id)
           ? `${toDaysDelay(p.deadline)} days delay`
           : new Date(p.deadline!).toLocaleDateString(),
@@ -360,28 +361,42 @@ const AdminDashboard: React.FC = () => {
 
         {/* Bar Chart — Project Distribution */}
         <article className="flex min-h-0 flex-col rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-          <div className="mb-3 flex items-center justify-between shrink-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Project Distribution</h2>
+          <div className="mb-4 flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Project Distribution</h2>
+              <p className="text-[9px] text-[#7f7664]/60">Breakdown by domain</p>
+            </div>
             <div className="flex flex-wrap gap-3">
               {barData.slice(0, 4).map((b) => (
-                <span key={b.name} className="flex items-center gap-1 text-xs text-[#7f7664]">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: b.color }} />
-                  <span className="truncate max-w-[56px]">{b.name}</span>
+                <span key={b.name} className="flex items-center gap-1.5 text-[9px] font-bold text-[#7f7664]">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: b.color }} />
+                  <span className="truncate max-w-[60px]">{b.name}</span>
                 </span>
               ))}
             </div>
           </div>
-          <div className="flex flex-1 min-h-0 items-end gap-3 pb-1">
+          <div className="relative flex flex-1 min-h-0 items-end gap-4 pb-2 px-2">
+            {/* Subtle Grid Lines */}
+            <div className="absolute inset-x-0 bottom-8 top-0 flex flex-col justify-between pointer-events-none opacity-20">
+              {[1, 2, 3].map((i) => <div key={i} className="w-full border-t border-dashed border-[#7f7664]/30" />)}
+            </div>
+            
             {barData.map((bar) => (
-              <div key={bar.name} className="flex flex-1 flex-col items-center gap-1.5">
+              <div key={bar.name} className="group relative flex flex-1 flex-col items-center gap-2">
+                <div className="absolute -top-6 opacity-0 transition-all group-hover:-top-8 group-hover:opacity-100">
+                  <span className="rounded-md bg-[#1a1c1a] px-2 py-1 text-[9px] font-bold text-white shadow-lg">{bar.count} Projects</span>
+                </div>
                 <div
-                  className="w-full rounded-t-xl transition-all duration-700"
+                  className="w-full rounded-t-2xl transition-all duration-500 ease-out group-hover:brightness-110"
                   style={{
-                    height: `${Math.max(28, Math.round((bar.count / maxBarCount) * 160))}px`,
-                    backgroundColor: bar.color,
+                    height: `${Math.max(32, Math.round((bar.count / maxBarCount) * 160))}px`,
+                    background: `linear-gradient(to top, ${bar.color}, ${bar.color}dd)`,
+                    boxShadow: `0 -4px 12px ${bar.color}20, inset 0 2px 4px rgba(255,255,255,0.2)`
                   }}
                 />
-                <span className="text-[10px] text-[#7f7664] truncate w-full text-center">{bar.name.slice(0, 7)}</span>
+                <span className="text-[9px] font-bold text-[#7f7664] transition-colors group-hover:text-[#1a1c1a] truncate w-full text-center uppercase tracking-tighter">
+                  {bar.name}
+                </span>
               </div>
             ))}
           </div>
@@ -433,43 +448,41 @@ const AdminDashboard: React.FC = () => {
         </article>
       </section>
 
-      {/* Team Sync Timeline */}
-      <section className="shrink-0 rounded-2xl border border-transparent bg-white px-6 py-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-        <div className="mb-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Team Sync Timeline</h3>
-        </div>
+      {/* Team Sync Timeline — Minimized Height */}
+      <section className="shrink-0 rounded-2xl border border-transparent bg-white px-6 py-2 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
         {timelineItems.length === 0 ? (
-          <p className="text-sm text-[#7f7664]">No upcoming updates.</p>
+          <p className="text-[10px] text-[#7f7664]">No upcoming updates.</p>
         ) : (
-          <div className="relative">
-            {/* Connecting line — sits at 32px (subtitle area) + 8px (half dot) = 40px from top */}
-            <div className="absolute left-0 right-0 h-px bg-[#e8e3da]" style={{ top: '40px' }} />
+          <div className="relative py-2">
+            {/* Connecting line */}
+            <div className="absolute left-0 right-0 h-px bg-[#e8e3da]" style={{ top: '50%' }} />
 
-            <div
-              className="grid"
-              style={{ gridTemplateColumns: `repeat(${timelineItems.length}, 1fr)`, gap: '12px' }}
-            >
+            <div className="flex justify-between items-center px-2">
               {timelineItems.map((item) => (
-                <div key={item.id} className="flex flex-col items-center">
-                  {/* Subtitle — fixed 32px area so all dots align */}
-                  <div className="flex h-8 w-full items-center justify-center px-1">
-                    <p className="line-clamp-2 text-center text-[10px] leading-tight text-[#7f7664]">
-                      {item.subtitle}
-                    </p>
+                <div key={item.id} className="group relative flex flex-col items-center">
+                  {/* Tooltip on Hover */}
+                  <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
+                    <div className="whitespace-nowrap rounded-xl bg-[#1a1c1a] px-3 py-2 text-center shadow-xl">
+                      <p className="text-[10px] font-bold text-white/60 uppercase tracking-tighter">{item.subtitle}</p>
+                      <p className="text-xs font-bold text-white mt-0.5">{item.title}</p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div className="h-1 flex-1 w-20 rounded-full bg-white/20 overflow-hidden">
+                          <div className="h-full bg-[#ffd464]" style={{ width: `${item.progress}%` }} />
+                        </div>
+                        <span className="text-[9px] font-bold text-[#ffd464]">{item.progress}%</span>
+                      </div>
+                    </div>
+                    {/* Tooltip Arrow */}
+                    <div className="h-2 w-2 rotate-45 bg-[#1a1c1a] -mt-1" />
                   </div>
 
                   {/* Dot on the line */}
                   <div
-                    className="relative z-10 h-4 w-4 flex-shrink-0 rounded-full border-2 border-white shadow-md"
+                    className="relative z-10 h-3 w-3 cursor-help rounded-full border-2 border-white shadow-sm transition-all group-hover:scale-125 group-hover:shadow-md"
                     style={{ backgroundColor: item.accent }}
                   />
-
-                  {/* Title below */}
-                  <div className="mt-2 w-full px-1">
-                    <p className="line-clamp-2 text-center text-xs font-semibold leading-snug text-[#1a1c1a]">
-                      {item.title}
-                    </p>
-                  </div>
+                  
+                  <div className="absolute inset-0 z-0 h-3 w-3 scale-0 rounded-full bg-current opacity-0 transition-all group-hover:scale-[2.5] group-hover:opacity-10" style={{ color: item.accent }} />
                 </div>
               ))}
             </div>

@@ -38,10 +38,10 @@ export const loginSchema = z.object({
 
 // Schémas pour l'inscription
 const baseUserSchema = z.object({
-  email: z.string().email("Adresse email invalide"),
+  email: z.string().trim().email("Adresse email invalide"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-  nom: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  prenom: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+  nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères"),
+  prenom: z.string().trim().min(2, "Le prénom doit contenir au moins 2 caractères"),
 });
 
 export const registerAdminSchema = baseUserSchema.extend({
@@ -69,7 +69,7 @@ export const registerEtudiantSchema = baseUserSchema.extend({
   githubUrl: z.string().url().optional().or(z.literal('')),
   linkedinUrl: z.string().url().optional().or(z.literal('')),
   portfolioUrl: z.string().url().optional().or(z.literal('')),
-  projetId: z.string().uuid().optional(),
+  projetId: z.string().uuid().optional().or(z.literal('')),
 });
 
 export const registerSchema = z.discriminatedUnion("role", [

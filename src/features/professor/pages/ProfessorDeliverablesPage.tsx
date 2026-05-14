@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { FileText, FileArchive, Link as LinkIcon, File, Download, ExternalLink, Send, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
+import { notifyProjectStudents } from '../../../lib/notifications';
 
 interface Comment {
   id: string;
@@ -20,6 +21,7 @@ interface DeliverableItem {
   isExternal: boolean;
   externalUrl?: string;
   filePath?: string;
+  projectId: string;
 }
 
 interface DeliverableGroup {
@@ -119,6 +121,7 @@ const Deliverables: React.FC = () => {
             isExternal: Boolean(v?.est_lien_externe),
             externalUrl: v?.url_externe || undefined,
             filePath: v?.chemin_fichier || undefined,
+            projectId: String(row.projet_id),
           };
 
           if (!grouped[groupName]) grouped[groupName] = [];
@@ -196,6 +199,19 @@ const Deliverables: React.FC = () => {
         ...g,
         deliverables: g.deliverables.map(d => d.id === deliverableId ? { ...d, status: newStatus } : d),
       })));
+
+      // Notify students
+      const { data: { user } } = await supabase.auth.getUser();
+      const deliverable = groups.flatMap(g => g.deliverables).find(d => d.id === deliverableId);
+      if (user && deliverable) {
+        await notifyProjectStudents({
+          projectId: deliverable.projectId,
+          senderId: user.id,
+          title: 'Deliverable Validated',
+          message: `Your deliverable "${deliverable.title}" has been ${newStatus.toLowerCase()}.`,
+          type: 'VALIDATION_LIVRABLE'
+        });
+      }
     }
     setUpdatingStatus(prev => ({ ...prev, [deliverableId]: false }));
   };
@@ -244,6 +260,18 @@ const Deliverables: React.FC = () => {
     setComments(prev => ({ ...prev, [deliverableId]: [...(prev[deliverableId] || []), newComment] }));
     setCommentInputs(prev => ({ ...prev, [deliverableId]: '' }));
     setSendingComment(prev => ({ ...prev, [deliverableId]: false }));
+
+    // Notify students
+    const deliverable = groups.flatMap(g => g.deliverables).find(d => d.id === deliverableId);
+    if (deliverable) {
+      await notifyProjectStudents({
+        projectId: deliverable.projectId,
+        senderId: user.id,
+        title: 'New Comment',
+        message: `Professor added a comment on "${deliverable.title}".`,
+        type: 'COMMENT_LIVRABLE'
+      });
+    }
   };
 
   const triggerBrowserDownload = (blob: Blob, name: string) => {

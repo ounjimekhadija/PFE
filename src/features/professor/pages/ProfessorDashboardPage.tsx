@@ -7,8 +7,8 @@ import * as XLSX from 'xlsx';
 interface ProjectBar {
   id: string;
   name: string;
-  timeProgress: number; 
-  taskCompletion: number; 
+  timeProgress: number;
+  taskCompletion: number;
   tasks: {
     completed: number;
     inProgress: number;
@@ -189,10 +189,10 @@ const Dashboard: React.FC = () => {
       ['Dashboard Report', new Date().toLocaleDateString('fr-FR')],
       [],
       ['Metric', 'Value'],
-      ['Total Students',   totalStudents],
-      ['Active Projects',  activeProjects],
-      ['Completion Rate',  `${completionRate}%`],
-      ['Avg. Delay',       avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
+      ['Total Students', totalStudents],
+      ['Active Projects', activeProjects],
+      ['Completion Rate', `${completionRate}%`],
+      ['Avg. Delay', avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
     ]), 'Summary');
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
@@ -253,9 +253,9 @@ const Dashboard: React.FC = () => {
           <div className="mb-2 flex shrink-0 items-center gap-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Project Distribution</p>
             <div className="ml-auto flex items-center gap-3 flex-wrap">
-              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#22c55e]"/>≥75% done</span>
-              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#ffd464]"/>40–74%</span>
-              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#765b00]"/>&lt;40%</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#22c55e]" />≥75% done</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#ffd464]" />40–74%</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#7f7664]"><span className="h-2 w-2 rounded-full bg-[#765b00]" />&lt;40%</span>
             </div>
           </div>
           <div className="min-h-0 flex-1 px-2">
@@ -270,11 +270,11 @@ const Dashboard: React.FC = () => {
                     {projectBars.map((p, i) => {
                       const taskPct = Math.max(p.taskCompletion, 0);
                       const timePct = Math.max(p.timeProgress, 0);
-                      const barColors = taskPct >= 75 
-                        ? { from: '#22c55e', to: '#16a34a', glow: 'rgba(34,197,94,0.3)' } 
-                        : taskPct >= 40 
-                        ? { from: '#ffd464', to: '#facc15', glow: 'rgba(255,212,100,0.3)' } 
-                        : { from: '#765b00', to: '#594400', glow: 'rgba(118,91,0,0.3)' };
+                      const barColors = taskPct >= 75
+                        ? { from: '#22c55e', to: '#16a34a', glow: 'rgba(34,197,94,0.3)' }
+                        : taskPct >= 40
+                          ? { from: '#ffd464', to: '#facc15', glow: 'rgba(255,212,100,0.3)' }
+                          : { from: '#765b00', to: '#594400', glow: 'rgba(118,91,0,0.3)' };
 
                       return (
                         <div key={i} className="group relative flex h-full w-full max-w-[220px] flex-col items-center justify-end">
@@ -288,8 +288,8 @@ const Dashboard: React.FC = () => {
                               <div className="absolute bottom-0 w-full opacity-10 transition-all duration-1000" style={{ height: `${timePct}%`, background: 'linear-gradient(to top, #1a1c1a, transparent)' }} />
                             )}
                             <div className="absolute bottom-0 w-full transition-all duration-700 ease-out rounded-t-xl"
-                              style={{ 
-                                height: `${Math.max(taskPct, 6)}%`, 
+                              style={{
+                                height: `${Math.max(taskPct, 6)}%`,
                                 background: `linear-gradient(to top, ${barColors.to}, ${barColors.from})`,
                                 boxShadow: `0 -4px 12px ${barColors.glow}, inset 0 2px 4px rgba(255,255,255,0.3)`
                               }}
@@ -298,19 +298,19 @@ const Dashboard: React.FC = () => {
                           <div className="mt-3 flex w-full flex-col items-center">
                             <span className="w-full truncate text-center text-[10px] font-bold text-[#1a1c1a]" title={p.name}>{p.name}</span>
                             <div className="mt-0.5 flex items-center gap-1">
-                               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: barColors.from }} />
-                               <span className="text-[9px] font-bold text-[#7f7664]">{taskPct}%</span>
+                              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: barColors.from }} />
+                              <span className="text-[9px] font-bold text-[#7f7664]">{taskPct}%</span>
                             </div>
                           </div>
                           <div className="absolute bottom-full left-1/2 z-30 mb-4 hidden w-40 -translate-x-1/2 animate-in fade-in zoom-in-95 flex-col rounded-xl border border-[#f4f3f1] bg-white p-3 shadow-2xl duration-200 group-hover:flex">
-                             <p className="mb-2 border-b border-[#f4f3f1] pb-1 text-[10px] font-bold text-[#1a1c1a]">{p.name}</p>
-                             <div className="space-y-1.5">
-                                <div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">Tasks Done</span><span className="font-bold text-green-600">{p.tasks?.completed || 0}</span></div>
-                                <div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">In Progress</span><span className="font-bold text-[#ffd464]">{p.tasks?.inProgress || 0}</span></div>
-                                {p.tasks && p.tasks.late > 0 && (<div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">Late Tasks</span><span className="font-bold text-red-500">{p.tasks.late}</span></div>)}
-                                <div className="mt-2 flex justify-between border-t border-[#f4f3f1] pt-1 text-[9px]"><span className="text-[#7f7664]">Time Spent</span><span className="font-bold text-[#1a1c1a]">{timePct}%</span></div>
-                             </div>
-                             <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#f4f3f1] bg-white"></div>
+                            <p className="mb-2 border-b border-[#f4f3f1] pb-1 text-[10px] font-bold text-[#1a1c1a]">{p.name}</p>
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">Tasks Done</span><span className="font-bold text-green-600">{p.tasks?.completed || 0}</span></div>
+                              <div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">In Progress</span><span className="font-bold text-[#ffd464]">{p.tasks?.inProgress || 0}</span></div>
+                              {p.tasks && p.tasks.late > 0 && (<div className="flex justify-between text-[9px]"><span className="text-[#7f7664]">Late Tasks</span><span className="font-bold text-red-500">{p.tasks.late}</span></div>)}
+                              <div className="mt-2 flex justify-between border-t border-[#f4f3f1] pt-1 text-[9px]"><span className="text-[#7f7664]">Time Spent</span><span className="font-bold text-[#1a1c1a]">{timePct}%</span></div>
+                            </div>
+                            <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-[#f4f3f1] bg-white"></div>
                           </div>
                         </div>
                       );
@@ -385,10 +385,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="shrink-0 rounded-2xl border border-transparent bg-white px-5 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Team Sync Timeline</p>
-          <span className="cursor-pointer text-[10px] font-semibold text-[#765b00] hover:underline">See calendar</span>
-        </div>
         {loading ? (
           <p className="text-xs text-[#7f7664]">Chargement...</p>
         ) : (

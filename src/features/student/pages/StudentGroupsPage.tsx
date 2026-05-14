@@ -23,6 +23,7 @@ const StudentGroups: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState<Student[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projects, setProjects] = useState<{ id: string; titre: string }[]>([]);
@@ -236,18 +237,40 @@ const StudentGroups: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md flex flex-col items-center border border-transparent">
               <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Choose a Project</h2>
-              <select
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className="w-full mb-6 px-4 py-3 border bg-white border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#765b00]/50 text-center"
-              >
-                <option value="" disabled>Select a project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.titre}
-                  </option>
-                ))}
-              </select>
+              <div className="relative w-full mb-6 text-left">
+                <button
+                  type="button"
+                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                  className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#765b00]/50 transition-all"
+                >
+                  <span className={!projectName ? 'text-gray-400' : 'text-[#1a1c1a]'}>
+                    {projectName 
+                      ? projects.find(p => p.id === projectName)?.titre 
+                      : 'Select a project'}
+                  </span>
+                  <svg className={`h-4 w-4 text-[#7f7664] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showProjectDropdown && (
+                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-xl transition-all animate-in fade-in slide-in-from-top-1">
+                    {projects.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setProjectName(p.id);
+                          setShowProjectDropdown(false);
+                        }}
+                        className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${projectName === p.id ? 'bg-[#765b00] text-white' : 'text-[#1a1c1a] hover:bg-[#765b00]/5'}`}
+                      >
+                        {p.titre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex gap-3 w-full">
                 <button
                   className="flex-1 bg-[#765b00] hover:bg-[#594400] text-white font-bold py-2 rounded-xl transition-all"

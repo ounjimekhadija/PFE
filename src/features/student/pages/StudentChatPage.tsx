@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { Send, Video, Search, Smile, CheckCheck, Users, Crown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { notifyProjectProfessor } from '../../../lib/notifications';
 
 interface Message {
   id: string;
@@ -208,6 +209,15 @@ const StudentChat: React.FC = () => {
     if (error) {
       console.error('Error sending message:', error);
       setNewMessage(messageText);
+    } else {
+      // Notify professor
+      await notifyProjectProfessor({
+        projectId: projectId,
+        senderId: currentUserId,
+        title: 'New Student Message',
+        message: `A student sent a message in "${projectTitle}".`,
+        type: 'MESSAGE'
+      });
     }
   };
 
@@ -217,8 +227,22 @@ const StudentChat: React.FC = () => {
     return messages.filter(m => m.text.toLowerCase().includes(q));
   }, [messages, search]);
 
-  const handleJoinVideo = () => {
-    if (projectId) window.open(`https://meet.jit.si/StudentHub_Project_${projectId}`, '_blank');
+  const handleJoinVideo = async () => {
+    if (projectId) {
+      const meetUrl = `https://meet.jit.si/StudentHub_Project_${projectId}`;
+      window.open(meetUrl, '_blank');
+
+      // Notify professor
+      if (currentUserId) {
+        await notifyProjectProfessor({
+          projectId: projectId,
+          senderId: currentUserId,
+          title: 'Meeting Request',
+          message: `Student started a meeting in "${projectTitle}". Click to join.`,
+          type: 'MEETING_REQUEST'
+        });
+      }
+    }
   };
 
   const emojis = ['😀', '😂', '😍', '😊', '👍', '👏', '🙏', '🔥', '🎉', '✅', '😅', '😎', '🤝', '💡', '🚀', '📌'];

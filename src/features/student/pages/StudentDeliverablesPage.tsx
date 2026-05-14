@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, FileText, History, Download, Trash2, Plus, ExternalLink, Eye, PlusCircle, FileCode, FileImage, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
+import { notifyProjectProfessor } from '../../../lib/notifications';
 
 interface DeliverableVersion {
   id: string;
@@ -176,6 +177,15 @@ const StudentDeliverables: React.FC = () => {
       setNewTitle('');
       setSelectedFile(null);
       fetchDeliverables();
+
+      // Notify professor
+      await notifyProjectProfessor({
+        projectId: projectId,
+        senderId: studentId,
+        title: 'New Deliverable Submitted',
+        message: `Student submitted a new deliverable: "${newTitle.trim()}".`,
+        type: 'SUBMISSION_LIVRABLE'
+      });
     } catch (error: any) {
       console.error(error);
       alert(`Erreur lors de la création du livrable: \n${error.message}`);
@@ -227,6 +237,16 @@ const StudentDeliverables: React.FC = () => {
       setSelectedFile(null);
       setVersionComment('Nouvelle version');
       fetchDeliverables();
+
+      // Notify professor
+      const { projectId } = await getCurrentStudentContext();
+      await notifyProjectProfessor({
+        projectId: projectId,
+        senderId: studentId,
+        title: 'New Deliverable Version',
+        message: `Student uploaded a new version of "${selectedDoc.title}".`,
+        type: 'SUBMISSION_LIVRABLE'
+      });
     } catch (error: any) {
       console.error(error);
       alert(`Erreur lors de l'ajout de version: \n${error.message}`);

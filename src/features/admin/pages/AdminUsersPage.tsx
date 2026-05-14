@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Filter, GraduationCap, MoreVertical, ShieldCheck, User, UserPlus, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
+import { registerSchema } from '../../../shared/schemas';
+import { z } from 'zod';
+
 
 interface DbUser {
   id: string;
@@ -130,6 +133,8 @@ const AdminUsers: React.FC = () => {
     portfolioUrl: '',
     projetId: '',
   });
+
+  const [formErrors, setFormErrors] = useState<Record<string, string[]>>({});
 
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const roleDropdownRef = useRef<HTMLDivElement>(null);
@@ -385,7 +390,7 @@ const AdminUsers: React.FC = () => {
       body: JSON.stringify(payload),
     });
     const body = await response.json();
-    if (!response.ok) throw new Error(body?.error || 'Creation utilisateur echouee.');
+    if (!response.ok) throw body;
     return body;
   };
 
@@ -432,25 +437,14 @@ const AdminUsers: React.FC = () => {
     setCreateError(null);
     setCreateSuccess(null);
 
-    if (!form.nom.trim() || !form.prenom.trim() || !form.email.trim() || !form.password.trim()) {
-      setCreateError('Nom, prenom, email et mot de passe sont obligatoires.');
+    const validation = registerSchema.safeParse(form);
+    if (!validation.success) {
+      const flattenedErrors = validation.error.flatten().fieldErrors;
+      setFormErrors(flattenedErrors as Record<string, string[]>);
+      setCreateError('Veuillez corriger les erreurs dans le formulaire.');
       return;
     }
-
-    if (form.role === 'ADMINISTRATEUR' && (!form.nomOrganisation.trim() || !form.niveauAcces.trim())) {
-      setCreateError("Pour Admin: organisation et niveau d'acces sont obligatoires.");
-      return;
-    }
-
-    if (form.role === 'ENCADRANT' && (!form.grade.trim() || !form.specialite.trim() || !form.bureau.trim())) {
-      setCreateError('Pour Encadrant: grade, specialite et bureau sont obligatoires.');
-      return;
-    }
-
-    if (form.role === 'ETUDIANT' && !form.numeroEtudiant.trim()) {
-      setCreateError('Pour Etudiant: numero etudiant est obligatoire.');
-      return;
-    }
+    setFormErrors({});
 
     try {
       setCreateLoading(true);
@@ -484,12 +478,15 @@ const AdminUsers: React.FC = () => {
       await fetchUsers();
       setShowAddModal(false);
       resetForm();
-    } catch (err: unknown) {
-      const message =
-        typeof err === 'object' && err !== null && 'message' in err
-          ? String((err as { message?: string }).message)
-          : 'Erreur lors de la creation utilisateur.';
-      setCreateError(message);
+    } catch (err: any) {
+      // If backend returns field-specific errors (from validate middleware)
+      if (err.errors) {
+        setFormErrors(err.errors);
+        setCreateError('Erreur de validation du serveur.');
+      } else {
+        const message = err.error || err.message || 'Erreur lors de la creation utilisateur.';
+        setCreateError(message);
+      }
     } finally {
       setCreateLoading(false);
     }
@@ -720,6 +717,7 @@ const AdminUsers: React.FC = () => {
                       onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
                       required
                     />
+                    {formErrors.nom && <p className="mt-1 text-xs text-red-500">{formErrors.nom[0]}</p>}
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-[#4d4636]">Prenom</label>
@@ -730,6 +728,7 @@ const AdminUsers: React.FC = () => {
                       onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
                       required
                     />
+                    {formErrors.prenom && <p className="mt-1 text-xs text-red-500">{formErrors.prenom[0]}</p>}
                   </div>
                 </div>
 
@@ -753,6 +752,7 @@ const AdminUsers: React.FC = () => {
                         onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                         required
                       />
+                      {formErrors.email && <p className="mt-1 text-xs text-red-500">{formErrors.email[0]}</p>}
                     </div>
                   </div>
                 )}
@@ -767,6 +767,7 @@ const AdminUsers: React.FC = () => {
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
                     />
+                    {formErrors.email && <p className="mt-1 text-xs text-red-500">{formErrors.email[0]}</p>}
                   </div>
                 )}
 
@@ -779,6 +780,7 @@ const AdminUsers: React.FC = () => {
                     onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                     required
                   />
+                  {formErrors.password && <p className="mt-1 text-xs text-red-500">{formErrors.password[0]}</p>}
                 </div>
 
                 {form.role === 'ADMINISTRATEUR' && (
@@ -879,6 +881,7 @@ const AdminUsers: React.FC = () => {
                         onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
                         required
                       />
+                      {formErrors.numeroEtudiant && <p className="mt-1 text-xs text-red-500">{formErrors.numeroEtudiant[0]}</p>}
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-[#4d4636]">CIN</label>
@@ -888,6 +891,7 @@ const AdminUsers: React.FC = () => {
                         value={form.cin}
                         onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
                       />
+                      {formErrors.cin && <p className="mt-1 text-xs text-red-500">{formErrors.cin[0]}</p>}
                     </div>
                   </div>
                 )}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, Users } from 'lucide-react';
+import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, Users, Mail, MessageSquare, CheckCircle, FileCheck, ExternalLink, Video } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { supabase } from '../../lib/supabase';
@@ -8,13 +8,14 @@ interface ProfessorTopNavProps {
   onLogout?: () => void;
 }
 
-interface NotifItem {
+interface Notification {
   id: string;
-  type: 'message' | 'deliverable';
-  name: string;
-  content: string;
-  time: string;
-  avatar: string;
+  title: string;
+  message: string;
+  type: string;
+  created_at: string;
+  is_read: boolean;
+  projet_id?: string;
 }
 
 const navItems = [
@@ -25,17 +26,15 @@ const navItems = [
   { id: 'chat', label: 'Inbox', to: '/chat', icon: MessageCircle },
 ];
 
-const toShortDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-
 const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   const location = useLocation();
   const [showNotif, setShowNotif] = useState(false);
-  const [notifs, setNotifs] = useState<NotifItem[]>([]);
-  const [notifLoading, setNotifLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const { isDark, toggle } = useDarkMode();
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -46,78 +45,143 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   }, []);
 
   const fetchNotifications = async () => {
-    setNotifLoading(true);
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: projectRows } = await supabase
-        .from('projets')
-        .select('id')
-        .eq('encadrant_id', user.id);
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      if (!projectRows || projectRows.length === 0) { setNotifs([]); return; }
-      const projectIds = projectRows.map((p: any) => p.id);
-
-      const [{ data: msgRows }, { data: delRows }] = await Promise.all([
-        supabase
-          .from('messages')
-          .select('id, contenu, created_at, auteur_id, utilisateurs(nom, prenom)')
-          .in('projet_id', projectIds)
-          .neq('auteur_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('livrables')
-          .select('id, titre, created_at')
-          .in('projet_id', projectIds)
-          .order('created_at', { ascending: false })
-          .limit(5),
-      ]);
-
-      const msgNotifs: NotifItem[] = (msgRows || []).map((m: any) => {
-        const u = Array.isArray(m.utilisateurs) ? m.utilisateurs[0] : m.utilisateurs;
-        const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
-        return {
-          id: `msg-${m.id}`,
-          type: 'message',
-          name,
-          content: m.contenu,
-          time: toShortDate(m.created_at),
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-        };
-      });
-
-      const delNotifs: NotifItem[] = (delRows || []).map((d: any) => ({
-        id: `del-${d.id}`,
-        type: 'deliverable' as const,
-        name: 'Livrable',
-        content: d.titre,
-        time: toShortDate(d.created_at),
-        avatar: `https://ui-avatars.com/api/?name=Livrable&background=ffd464&color=765b00`,
-      }));
-
-      const merged = [...msgNotifs, ...delNotifs]
-        .sort((a, b) => 0)
-        .slice(0, 10);
-
-      setNotifs(merged);
-      setUnreadCount(0);
+      if (error) throw error;
+      if (data) setNotifications(data);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
     } finally {
-      setNotifLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleBellClick = () => {
-    setShowNotif((v) => {
-      if (!v) fetchNotifications();
-      return !v;
-    });
+  useEffect(() => {
+    fetchNotifications();
+
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const channel = supabase
+        .channel(`professor_notifications_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 20));
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setNotifications((prev) =>
+              prev.map((n) => (n.id === payload.new.id ? { ...n, ...payload.new } : n))
+            );
+          }
+        )
+        .subscribe();
+
+      return channel;
+    };
+
+    const subPromise = setupSubscription();
+    return () => {
+      subPromise.then(channel => channel && supabase.removeChannel(channel));
+    };
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
+  };
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', id);
+
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (err) {
+      console.error('Error marking as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async (n: Notification) => {
+    if (!n.is_read) {
+      await handleMarkRead(n.id);
+    }
+
+    if (n.type === 'MEETING_REQUEST' && n.projet_id) {
+      const meetUrl = `https://meet.jit.si/StudentHub_Project_${n.projet_id}`;
+      window.open(meetUrl, '_blank');
+    }
+  };
+
+  const getNotifIcon = (type: string) => {
+    switch (type) {
+      case 'MESSAGE': return <MessageSquare size={14} className="text-blue-500" />;
+      case 'SUBMISSION_LIVRABLE': return <ExternalLink size={14} className="text-purple-500" />;
+      case 'MEETING_REQUEST': return <Video size={14} className="text-green-500" />;
+      case 'COMMENT_LIVRABLE': return <Mail size={14} className="text-amber-500" />;
+      case 'COMMENT_TACHE': return <Mail size={14} className="text-amber-500" />;
+      default: return <Bell size={14} className="text-[#765b00]" />;
+    }
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(mins / 60);
+    const days = Math.floor(hours / 24);
+
+    if (mins < 60) return `il y a ${mins}m`;
+    if (hours < 24) return `il y a ${hours}h`;
+    return d.toLocaleDateString();
   };
 
   return (
     <header className="bg-[#faf9f6] px-4 py-3 md:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-[28px] border border-transparent bg-white px-4 py-2 shadow-[0_4px_16px_rgba(118,91,0,0.06)]" style={{ transition: 'background-color 0.2s' }}>
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-[28px] border border-transparent bg-white px-4 py-2 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
@@ -148,56 +212,78 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
             <Settings size={16} />
           </Link>
 
-          {/* Notification bell */}
           <div className="relative" ref={notifRef}>
             <button
               type="button"
               className="relative flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
               aria-label="Notifications"
-              onClick={handleBellClick}
+              onClick={() => setShowNotif(!showNotif)}
             >
               <Bell size={16} />
               {unreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#765b00] text-[9px] font-bold text-white">
-                  {unreadCount}
-                </span>
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#ba1a1a] ring-2 ring-white dark:ring-[#1c1b19]" />
               )}
             </button>
 
             {showNotif && (
-              <div className="absolute right-0 top-11 z-50 w-80 rounded-2xl border border-[#f4f3f1] bg-white shadow-[0_8px_24px_rgba(118,91,0,0.12)]">
-                <div className="flex items-center justify-between border-b border-[#f4f3f1] px-4 py-3">
-                  <h3 className="text-sm font-bold text-[#1a1c1a]">Notifications</h3>
-                  <span className="text-[11px] text-[#7f7664]">{new Date().toLocaleDateString('fr-FR')}</span>
+              <div className="absolute right-0 top-11 z-50 mt-2 w-80 rounded-[24px] border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_8px_32px_rgba(118,91,0,0.15)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#1a1c1a] dark:text-white">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span className="bg-[#ba1a1a] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  <button 
+                    onClick={handleMarkAllRead}
+                    className="text-[11px] font-bold text-[#765b00] hover:underline"
+                  >
+                    Tout marquer comme lu
+                  </button>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto">
-                  {notifLoading && (
-                    <p className="py-6 text-center text-sm text-[#7f7664]">Chargement...</p>
-                  )}
-                  {!notifLoading && notifs.length === 0 && (
-                    <p className="py-6 text-center text-sm text-[#7f7664]">Aucune notification.</p>
-                  )}
-                  {notifs.map((n) => (
-                    <div key={n.id} className="flex items-start gap-3 border-b border-[#f4f3f1] px-4 py-3 last:border-0 hover:bg-[#faf9f6] transition-colors">
-                      <img src={n.avatar} alt={n.name} className="h-9 w-9 shrink-0 rounded-full object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-sm font-semibold text-[#1a1c1a]">{n.name}</p>
-                          <span className="shrink-0 text-[10px] text-[#7f7664]">{n.time}</span>
+                <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
+                  {loading && <p className="py-8 text-center text-xs text-[#7f7664]">Chargement...</p>}
+                  {!loading && notifications.length === 0 ? (
+                    <p className="py-8 text-center text-xs text-[#7f7664]">Aucune notification.</p>
+                  ) : (
+                    notifications.map((n) => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => handleNotificationClick(n)}
+                        className={`group relative flex items-start gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
+                          n.is_read ? 'hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927]' : 'bg-[#765b00]/5 hover:bg-[#765b00]/10'
+                        }`}
+                      >
+                        <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                          n.is_read ? 'bg-[#f4f3f1] text-[#7f7664]' : 'bg-[#ffd464] text-[#765b00]'
+                        }`}>
+                          {getNotifIcon(n.type)}
                         </div>
-                        <p className="mt-0.5 truncate text-xs text-[#7f7664]">
-                          {n.type === 'deliverable' ? '📎 ' : '💬 '}{n.content}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-xs font-bold truncate ${n.is_read ? 'text-[#4d4636] dark:text-[#d1c5b0]' : 'text-[#1a1c1a] dark:text-white'}`}>
+                            {n.title}
+                          </p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-[#7f7664] line-clamp-2">
+                            {n.message}
+                          </p>
+                          <p className="mt-1 text-[10px] font-bold text-[#d1c5b0] uppercase tracking-widest">
+                            {formatTime(n.created_at)}
+                          </p>
+                        </div>
+                        {!n.is_read && (
+                          <div className="absolute top-4 right-4 h-1.5 w-1.5 rounded-full bg-[#765b00]" />
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Dark mode toggle */}
           <button
             type="button"
             onClick={toggle}

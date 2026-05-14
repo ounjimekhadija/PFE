@@ -146,7 +146,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 // 1) cree auth.users
 // 2) insere dans utilisateurs
 // 3) insere dans table de role (administrateurs | encadrants | etudiants)
-router.post('/admin/users', authMiddleware, async (req, res) => {
+router.post('/admin/users', authMiddleware, validate({ body: registerSchema }), async (req, res) => {
   try {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY manquant.' });
@@ -326,6 +326,14 @@ router.post('/admin/projects', authMiddleware, async (req, res) => {
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
+
+    // Create notification for admins
+    await supabase.from('notifications').insert({
+      title: 'Nouveau Groupe',
+      message: `Le groupe "${titre}" a été créé.`,
+      type: 'PROJECT_CREATED'
+    });
+
     return res.status(201).json({ message: 'Projet cree avec succes.', project: data });
   } catch (err) {
     console.error('Erreur creation projet:', err);

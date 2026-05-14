@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Send, Video, Paperclip, Smile, CheckCheck, FileText } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { notifyProjectStudents } from '../../../lib/notifications';
 
 interface ContactItem {
   id: string;
@@ -383,6 +384,15 @@ const Chat: React.FC = () => {
       console.error('Erreur envoi message:', sendError);
       setInput(content);
       setError(sendError.message);
+    } else {
+      // Notify students
+      await notifyProjectStudents({
+        projectId: selectedProjectId,
+        senderId: currentUserId,
+        title: 'New Message',
+        message: `Professor sent a message in "${selectedProjectTitle}".`,
+        type: 'MESSAGE'
+      });
     }
   };
 
@@ -408,6 +418,15 @@ const Chat: React.FC = () => {
         contenu,
         type: 'TEXTE',
       });
+
+      // Notify students
+      await notifyProjectStudents({
+        projectId: selectedProjectId,
+        senderId: currentUserId,
+        title: 'New File',
+        message: `Professor shared a file in "${selectedProjectTitle}".`,
+        type: 'MESSAGE'
+      });
     } catch (err) {
       setError('Erreur upload fichier.');
     } finally {
@@ -415,9 +434,21 @@ const Chat: React.FC = () => {
     }
   };
 
-  const handleJoinCall = () => {
+  const handleJoinCall = async () => {
     if (!selectedProjectId) return;
-    window.open(`https://meet.jit.si/Encadrant_Project_${selectedProjectId}`, '_blank');
+    const meetUrl = `https://meet.jit.si/Encadrant_Project_${selectedProjectId}`;
+    window.open(meetUrl, '_blank');
+
+    // Notify students
+    if (currentUserId) {
+      await notifyProjectStudents({
+        projectId: selectedProjectId,
+        senderId: currentUserId,
+        title: 'Meeting Request',
+        message: `Professor started a meeting in "${selectedProjectTitle}". Click to join.`,
+        type: 'MEETING_REQUEST'
+      });
+    }
   };
 
   return (

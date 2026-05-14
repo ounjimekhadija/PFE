@@ -82,6 +82,7 @@ const AdminProjects: React.FC = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
   const [search, setSearch] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -288,7 +289,7 @@ const AdminProjects: React.FC = () => {
     return { completed, nearDeadline, avgProgress };
   }, [projects]);
 
-  const inputClass = 'w-full rounded-xl border border-transparent bg-white px-4 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20';
+   const inputClass = 'w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2.5 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white';
 
   const openCreateModal = () => {
     setFormError(null);
@@ -474,36 +475,127 @@ const AdminProjects: React.FC = () => {
 
       {/* Create Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 backdrop-blur-sm p-4 sm:p-6">
-          <div className="relative my-8 w-full max-w-md rounded-3xl border border-transparent bg-white shadow-2xl">
-            <button className="absolute right-4 top-4 text-2xl font-bold text-[#7f7664] hover:text-[#4d4636]" onClick={() => setShowModal(false)} aria-label="Close">&times;</button>
-            <div className="border-b border-transparent px-8 pb-4 pt-8">
-              <h2 className="text-xl font-bold text-[#1a1c1a]">Create Project</h2>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in">
+          <div className="relative my-8 w-full max-w-md overflow-hidden rounded-[2rem] border border-[#dcd6c1] bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)] animate-in zoom-in-95 duration-300">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#f4f3f1] bg-white px-8 py-6">
+              <div>
+                <h2 className="text-xl font-bold text-[#1a1c1a]">Create Project</h2>
+                <p className="text-xs text-[#7f7664] mt-0.5">Define the scope and supervisor for the new initiative.</p>
+              </div>
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#7f7664] hover:bg-[#f4f3f1] hover:text-[#1a1c1a] transition-all"
+                onClick={() => setShowModal(false)}
+                aria-label="Close"
+              >
+                <Plus className="rotate-45" size={20} />
+              </button>
             </div>
-            <form onSubmit={handleCreateProject} className="space-y-4 px-8 py-6">
-              {formError && <div className="rounded-xl border border-[#fecaca] bg-[#ffdad6] px-3 py-2 text-sm text-[#ba1a1a]">{formError}</div>}
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#4d4636]">Project Name <span className="text-[#ba1a1a]">*</span></label>
-                <input type="text" className={inputClass} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
+
+            <form onSubmit={handleCreateProject} className="space-y-5 px-8 py-8">
+              {formError && (
+                <div className="rounded-xl border border-[#fecaca] bg-[#ffdad6] px-4 py-3 text-sm text-[#ba1a1a] flex items-center gap-2 animate-in slide-in-from-top-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-[#ba1a1a]" />
+                  {formError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-[#4d4636]">
+                  Project Name <span className="text-[#ba1a1a]">*</span>
+                </label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter project title"
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  required
+                />
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#4d4636]">Filière / Domaine</label>
-                <input type="text" className={inputClass} placeholder="ex: Informatique, IA, IoT..." value={form.domaine} onChange={(e) => setForm((f) => ({ ...f, domaine: e.target.value }))} />
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-[#4d4636]">Filière / Domaine</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="ex: Informatique, IA, IoT..."
+                  value={form.domaine}
+                  onChange={(e) => setForm((f) => ({ ...f, domaine: e.target.value }))}
+                />
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#4d4636]">Encadrant (Supervisor)</label>
-                <select className={inputClass + ' [&>option]:bg-white [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white'} style={{ accentColor: '#765b00' }} value={form.encadrantId} onChange={(e) => setForm((f) => ({ ...f, encadrantId: e.target.value }))}>
-                  <option value="">-- Aucun --</option>
-                  {encadrantOptions.map((enc) => <option key={enc.id} value={enc.id}>{enc.displayName}</option>)}
-                </select>
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-[#4d4636]">Encadrant (Supervisor)</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowSupervisorDropdown(!showSupervisorDropdown)}
+                    className={inputClass + ' flex items-center justify-between text-left'}
+                  >
+                    <span className={!form.encadrantId ? 'text-[#7f7664]' : 'text-[#1a1c1a]'}>
+                      {form.encadrantId 
+                        ? encadrantOptions.find(e => e.id === form.encadrantId)?.displayName 
+                        : '-- Aucun --'}
+                    </span>
+                    <MoreVertical size={14} className={`rotate-90 text-[#7f7664] transition-transform ${showSupervisorDropdown ? 'rotate-[270deg]' : ''}`} />
+                  </button>
+
+                  {showSupervisorDropdown && (
+                    <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(118,91,0,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(f => ({ ...f, encadrantId: '' }));
+                          setShowSupervisorDropdown(false);
+                        }}
+                        className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${!form.encadrantId ? 'bg-[#765b00] text-white' : 'text-[#1a1c1a] hover:bg-[#765b00]/5'}`}
+                      >
+                        -- Aucun --
+                      </button>
+                      {encadrantOptions.map((enc) => (
+                        <button
+                          key={enc.id}
+                          type="button"
+                          onClick={() => {
+                            setForm(f => ({ ...f, encadrantId: enc.id }));
+                            setShowSupervisorDropdown(false);
+                          }}
+                          className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${form.encadrantId === enc.id ? 'bg-[#765b00] text-white' : 'text-[#1a1c1a] hover:bg-[#765b00]/5'}`}
+                        >
+                          {enc.displayName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-semibold text-[#4d4636]">Deadline</label>
-                <input type="date" className={inputClass} value={form.deadline} onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))} />
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-[#4d4636]">Deadline</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    className={inputClass}
+                    value={form.deadline}
+                    onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div className="mt-4 flex justify-end gap-2 border-t border-transparent pt-4">
-                <button type="button" className="rounded-xl bg-[#efeeeb] px-5 py-2 text-sm font-semibold text-[#4d4636] hover:bg-[#e3e2e0]" onClick={() => setShowModal(false)}>Annuler</button>
-                <button type="submit" className="rounded-xl bg-[#765b00] px-5 py-2 text-sm font-bold text-white shadow hover:bg-[#594400] disabled:opacity-50" disabled={createLoading}>
+
+              <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-[#f4f3f1]">
+                <button
+                  type="button"
+                  className="rounded-xl border border-[#dcd6c1] bg-white px-6 py-2.5 text-sm font-semibold text-[#4d4636] transition-all hover:bg-[#f4f3f1] hover:border-[#c4b99a]"
+                  onClick={() => setShowModal(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-[#765b00] px-6 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(118,91,0,0.2)] transition-all hover:bg-[#594400] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+                  disabled={createLoading}
+                >
                   {createLoading ? 'Creation...' : 'Create'}
                 </button>
               </div>
