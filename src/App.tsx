@@ -25,13 +25,12 @@ import AdminUsersPage from './features/admin/pages/AdminUsersPage';
 import { useAppController } from './shared/hooks/useAppController';
 import SplashScreen from './shared/components/SplashScreen';
 import { useState } from 'react';
-
 const App: React.FC = () => {
-  const { 
-    isAuthenticated, 
+  const {
+    isAuthenticated,
     isInitializing,
-    userRole, 
-    login, 
+    userRole,
+    login,
     logout
   } = useAppController();
 
