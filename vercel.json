@@ -1,5 +1,15 @@
 {
   "version": 2,
+  "experimentalServices": {
+        "frontend": {
+            "routePrefix": "/",
+            "framework": "vite"
+        },
+        "backend": {
+            "root": "backend",
+            "routePrefix": "/_/backend"
+        }
+    },
   "builds": [
     {
       "src": "package.json",

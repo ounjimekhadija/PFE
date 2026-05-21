@@ -15,6 +15,14 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'documents');
 
+-- Add a new policy to allow insert access on the 'documents' bucket for authenticated users.
+-- This policy allows any authenticated user to insert an object into the 'documents' bucket.
+CREATE POLICY "Allow insert access on documents for authenticated users" 
+ON storage.objects FOR INSERT 
+TO authenticated 
+WITH CHECK (bucket_id = 'documents');
+
+
 -- 4. Politique de modification (UPDATE) : Permettre aux utilisateurs authentifiés de modifier les fichiers existants
 CREATE POLICY "Allow authenticated users to update documents"
 ON storage.objects FOR UPDATE
