@@ -44,7 +44,7 @@ interface EncadrantOption {
   displayName: string;
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || '';
 
 const toText = (v: string | null | undefined, fallback = 'N/A') => (v?.trim() ? v.trim() : fallback);
 

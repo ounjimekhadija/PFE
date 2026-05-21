@@ -81,7 +81,7 @@ const roleLabel = (role: string): string => {
 
 const PAGE_SIZE = 10;
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || 'http://localhost:5000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || '';
 
 const AdminUsers: React.FC = () => {
   const [loading, setLoading] = useState(true);

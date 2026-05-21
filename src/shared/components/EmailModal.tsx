@@ -22,7 +22,7 @@ const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser
     setStatus('sending');
 
     try {
-      const response = await fetch('http://localhost:5000/api/mail/send', {
+      const response = await fetch('/api/mail/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

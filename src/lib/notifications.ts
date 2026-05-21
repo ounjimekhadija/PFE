@@ -22,7 +22,7 @@ interface NotifyOptions {
  */
 const sendEmail = async (to: string, subject: string, text: string) => {
   try {
-    const response = await fetch('http://localhost:5000/api/mail/send', {
+    const response = await fetch('/api/mail/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

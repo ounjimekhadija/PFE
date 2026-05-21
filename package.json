@@ -16,7 +16,9 @@
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
     "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "express-rate-limit": "^8.5.0",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.294.0",
     "motion": "^11.0.0",
     "nodemailer": "^8.0.7",
@@ -27,7 +29,8 @@
     "react-router-dom": "^7.14.1",
     "recharts": "^3.8.1",
     "xlsx": "^0.18.5",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@supabase/ssr": "^0.10.2"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
