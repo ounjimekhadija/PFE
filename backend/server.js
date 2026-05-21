@@ -41,6 +41,10 @@ app.get('/', (req, res) => {
 });
 
 // Démarrage du serveur
-app.listen(PORT, () => {
-  console.log(`Le serveur écoute sur http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Le serveur écoute sur http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

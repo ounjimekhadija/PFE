@@ -48,7 +48,18 @@ const registerSchema = z.discriminatedUnion("role", [
   registerEtudiantSchema,
 ]);
 
+const meetingSchema = z.object({
+  projectId: z.string().uuid("ID de projet invalide"),
+  title: z.string().trim().min(3, "Le titre doit faire au moins 3 caractères"),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Date invalide",
+  }),
+  location: z.string().trim().min(2, "Le lieu doit faire au moins 2 caractères"),
+  agenda: z.string().trim().min(3, "L'ordre du jour doit faire au moins 3 caractères"),
+});
+
 module.exports = {
     loginSchema,
-    registerSchema
+    registerSchema,
+    meetingSchema
 }
