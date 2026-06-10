@@ -30,7 +30,7 @@ router.post('/schedule', authMiddleware, validate({ body: meetingSchema }), asyn
         projet_id: projectId,
         encadrant_id: encadrantId,
         titre: title,
-        date_reunion: date,
+        date_heure: date,
         lieu: location,
         ordre_du_jour: agenda,
       })

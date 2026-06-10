@@ -47,14 +47,12 @@ const baseUserSchema = z.object({
 export const registerAdminSchema = baseUserSchema.extend({
   role: z.literal('ADMINISTRATEUR'),
   nomOrganisation: z.string().optional(),
-  niveauAcces: z.string().optional(),
+  // niveauAcces removed
 });
 
 export const registerEncadrantSchema = baseUserSchema.extend({
   role: z.literal('ENCADRANT'),
-  grade: z.string().optional(),
-  specialite: z.string().optional(),
-  bureau: z.string().optional(),
+  // Removed fields: grade, specialite, bureau
 });
 
 export const registerEtudiantSchema = baseUserSchema.extend({

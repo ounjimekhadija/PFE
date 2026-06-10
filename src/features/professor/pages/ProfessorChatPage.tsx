@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Send, Video, Paperclip, Smile, CheckCheck, FileText } from 'lucide-react';
+import MessageContent from '../../../shared/components/MessageContent';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectStudents } from '../../../lib/notifications';
 
@@ -520,7 +521,7 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative bg-white">
+      <div className="flex-1 flex flex-col relative bg-white" style={{ height: '100vh', overflow: 'hidden' }}>
 
         {/* Header */}
         <header className="sticky top-0 z-20 flex items-center justify-between px-10 py-6 bg-white/80 backdrop-blur-md border-b border-transparent shadow-sm">
@@ -551,7 +552,7 @@ const Chat: React.FC = () => {
         </header>
 
         {/* Message Container */}
-        <div className="chat-messages flex-1 overflow-y-auto px-10 py-10 flex flex-col gap-8 bg-[#faf9f6]/50">
+        <div className="flex-1 overflow-y-auto px-10 py-10 flex flex-col gap-8 bg-[#faf9f6]/50">
           {error && <div className="text-sm text-[#ba1a1a]">Erreur: {error}</div>}
           {!loading && !selectedProjectId && <div className="text-sm text-[#7f7664]">Aucun projet assigné à cet encadrant.</div>}
           {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#7f7664]">Aucun message pour ce projet.</div>}
@@ -568,21 +569,9 @@ const Chat: React.FC = () => {
                     ? 'bg-[#765b00] text-white rounded-3xl rounded-tr-none'
                     : 'bg-white border border-[#d1c5b0] text-[#4d4636] rounded-3xl rounded-tl-none'
                 }`}>
-                  {msg.text.startsWith('[image]') ? (
-                    <img src={msg.text.replace('[image]', '')} alt="attachment" className="max-w-[280px] max-h-[200px] object-cover rounded-3xl" />
-                  ) : msg.text.startsWith('[file]') ? (
-                    (() => {
-                      const [name, url] = msg.text.replace('[file]', '').split('||');
-                      return (
-                        <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-5 py-4 hover:opacity-80 transition">
-                          <FileText size={20} className="shrink-0" />
-                          <span className="truncate text-sm font-semibold">{name}</span>
-                        </a>
-                      );
-                    })()
-                  ) : (
-                    <div className="px-6 py-4">{msg.text}</div>
-                  )}
+                  <div className="px-6 py-4">
+                    <MessageContent text={msg.text} />
+                  </div>
                 </div>
 
                 {msg.isMe && msg.isRead && (

@@ -117,10 +117,8 @@ const AdminUsers: React.FC = () => {
     email: '',
     password: '',
     nomOrganisation: '',
-    niveauAcces: 'ADMIN',
-    grade: '',
-    specialite: '',
-    bureau: '',
+    // niveauAcces removed
+    // grade, specialite, bureau removed
     numeroEtudiant: '',
     cne: '',
     cin: '',
@@ -155,23 +153,7 @@ const AdminUsers: React.FC = () => {
     { value: 'ETUDIANT', label: 'Etudiant' },
   ];
 
-  const [showAccessDropdown, setShowAccessDropdown] = useState(false);
-  const accessDropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (accessDropdownRef.current && !accessDropdownRef.current.contains(e.target as Node)) {
-        setShowAccessDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const accessLevels = [
-    { value: 'ADMIN', label: 'ADMIN' },
-    { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN' },
-  ];
+  // access level removed
 
   const fetchUsers = async () => {
     try {
@@ -315,10 +297,6 @@ const AdminUsers: React.FC = () => {
       email: '',
       password: '',
       nomOrganisation: '',
-      niveauAcces: 'ADMIN',
-      grade: '',
-      specialite: '',
-      bureau: '',
       numeroEtudiant: '',
       cne: '',
       cin: '',
@@ -457,10 +435,7 @@ const AdminUsers: React.FC = () => {
         password: form.password,
         telephone: form.phone,
         nomOrganisation: form.role === 'ADMINISTRATEUR' ? form.nomOrganisation : null,
-        niveauAcces: form.role === 'ADMINISTRATEUR' ? form.niveauAcces : null,
-        grade: form.role === 'ENCADRANT' ? form.grade : null,
-        specialite: form.role === 'ENCADRANT' ? form.specialite : null,
-        bureau: form.role === 'ENCADRANT' ? form.bureau : null,
+        // grade, specialite, bureau removed
         numeroEtudiant: form.role === 'ETUDIANT' ? form.numeroEtudiant : null,
         cne: form.role === 'ETUDIANT' ? form.cne : null,
         cin: form.role === 'ETUDIANT' ? form.cin : null,
@@ -795,80 +770,11 @@ const AdminUsers: React.FC = () => {
                         required
                       />
                     </div>
-                    <div className="relative" ref={accessDropdownRef}>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Niveau acces</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowAccessDropdown(!showAccessDropdown)}
-                        className="flex w-full items-center justify-between rounded-xl border border-[#dcd6c1] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
-                      >
-                        <span>{accessLevels.find(a => a.value === form.niveauAcces)?.label}</span>
-                        <svg className={`h-4 w-4 text-[#7f7664] transition-transform ${showAccessDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {showAccessDropdown && (
-                        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(118,91,0,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
-                          {accessLevels.map((lvl) => (
-                            <button
-                              key={lvl.value}
-                              type="button"
-                              onClick={() => {
-                                setForm((f) => ({ ...f, niveauAcces: lvl.value }));
-                                setShowAccessDropdown(false);
-                              }}
-                              className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${
-                                form.niveauAcces === lvl.value
-                                  ? 'bg-[#765b00] text-white'
-                                  : 'text-[#1a1c1a] hover:bg-[#765b00]/5'
-                              }`}
-                            >
-                              {lvl.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    {/* Niveau acces removed */}
                   </>
                 )}
 
-                {form.role === 'ENCADRANT' && (
-                  <>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Grade</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.grade}
-                          onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-sm font-medium text-[#4d4636]">Specialite</label>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                          value={form.specialite}
-                          onChange={(e) => setForm((f) => ({ ...f, specialite: e.target.value }))}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Bureau</label>
-                      <input
-                        type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
-                        value={form.bureau}
-                        onChange={(e) => setForm((f) => ({ ...f, bureau: e.target.value }))}
-                        required
-                      />
-                    </div>
-                  </>
-                )}
+                {/* Encadrant-specific fields removed */}
 
                 {form.role === 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

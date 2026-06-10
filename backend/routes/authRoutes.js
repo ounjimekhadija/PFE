@@ -56,7 +56,6 @@ const buildRoleInsertCandidates = (role, userId, payload) => {
   if (role === 'ADMINISTRATEUR') {
     const base = {
       nom_organisation: toNullable(payload.nomOrganisation) || 'Organisation',
-      niveau_acces: toNullable(payload.niveauAcces) || 'ADMIN',
     };
 
     return [
@@ -68,11 +67,8 @@ const buildRoleInsertCandidates = (role, userId, payload) => {
   }
 
   if (role === 'ENCADRANT') {
-    const base = {
-      grade: toNullable(payload.grade) || 'Professeur',
-      specialite: toNullable(payload.specialite) || 'Informatique',
-      bureau: toNullable(payload.bureau) || 'N/A',
-    };
+    // Encadrant: no extra fields required anymore
+    const base = {};
 
     return [
       { id: userId, utilisateur_id: userId, ...base },
@@ -171,10 +167,6 @@ router.post('/admin/users', authMiddleware, validate({ body: registerSchema }), 
     const filiere = toNullable(req.body?.filiere);
     const projetId = toNullable(req.body?.projetId);
     const nomOrganisation = toNullable(req.body?.nomOrganisation);
-    const niveauAcces = toNullable(req.body?.niveauAcces);
-    const grade = toNullable(req.body?.grade);
-    const specialite = toNullable(req.body?.specialite);
-    const bureau = toNullable(req.body?.bureau);
     const numeroEtudiant = toNullable(req.body?.numeroEtudiant);
     const cne = toNullable(req.body?.cne);
     const cin = toNullable(req.body?.cin);
@@ -197,17 +189,13 @@ router.post('/admin/users', authMiddleware, validate({ body: registerSchema }), 
       });
     }
 
-    if (role === 'ADMINISTRATEUR' && (!nomOrganisation || !niveauAcces)) {
+    if (role === 'ADMINISTRATEUR' && !nomOrganisation) {
       return res.status(400).json({
-        error: 'Pour ADMINISTRATEUR, nomOrganisation et niveauAcces sont requis.',
+        error: 'Pour ADMINISTRATEUR, nomOrganisation est requis.',
       });
     }
 
-    if (role === 'ENCADRANT' && (!grade || !specialite || !bureau)) {
-      return res.status(400).json({
-        error: 'Pour ENCADRANT, grade, specialite et bureau sont requis.',
-      });
-    }
+    // Encadrant no longer requires grade/specialite/bureau
 
     if (role === 'ETUDIANT' && !numeroEtudiant) {
       return res.status(400).json({
@@ -256,10 +244,6 @@ router.post('/admin/users', authMiddleware, validate({ body: registerSchema }), 
 
     const roleInsert = await tryInsertRoleRow(roleTable, newUserId, role, {
       nomOrganisation,
-      niveauAcces,
-      grade,
-      specialite,
-      bureau,
       numeroEtudiant,
       cne,
       cin,

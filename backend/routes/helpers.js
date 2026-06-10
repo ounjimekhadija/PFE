@@ -28,7 +28,6 @@ const buildRoleInsertCandidates = (role, userId, payload) => {
     if (role === 'ADMINISTRATEUR') {
         const base = {
             nom_organisation: toNullable(payload.nomOrganisation) || 'Organisation',
-            niveau_acces: toNullable(payload.niveauAcces) || 'ADMIN',
         };
 
         return [
@@ -40,11 +39,8 @@ const buildRoleInsertCandidates = (role, userId, payload) => {
     }
 
     if (role === 'ENCADRANT') {
-        const base = {
-            grade: toNullable(payload.grade) || 'Professeur',
-            specialite: toNullable(payload.specialite) || 'Informatique',
-            bureau: toNullable(payload.bureau) || 'N/A',
-        };
+        // Removed grade, specialite, bureau fields
+        const base = {};
 
         return [
             { id: userId, utilisateur_id: userId, ...base },

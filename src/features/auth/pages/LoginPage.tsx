@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Github, Facebook, Chrome, GraduationCap, UserCog, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Github, Facebook, Chrome } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserRole } from '../../../shared/types';
 import { supabase } from '../../../lib/supabase';
@@ -11,7 +11,6 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -78,13 +77,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         // Mapper le rôle Supabase (ADMINISTRATEUR, ENCADRANT, ETUDIANT) vers nos UserRoles internes
         const userRole = mapDbRoleToUserRole(userData.role);
-
-        if (userRole !== role) {
-          await supabase.auth.signOut();
-          throw new Error("Le rôle sélectionné ne correspond pas à ce compte.");
-        }
         
-        // 3. Déclencher onLogin avec le vrai rôle
+        // 3. Déclencher onLogin avec le vrai rôle détecté automatiquement
         onLogin(userRole);
       }
     } catch (err: any) {
@@ -161,29 +155,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="absolute inset-0 rounded-3xl shadow-inner-lg shadow-warm-surface-container-high/50 pointer-events-none"></div>
         <h1 className="text-4xl font-bold text-warm-on-surface mb-2 text-center font-jakarta">Login Form</h1>
         <div className="w-20 h-1.5 bg-warm-primary rounded-full mb-10 mx-auto"></div>
-
-        {/* Role Selector */}
-        <div className="flex gap-4 mb-10 w-full">
-          {[
-            { id: 'student', icon: GraduationCap, label: 'Student' },
-            { id: 'professor', icon: UserCog, label: 'Professor' },
-            { id: 'admin', icon: ShieldCheck, label: 'Admin' },
-          ].map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRole(r.id as UserRole)}
-              className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-2xl border-2 transition-all duration-300 text-sm font-bold uppercase tracking-wider shadow-md hover:shadow-xl hover:-translate-y-1 ${
-                role === r.id
-                  ? 'bg-warm-secondary text-warm-on-secondary border-warm-secondary/80 shadow-warm-secondary/30'
-                  : 'bg-warm-surface-container text-warm-on-surface-variant border-warm-surface-container-high hover:bg-warm-surface-container-high'
-              }`}
-            >
-              <r.icon size={20} />
-              {r.label}
-            </button>
-          ))}
-        </div>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8">
           {error && <div className="text-warm-on-error text-sm text-center font-semibold bg-warm-error-container/80 p-3 border border-warm-error/50 rounded-lg">{error}</div>}

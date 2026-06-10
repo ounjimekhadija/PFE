@@ -1,9 +1,11 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar from './shared/components/Sidebar';
 import AdminTopNav from './shared/components/AdminTopNav';
 import ProfessorTopNav from './shared/components/ProfessorTopNav';
 import StudentTopNav from './shared/components/StudentTopNav';
+import PageTransition from './shared/components/PageTransition';
 import LoginPage from './features/auth/pages/LoginPage';
 import StudentSettingsPage from './features/student/pages/StudentSettingsPage';
 import ProfessorSettingsPage from './features/professor/pages/ProfessorSettingsPage';
@@ -24,55 +26,65 @@ import AdminProjectsPage from './features/admin/pages/AdminProjectsPage';
 import AdminUsersPage from './features/admin/pages/AdminUsersPage';
 import { useAppController } from './shared/hooks/useAppController';
 import SplashScreen from './shared/components/SplashScreen';
-import { useState } from 'react';
-const App: React.FC = () => {
-  const {
-    isAuthenticated,
-    isInitializing,
-    userRole,
-    login,
-    logout
-  } = useAppController();
+import type { UserRole } from './shared/types';
 
-  const [showSplash, setShowSplash] = useState(true);
+interface AppRoutesProps {
+  isAuthenticated: boolean;
+  isInitializing: boolean;
+  userRole: UserRole;
+  login: (role: UserRole) => void;
+  logout: () => void;
+}
 
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+const AppRoutes: React.FC<AppRoutesProps> = ({ isAuthenticated, isInitializing, userRole, login, logout }) => {
+  const location = useLocation();
+
+  if (isInitializing) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#0f0f0e]">
+        <div className="relative flex flex-col items-center">
+          <div className="absolute -inset-20 bg-[#765b00] opacity-10 blur-[100px] animate-pulse"></div>
+          <div className="mb-12 relative">
+            <h1 className="text-6xl font-bold tracking-tighter text-white">
+              Bar<span className="text-[#765b00]">Oun</span>
+            </h1>
+            <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#765b00] to-transparent"></div>
+          </div>
+          <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
+            <div className="h-full bg-gradient-to-r from-[#765b00] to-[#b88c00] animate-pulse" style={{ width: '100%' }}></div>
+          </div>
+          <p className="mt-4 text-[#7f7664] text-sm tracking-[0.2em] uppercase animate-pulse">
+            Initialisation de votre espace
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AnimatePresence mode="wait" initial={false}>
+        <PageTransition key={location.key} className="h-full w-full">
+          <Routes location={location}>
+            <Route path="/login" element={<LoginPage onLogin={login} />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </PageTransition>
+      </AnimatePresence>
+    );
   }
 
   return (
-    <Router>
-      {isInitializing ? (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-[#0f0f0e]">
-          <div className="relative flex flex-col items-center">
-            <div className="absolute -inset-20 bg-[#765b00] opacity-10 blur-[100px] animate-pulse"></div>
-            <div className="mb-12 relative">
-              <h1 className="text-6xl font-bold tracking-tighter text-white">
-                Bar<span className="text-[#765b00]">Oun</span>
-              </h1>
-              <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#765b00] to-transparent"></div>
-            </div>
-            <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
-              <div className="h-full bg-gradient-to-r from-[#765b00] to-[#b88c00] animate-pulse" style={{ width: '100%' }}></div>
-            </div>
-            <p className="mt-4 text-[#7f7664] text-sm tracking-[0.2em] uppercase animate-pulse">
-              Initialisation de votre espace
-            </p>
-          </div>
-        </div>
-      ) : !isAuthenticated ? (
-        <Routes>
-          <Route path="/login" element={<LoginPage onLogin={login} />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      ) : (
-        <div className={userRole === 'admin' || userRole === 'professor' || userRole === 'student' ? 'flex flex-col h-screen overflow-hidden bg-[#faf9f6]' : 'flex h-screen bg-white'}>
-          {userRole !== 'admin' && userRole !== 'professor' && userRole !== 'student' && <Sidebar role={userRole} onLogout={logout} />}
-          <main className="flex-1 flex flex-col overflow-hidden">
-            {userRole === 'admin' && <AdminTopNav onLogout={logout} />}
-            {userRole === 'professor' && <ProfessorTopNav onLogout={logout} />}
-            {userRole === 'student' && <StudentTopNav onLogout={logout} />}
-            <Routes>
+    <div className={userRole === 'admin' || userRole === 'professor' || userRole === 'student' ? 'flex flex-col h-screen overflow-hidden bg-[#faf9f6]' : 'flex h-screen bg-white'}>
+      {userRole !== 'admin' && userRole !== 'professor' && userRole !== 'student' && <Sidebar role={userRole} onLogout={logout} />}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {userRole === 'admin' && <AdminTopNav onLogout={logout} />}
+        {userRole === 'professor' && <ProfessorTopNav onLogout={logout} />}
+        {userRole === 'student' && <StudentTopNav onLogout={logout} />}
+
+        <AnimatePresence mode="wait" initial={false}>
+          <PageTransition key={location.key} className="flex-1 min-h-0 overflow-hidden">
+            <Routes location={location}>
               <Route path="/login" element={<Navigate to="/dashboard" replace />} />
 
               {/* Settings page by role */}
@@ -112,9 +124,37 @@ const App: React.FC = () => {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
-          </main>
-        </div>
-      )}
+          </PageTransition>
+        </AnimatePresence>
+      </main>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  const {
+    isAuthenticated,
+    isInitializing,
+    userRole,
+    login,
+    logout
+  } = useAppController();
+
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
+  return (
+    <Router>
+      <AppRoutes
+        isAuthenticated={isAuthenticated}
+        isInitializing={isInitializing}
+        userRole={userRole}
+        login={login}
+        logout={logout}
+      />
     </Router>
   );
 };

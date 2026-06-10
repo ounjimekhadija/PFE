@@ -17,14 +17,12 @@ const baseUserSchema = z.object({
 const registerAdminSchema = baseUserSchema.extend({
   role: z.literal('ADMINISTRATEUR'),
   nomOrganisation: z.string().optional().or(z.literal('')).nullable(),
-  niveauAcces: z.string().optional().or(z.literal('')).nullable(),
+  // niveauAcces removed
 });
 
 const registerEncadrantSchema = baseUserSchema.extend({
   role: z.literal('ENCADRANT'),
-  grade: z.string().optional().or(z.literal('')).nullable(),
-  specialite: z.string().optional().or(z.literal('')).nullable(),
-  bureau: z.string().optional().or(z.literal('')).nullable(),
+  // grade, specialite and bureau removed
 });
 
 const registerEtudiantSchema = baseUserSchema.extend({
