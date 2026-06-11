@@ -92,11 +92,11 @@ const Tasks: React.FC = () => {
 
   const handleCreateIteration = async () => {
     if (!iterForm.projectId || !iterForm.dateDebut || !iterForm.dateFin) {
-      setIterError('Le groupe, la date de début et la date de fin sont requis.');
+      setIterError('Group, start date, and end date are required.');
       return;
     }
     if (iterForm.dateFin < iterForm.dateDebut) {
-      setIterError('La date de fin doit être après la date de début.');
+      setIterError('The end date must be after the start date.');
       return;
     }
     setIterSaving(true);
@@ -216,12 +216,12 @@ const Tasks: React.FC = () => {
         const mapped: TaskCard[] = (taskRows || []).map((t: any) => {
           const assignation = t.tache_assignations?.[0];
           const u = assignation?.etudiants?.utilisateurs;
-          const assignee = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Non assigné' : 'Non assigné';
+          const assignee = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Unassigned' : 'Unassigned';
           const projectId = projectByIter[String(t.iteration_id)] || '';
           return {
             id: String(t.id),
-            title: t.titre || 'Tâche sans titre',
-            description: t.description || 'Aucune description.',
+            title: t.titre || 'Untitled task',
+            description: t.description || 'No description.',
             assignee,
             status: toStatus(t.etat),
             priority: t.priorite,
@@ -454,9 +454,9 @@ const Tasks: React.FC = () => {
         </div>
       </header>
 
-      {loading && <p className="text-sm text-[#7f7664]">Chargement des tâches...</p>}
+      {loading && <p className="text-sm text-[#7f7664]">Loading tasks...</p>}
       {!loading && allIterations.length === 0 && (
-        <p className="text-sm text-[#7f7664]">Aucune itération trouvée. Créez une itération pour commencer.</p>
+        <p className="text-sm text-[#7f7664]">No iteration found. Create an iteration to start.</p>
       )}
 
       {/* Iterations strip */}
@@ -473,7 +473,7 @@ const Tasks: React.FC = () => {
                     onClick={handleValidateIteration}
                     className="rounded-xl bg-green-500 px-4 py-2 text-xs font-bold text-white"
                   >
-                    Valider l'itération
+                    Validate Iteration
                   </button>
                 );
               }
@@ -590,7 +590,7 @@ const Tasks: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Numéro</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Number</label>
                 <input
                   type="number"
                   min={1}
@@ -642,16 +642,16 @@ const Tasks: React.FC = () => {
                     className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#4d4636] outline-none transition hover:border-[#765b00]"
                   >
                     <span className="truncate">
-                      {iterForm.statut === 'A_FAIRE' ? 'À faire' : iterForm.statut === 'EN_COURS' ? 'En cours' : 'Validé'}
+                      {iterForm.statut === 'A_FAIRE' ? 'To Do' : iterForm.statut === 'EN_COURS' ? 'In Progress' : 'Validated'}
                     </span>
                     <ChevronDown size={14} className={`text-[#7f7664] transition-transform ${openIterStatusDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {openIterStatusDropdown && (
                     <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#f4f3f1] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
                       {[
-                        { v: 'A_FAIRE', l: 'À faire' },
-                        { v: 'EN_COURS', l: 'En cours' },
-                        { v: 'VALIDE', l: 'Validé' }
+                        { v: 'A_FAIRE', l: 'To Do' },
+                        { v: 'EN_COURS', l: 'In Progress' },
+                        { v: 'VALIDE', l: 'Validated' }
                       ].map(o => (
                         <button
                           key={o.v}
@@ -676,7 +676,7 @@ const Tasks: React.FC = () => {
                 disabled={iterSaving}
                 className="w-full rounded-xl bg-[#765b00] py-2.5 text-sm font-bold text-white transition hover:bg-[#594400] disabled:opacity-50"
               >
-                {iterSaving ? 'Création...' : 'Create Iteration'}
+                {iterSaving ? 'Creating...' : 'Create Iteration'}
               </button>
             </div>
           </div>
@@ -711,7 +711,7 @@ const Tasks: React.FC = () => {
             {/* Details */}
             <div className="shrink-0 border-b border-[#f4f3f1] px-6 py-3">
               <div className="flex items-center gap-6 text-xs text-[#7f7664]">
-                <span><span className="font-semibold text-[#4d4636]">Assigné à:</span> {selectedTask.assignee}</span>
+                <span><span className="font-semibold text-[#4d4636]">Assigned to:</span> {selectedTask.assignee}</span>
                 <span><span className="font-semibold text-[#4d4636]">Date:</span> {selectedTask.dateLabel}</span>
               </div>
               <p className="mt-2 text-sm text-[#4d4636] leading-relaxed">{selectedTask.description}</p>
@@ -722,7 +722,7 @@ const Tasks: React.FC = () => {
               <p className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">
                 Comments ({selectedTask.commentCount})
               </p>
-              {loadingComments && <p className="text-xs text-[#7f7664]">Chargement...</p>}
+              {loadingComments && <p className="text-xs text-[#7f7664]">Loading...</p>}
               {!loadingComments && comments.length === 0 && (
                 <p className="text-xs text-[#d1c5b0]">No comments yet. Be the first!</p>
               )}
@@ -749,7 +749,7 @@ const Tasks: React.FC = () => {
               <div className="flex items-center gap-2 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-3 py-2 focus-within:border-[#765b00]">
                 <input
                   type="text"
-                  placeholder="Ajouter un commentaire..."
+                  placeholder="Add a comment..."
                   value={commentInput}
                   onChange={e => setCommentInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(); } }}

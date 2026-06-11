@@ -87,7 +87,7 @@ const StudentGroups: React.FC = () => {
             return {
               id: student.id,
               name: student.utilisateurs ? `${student.utilisateurs.prenom} ${student.utilisateurs.nom}` : student.id,
-              role: student.filiere || 'Étudiant',
+              role: student.filiere || 'Student',
               email: student.utilisateurs?.email || '',
               avatar: avatarUrl,
               status: student.projet_id ? 'In Group' : 'Available',
@@ -101,7 +101,7 @@ const StudentGroups: React.FC = () => {
           setStudents(formattedStudents);
         }
       } catch (err) {
-        console.error('Erreur lors du chargement des étudiants:', err);
+        console.error('Error loading students:', err);
       } finally {
         setLoading(false);
       }
@@ -150,13 +150,13 @@ const StudentGroups: React.FC = () => {
       const currentUserId = user?.id;
 
       if (selected.length === 0 && !currentUserId) {
-        alert('Sélectionnez au moins un étudiant disponible ou soyez connecté.');
+        alert('Select at least one available student or be logged in.');
         return;
       }
 
       const selectedUnavailable = selected.filter((s) => s.projet_id);
       if (selectedUnavailable.length > 0) {
-        alert('Un ou plusieurs étudiants sélectionnés sont déjà dans un groupe.');
+        alert('One or more selected students are already in a group.');
         return;
       }
 
@@ -168,7 +168,7 @@ const StudentGroups: React.FC = () => {
           .single();
 
         if (meRow?.projet_id) {
-          alert("Vous êtes déjà assigné à un projet. Un étudiant ne peut appartenir qu'à un seul projet.");
+          alert("You are already assigned to a project. A student can only belong to one project.");
           return;
         }
       }
@@ -203,8 +203,8 @@ const StudentGroups: React.FC = () => {
         await notifyAdmins({
           senderId: currentUserId,
           projectId: projectId,
-          title: 'Nouveau Groupe Formé',
-          message: `Un groupe d'étudiants s'est formé pour le projet "${selectedProject?.titre || 'Inconnu'}".`,
+          title: 'New Group Formed',
+          message: `A group of students has formed for the project "${selectedProject?.titre || 'Unknown'}".`,
           type: 'GROUP_CREATED'
         });
       }
@@ -320,11 +320,10 @@ const StudentGroups: React.FC = () => {
           </div>
           <button
             onClick={handleFilterClick}
-            className={`p-3 rounded-2xl transition-all flex items-center justify-center ${
-              sortOrder !== 'none'
-                ? 'bg-[#ffd464]/30 text-[#765b00] hover:bg-[#ffd464]/50'
-                : 'bg-[#f4f3f1] text-[#7f7664] hover:bg-[#efeeeb] hover:text-[#4d4636]'
-            }`}
+            className={`p-3 rounded-2xl transition-all flex items-center justify-center ${sortOrder !== 'none'
+              ? 'bg-[#ffd464]/30 text-[#765b00] hover:bg-[#ffd464]/50'
+              : 'bg-[#f4f3f1] text-[#7f7664] hover:bg-[#efeeeb] hover:text-[#4d4636]'
+              }`}
             title="Trier par nom (A-Z / Z-A)"
           >
             <Filter size={18} strokeWidth={2} />
@@ -357,9 +356,8 @@ const StudentGroups: React.FC = () => {
                     alt={student.name}
                     className="h-20 w-20 rounded-[28px] border-4 border-white object-cover shadow-md"
                   />
-                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white flex items-center justify-center ${
-                    student.status === 'Available' ? 'bg-green-500' : 'bg-[#765b00]'
-                  }`}>
+                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white flex items-center justify-center ${student.status === 'Available' ? 'bg-green-500' : 'bg-[#765b00]'
+                    }`}>
                     {student.status === 'In Group' && <CheckCircle2 size={10} className="text-white" />}
                   </div>
                 </div>
@@ -370,7 +368,7 @@ const StudentGroups: React.FC = () => {
 
               <h3 className="mb-1 truncate text-xl font-bold text-[#1a1c1a]">{student.name}</h3>
               {student.groupName && (
-                <p className="mb-1 truncate text-sm font-medium text-[#7f7664]">Groupe: {student.groupName}</p>
+                <p className="mb-1 truncate text-sm font-medium text-[#7f7664]">Group: {student.groupName}</p>
               )}
               <p className="mb-4 truncate text-sm font-bold text-[#765b00]">{student.role}</p>
 
@@ -407,13 +405,12 @@ const StudentGroups: React.FC = () => {
                   )}
                 </div>
                 <button
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
-                    student.status === 'Available'
-                      ? selected.find(s => s.id === student.id)
-                        ? 'bg-[#16A34A] text-white shadow-sm hover:bg-[#15803D]'
-                        : 'bg-[#765b00] text-white shadow-sm hover:bg-[#594400]'
-                      : 'cursor-not-allowed bg-[#efeeeb] text-[#7f7664]'
-                  }`}
+                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${student.status === 'Available'
+                    ? selected.find(s => s.id === student.id)
+                      ? 'bg-[#16A34A] text-white shadow-sm hover:bg-[#15803D]'
+                      : 'bg-[#765b00] text-white shadow-sm hover:bg-[#594400]'
+                    : 'cursor-not-allowed bg-[#efeeeb] text-[#7f7664]'
+                    }`}
                   disabled={student.status !== 'Available'}
                   onClick={() => toggleSelect(student)}
                 >

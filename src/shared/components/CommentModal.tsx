@@ -53,7 +53,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non connecté');
+      if (!user) throw new Error('Not logged in');
 
       const { error } = await supabase
         .from('tache_commentaires')
@@ -68,7 +68,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
       fetchComments();
     } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'ajout du commentaire: " + err.message);
+      alert("Error adding comment: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
           {fetchLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-3 border-[#765b00]/20 border-t-[#765b00] rounded-full animate-spin"></div>
-              <p className="text-sm text-[#7f7664] font-medium">Chargement des messages...</p>
+              <p className="text-sm text-[#7f7664] font-medium">Loading messages...</p>
             </div>
           ) : comments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -107,8 +107,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
                 <MessageSquare size={32} strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-[#1a1c1a] font-bold">Aucun message pour le moment</p>
-                <p className="text-sm text-[#7f7664]">Soyez le premier à lancer la discussion !</p>
+                <p className="text-[#1a1c1a] font-bold">No messages yet</p>
+                <p className="text-sm text-[#7f7664]">Be the first to start the discussion!</p>
               </div>
             </div>
           ) : (
@@ -144,7 +144,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
               <input 
                 type="text"
                 className="flex-1 bg-[#f4f3f1] border border-transparent rounded-2xl px-5 py-4 text-sm focus:bg-white focus:border-[#765b00] outline-none transition-all pr-12 text-[#1a1c1a]"
-                placeholder="Écrire un commentaire..."
+                placeholder="Write a comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 disabled={loading}

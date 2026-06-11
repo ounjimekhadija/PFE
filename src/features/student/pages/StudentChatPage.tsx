@@ -50,7 +50,7 @@ const StudentChat: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectMeetings, setProjectMeetings] = useState<ReunionItem[]>([]);
-  const [supervisorName, setSupervisorName] = useState('Encadrant');
+  const [supervisorName, setSupervisorName] = useState('Supervisor');
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +128,7 @@ const StudentChat: React.FC = () => {
           .single();
 
         if (projectError || !project?.encadrant_id) {
-          setError('Encadrant non trouvé');
+          setError('Supervisor not found');
           return;
         }
 
@@ -139,7 +139,7 @@ const StudentChat: React.FC = () => {
           .single();
 
         if (professorError || !professor) {
-          setError('Détails de l\'encadrant non trouvés');
+          setError('Supervisor details not found');
           return;
         }
 
@@ -150,7 +150,7 @@ const StudentChat: React.FC = () => {
           id: professor.id,
           name: professorName,
           groupName: project?.nom_groupe || project?.titre || '',
-          lastMsg: 'Chargement des messages du projet...',
+          lastMsg: 'Loading project messages...',
           time: '',
           unread: 0,
           active: true,
@@ -178,7 +178,7 @@ const StudentChat: React.FC = () => {
                 id: projStudent.id,
                 name: studentName,
                 groupName: project?.nom_groupe || project?.titre || '',
-                lastMsg: 'Chargement des messages du projet...',
+                lastMsg: 'Loading project messages...',
                 time: '',
                 unread: 0,
                 active: false,
@@ -218,7 +218,7 @@ const StudentChat: React.FC = () => {
           fetchMessages(student.projet_id, user.id);
         }
       } catch (err: any) {
-        setError(err?.message || 'Erreur lors du chargement');
+        setError(err?.message || 'Loading error');
       } finally {
         setLoading(false);
       }
@@ -432,16 +432,16 @@ const StudentChat: React.FC = () => {
       await notifyProjectProfessor({
         projectId,
         senderId: currentUserId,
-        title: 'Nouveau fichier',
-        message: 'Un membre du groupe a partagé un fichier.',
+        title: 'New file',
+        message: 'A group member shared a file.',
         type: 'MESSAGE'
       });
 
       await notifyProjectStudents({
         projectId,
         senderId: currentUserId,
-        title: 'Nouveau fichier',
-        message: 'Un membre du groupe a partagé un fichier.',
+        title: 'New file',
+        message: 'A group member shared a file.',
         type: 'MESSAGE'
       });
 
@@ -454,7 +454,7 @@ const StudentChat: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center text-[#7f7664]">Chargement...</div>;
+    return <div className="flex-1 flex items-center justify-center text-[#7f7664]">Loading...</div>;
   }
 
   if (error) {
@@ -483,7 +483,7 @@ const StudentChat: React.FC = () => {
         <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
           {groupedContacts.professor && (
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7f7664] mb-2 px-4">ENCADRANT</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7f7664] mb-2 px-4">SUPERVISOR</h3>
               <div
                 key={groupedContacts.professor.id}
                 className={`flex w-full items-center gap-4 rounded-2xl px-4 py-4 text-left transition-all ${
@@ -536,7 +536,7 @@ const StudentChat: React.FC = () => {
                       <p className="truncate font-bold text-[#1a1c1a]">{contact.name}</p>
                       <span className="text-[11px] font-bold uppercase text-[#7f7664]">{contact.time}</span>
                     </div>
-                    <p className="mb-0.5 truncate text-[11px] font-semibold text-[#7f7664]">Étudiant(e)</p>
+                    <p className="mb-0.5 truncate text-[11px] font-semibold text-[#7f7664]">Student</p>
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate text-sm font-medium text-[#7f7664]">{contact.lastMsg}</p>
                       {contact.unread > 0 && <span className="rounded-lg bg-[#765b00] px-2 py-1 text-[10px] font-bold text-white">{contact.unread}</span>}
@@ -584,7 +584,7 @@ const StudentChat: React.FC = () => {
             <div className="flex-1 overflow-y-auto px-8 py-8">
               {filteredMessages.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-[#7f7664]">
-                  Aucun message
+                  No message
                 </div>
               ) : (
                 <div className="space-y-8">

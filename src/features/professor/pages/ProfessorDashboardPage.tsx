@@ -126,7 +126,7 @@ const Dashboard: React.FC = () => {
 
         const formattedStudents = (students || []).map((s: any) => {
           const u = Array.isArray(s.utilisateurs) ? s.utilisateurs[0] : s.utilisateurs;
-          const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
+          const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Student';
           const projectName = projects.find((p: any) => p.id === s.projet_id)?.titre || 'N/A';
           return {
             id: s.id,
@@ -147,8 +147,8 @@ const Dashboard: React.FC = () => {
 
         setIterations((iters || []).map((it: any) => ({
           id: it.id,
-          label: it.statut === 'EN_COURS' ? 'Itération en cours' : it.statut === 'VALIDE' ? `Itération ${it.numero}` : 'À faire',
-          description: `Du ${new Date(it.date_debut).toLocaleDateString('fr-FR')} au ${new Date(it.date_fin).toLocaleDateString('fr-FR')}`,
+          label: it.statut === 'EN_COURS' ? 'Iteration in progress' : it.statut === 'VALIDE' ? `Iteration ${it.numero}` : 'To Do',
+          description: `From ${new Date(it.date_debut).toLocaleDateString()} to ${new Date(it.date_fin).toLocaleDateString()}`,
           date: it.date_debut,
           statut: it.statut,
         })));
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
           const project = projects.find((p: any) => p.id === it.projet_id);
           return {
             id: it.id,
-            projectName: project ? project.titre : 'Projet',
+            projectName: project ? project.titre : 'Project',
             numero: it.numero,
             statut: it.statut,
             date: it.date_debut || new Date().toISOString()
@@ -223,7 +223,7 @@ const Dashboard: React.FC = () => {
 
           return {
             id: p.id,
-            name: p.titre || 'Projet',
+            name: p.titre || 'Project',
             timeProgress,
             taskCompletion,
             tasks: iterTasks,
@@ -269,7 +269,7 @@ const Dashboard: React.FC = () => {
       // Generation Date
       summarySheet.mergeCells('A3:B3');
       const dateCell = summarySheet.getCell('A3');
-      dateCell.value = `Generated on ${new Date().toLocaleDateString('fr-FR')}`;
+      dateCell.value = `Generated on ${new Date().toLocaleDateString()}`;
       dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF7F7664' } };
       dateCell.alignment = { vertical: 'middle', horizontal: 'right' };
       
@@ -506,9 +506,9 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="min-h-0 flex-1 px-2">
             {loading ? (
-              <p className="text-sm text-[#7f7664]">Chargement...</p>
+              <p className="text-sm text-[#7f7664]">Loading...</p>
             ) : projectBars.length === 0 ? (
-              <p className="text-sm text-[#7f7664]">Aucun projet.</p>
+              <p className="text-sm text-[#7f7664]">No project.</p>
             ) : (
               <div className="flex h-full min-h-0 flex-1 gap-8">
                 <div className="flex flex-1 flex-col justify-end min-w-0">
@@ -600,9 +600,9 @@ const Dashboard: React.FC = () => {
             <p className="mb-4 self-start text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Iterations History</p>
             <div className="flex-1 overflow-y-auto max-h-[240px] pr-2 custom-scrollbar space-y-3">
               {loading ? (
-                <p className="text-xs text-[#7f7664]">Chargement...</p>
+                <p className="text-xs text-[#7f7664]">Loading...</p>
               ) : iterationsHistory.length === 0 ? (
-                <p className="text-xs text-[#7f7664]">Aucune itération.</p>
+                <p className="text-xs text-[#7f7664]">No iteration.</p>
               ) : (
                 iterationsHistory.map((it) => (
                   <div key={it.id} className="flex flex-col border-b border-[#f4f3f1] pb-2 last:border-0 last:pb-0">
@@ -640,7 +640,7 @@ const Dashboard: React.FC = () => {
 
       <div className="shrink-0 rounded-2xl border border-transparent bg-white px-5 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
         {loading ? (
-          <p className="text-xs text-[#7f7664]">Chargement...</p>
+          <p className="text-xs text-[#7f7664]">Loading...</p>
         ) : (
           <div className="flex gap-8 overflow-x-auto pb-2 custom-scrollbar">
             {iterations.map((it) => {
@@ -649,7 +649,7 @@ const Dashboard: React.FC = () => {
               return (
                 <div key={it.id} className="border-l-2 pl-3 shrink-0" style={{ borderColor }}>
                   <p className="text-[10px] font-bold" style={{ color: textColor }}>
-                    {new Date(it.date).toLocaleDateString('fr-FR')}
+                    {new Date(it.date).toLocaleDateString()}
                   </p>
                   <p className="text-xs font-semibold text-[#1a1c1a]">{it.label}</p>
                 </div>

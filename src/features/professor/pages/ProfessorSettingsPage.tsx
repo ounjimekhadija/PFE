@@ -4,8 +4,8 @@ import { supabase } from '../../../lib/supabase';
 
 const ProfessorSettingsPage: React.FC = () => {
   const [profile, setProfile] = useState({
-    name: 'Chargement...',
-    email: 'chargement@hub.student',
+    name: 'Loading...',
+    email: 'loading@hub.student',
     phone: '',
     website: '',
     github: '',
@@ -91,7 +91,7 @@ const ProfessorSettingsPage: React.FC = () => {
           avatar: resolveAvatarUrl(userData.avatar_url, fullName),
         });
       } catch (err) {
-        console.error('Erreur chargement profil encadrant:', err);
+        console.error('Error loading supervisor profile:', err);
       } finally {
         setLoading(false);
       }
@@ -180,7 +180,7 @@ const ProfessorSettingsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-[#faf9f6] p-8 text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-        Chargement des donnees...
+        Loading data...
       </div>
     );
   }

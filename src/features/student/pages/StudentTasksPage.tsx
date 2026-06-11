@@ -42,9 +42,9 @@ const StudentTasks: React.FC = () => {
   const [currentIterationId, setCurrentIterationId] = useState<string | null>(null);
 
   const [columns, setColumns] = useState<Column[]>([
-    { id: 'todo', title: 'À faire', tasks: [] },
-    { id: 'inprogress', title: 'En cours', tasks: [] },
-    { id: 'done', title: 'Terminé', tasks: [] },
+    { id: 'todo', title: 'To Do', tasks: [] },
+    { id: 'inprogress', title: 'In Progress', tasks: [] },
+    { id: 'done', title: 'Done', tasks: [] },
   ]);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ const StudentTasks: React.FC = () => {
           .eq('projet_id', projectId);
 
         if (membersError) {
-          console.error("Erreur récupération membres:", membersError);
+          console.error("Error fetching members:", membersError);
         }
 
         if (projectMembers) {
@@ -78,8 +78,8 @@ const StudentTasks: React.FC = () => {
             return {
               id: m.id,
               name: userObj
-                ? `${userObj.prenom} ${userObj.nom} ${isMe ? '(Moi)' : ''}`
-                : (isMe ? 'Moi' : 'Membre Inconnu')
+                ? `${userObj.prenom} ${userObj.nom} ${isMe ? '(Me)' : ''}`
+                : (isMe ? 'Me' : 'Unknown Member')
             };
           });
           setAssigneeOptions(formattedMembers);
@@ -139,10 +139,10 @@ const StudentTasks: React.FC = () => {
             id: t.id.toString(),
             db_id: t.id,
             title: t.titre,
-            description: t.description || 'Aucune description',
+            description: t.description || 'No description',
             priority: uiPriority,
             assigneeStudentId: assignedStudentId,
-            assignee: assignedUser ? `${assignedUser.prenom} ${assignedUser.nom}` : 'Non assigné',
+            assignee: assignedUser ? `${assignedUser.prenom} ${assignedUser.nom}` : 'Unassigned',
             comments: t.tache_commentaires ? t.tache_commentaires.length : 0,
             attachments: 0,
           };
@@ -154,9 +154,9 @@ const StudentTasks: React.FC = () => {
         });
 
         setColumns([
-          { id: 'todo', title: 'À faire', tasks: todo },
-          { id: 'inprogress', title: 'En cours', tasks: inprogress },
-          { id: 'done', title: 'Terminé', tasks: done },
+          { id: 'todo', title: 'To Do', tasks: todo },
+          { id: 'inprogress', title: 'In Progress', tasks: inprogress },
+          { id: 'done', title: 'Done', tasks: done },
         ]);
       } catch (err) {
         console.error('Failed to load tasks', err);
@@ -167,7 +167,7 @@ const StudentTasks: React.FC = () => {
 
   const handleTaskCreated = (newDbTask: any, assignedStudentId: string | undefined) => {
     const selectedAssignee = assigneeOptions.find((opt) => opt.id === assignedStudentId);
-    const assigneeName = selectedAssignee?.name || 'Non assigné';
+    const assigneeName = selectedAssignee?.name || 'Unassigned';
 
     const dbPriority = (newDbTask.priorite || 'MEDIUM') as string;
     let uiPriority: TaskS['priority'] = 'Medium';
@@ -178,7 +178,7 @@ const StudentTasks: React.FC = () => {
       id: newDbTask.id.toString(),
       db_id: newDbTask.id,
       title: newDbTask.titre,
-      description: newDbTask.description || 'Aucune description',
+      description: newDbTask.description || 'No description',
       assigneeStudentId: assignedStudentId,
       priority: uiPriority,
       assignee: assigneeName,
@@ -230,7 +230,7 @@ const StudentTasks: React.FC = () => {
         if (error) throw error;
       } catch (error: any) {
         console.error("Update task status failed", error);
-        alert("Erreur de sauvegarde: impossible de déplacer la tâche (Avez-vous configuré les Policies Supabase ?)");
+        alert("Save error: unable to move task");
         setColumns(previousColumns);
       }
     }
@@ -253,7 +253,7 @@ const StudentTasks: React.FC = () => {
           onClick={() => setIsCreateModalOpen(true)}
         >
           <Plus size={16} />
-          <span>Créer une tâche</span>
+          <span>Create a task</span>
         </button>
       </header>
 
@@ -324,8 +324,7 @@ const StudentTasks: React.FC = () => {
                                                              'text-blue-600 bg-blue-50'
                               }`}>
                                 <Flag size={10} strokeWidth={3} />
-                                {task.priority === 'High'   ? 'Haute'   :
-                                 task.priority === 'Medium' ? 'Moyenne' : 'Faible'}
+                                {task.priority === 'High' ? 'High' : task.priority === 'Medium' ? 'Medium' : 'Low'}
                               </div>
                             </div>
 

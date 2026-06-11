@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+// Removed fr locale
 
 interface AdminTopNavProps {
   onLogout?: () => void;
@@ -139,7 +139,7 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
                       onClick={markAsRead}
                       className="text-[10px] font-bold text-[#765b00] hover:underline"
                     >
-                      Tout marquer comme lu
+                      Mark all as read
                     </button>
                   )}
                 </div>
@@ -161,13 +161,13 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             <span className="shrink-0 text-[10px] text-[#7f7664]">
-                              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: fr })}
+                              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                             </span>
                             {!n.is_read && (
                               <button
                                 onClick={() => markIndividualAsRead(n.id)}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity flex h-6 w-6 items-center justify-center rounded-full bg-[#765b00]/10 text-[#765b00] hover:bg-[#765b00] hover:text-white"
-                                title="Marquer comme lu"
+                                title="Mark as read"
                               >
                                 <CheckSquare size={12} />
                               </button>

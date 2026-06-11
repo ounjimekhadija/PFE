@@ -51,8 +51,8 @@ const StudentDeliverables: React.FC = () => {
       .eq('id', user.id)
       .single();
 
-    if (error || !student) throw new Error("Profil étudiant introuvable pour l'utilisateur connecté.");
-    if (!student.projet_id) throw new Error("Aucun projet associé à cet étudiant.");
+    if (error || !student) throw new Error("Student profile not found for logged in user.");
+    if (!student.projet_id) throw new Error("No project associated with this student.");
 
     return { studentId: student.id, projectId: student.projet_id };
   };
@@ -98,7 +98,7 @@ const StudentDeliverables: React.FC = () => {
             id: v.id,
             version: v.version,
             date: new Date(v.created_at).toISOString().split('T')[0],
-            author: v.etudiants?.utilisateurs ? `${v.etudiants.utilisateurs.prenom} ${v.etudiants.utilisateurs.nom}` : 'Inconnu',
+            author: v.etudiants?.utilisateurs ? `${v.etudiants.utilisateurs.prenom} ${v.etudiants.utilisateurs.nom}` : 'Unknown',
             comment: `Version soumise`,
             url: v.chemin_fichier || v.url_externe
           })) || []
@@ -130,7 +130,7 @@ const StudentDeliverables: React.FC = () => {
 
   const handleUpload = async () => {
     if (!newTitle.trim() || !selectedFile) {
-      alert("Veuillez entrer un titre et sélectionner un fichier.");
+      alert("Please enter a title and select a file.");
       return;
     }
     try {
@@ -151,7 +151,7 @@ const StudentDeliverables: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw new Error(`Erreur Livrables: ${error.message}`);
+      if (error) throw new Error(`Deliverables Error: ${error.message}`);
 
       const { error: vError } = await supabase.from('livrable_versions').insert({
         livrable_id: data.id,
@@ -178,7 +178,7 @@ const StudentDeliverables: React.FC = () => {
         type: 'SUBMISSION_LIVRABLE'
       });
     } catch (error: any) {
-      alert(`Erreur lors de la création du livrable: \n${error.message}`);
+      alert(`Error creating deliverable: \n${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -186,7 +186,7 @@ const StudentDeliverables: React.FC = () => {
 
   const handleAddNewVersion = async () => {
     if (!selectedDoc || !selectedFile) {
-      alert("Veuillez sélectionner un fichier.");
+      alert("Please select a file.");
       return;
     }
     try {
@@ -282,7 +282,7 @@ const StudentDeliverables: React.FC = () => {
           </button>
         </header>
 
-        {/* Grille des livrables avec marge basse supplémentaire */}
+        {/* Deliverables grid with extra bottom margin */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
           {deliverables.map((doc) => (
             <motion.div
@@ -344,7 +344,7 @@ const StudentDeliverables: React.FC = () => {
                           window.open(fileUrl, '_blank');
                         } else {
                           supabase.storage.from('documents').createSignedUrl(fileUrl, 3600, { download: true }).then(({ data, error }) => {
-                            if (error) { alert("Erreur d'accès au fichier: " + error.message); return; }
+                            if (error) { alert("Error accessing file: " + error.message); return; }
                             if (data?.signedUrl) {
                               const link = document.createElement('a');
                               link.href = data.signedUrl;
@@ -357,7 +357,7 @@ const StudentDeliverables: React.FC = () => {
                           });
                         }
                       } else {
-                        alert("Le fichier n'est pas disponible dans le Storage.");
+                        alert("The file is not available in Storage.");
                       }
                     }}
                   >
@@ -368,7 +368,7 @@ const StudentDeliverables: React.FC = () => {
                     title="Delete deliverable"
                     onClick={async e => {
                       e.stopPropagation();
-                      if (window.confirm('Voulez-vous vraiment supprimer ce livrable et effacer définitivement ses fichiers du Storage ?')) {
+                      if (window.confirm('Are you sure you want to delete this deliverable and permanently erase its files from Storage?')) {
                         try {
                           const { data: versions } = await supabase
                             .from('livrable_versions')
@@ -385,7 +385,7 @@ const StudentDeliverables: React.FC = () => {
                           await supabase.from('livrables').delete().eq('id', doc.id);
                           fetchDeliverables();
                         } catch (err) {
-                          alert("Impossible de supprimer le livrable.");
+                          alert("Unable to delete the deliverable.");
                         }
                       }
                     }}
@@ -457,7 +457,7 @@ const StudentDeliverables: React.FC = () => {
               <div className="flex flex-col items-center justify-center gap-2">
                 <Upload size={24} className="text-[#7f7664]" />
                 <span className="text-sm font-medium text-[#4d4636]">
-                  {selectedFile ? selectedFile.name : "Cliquez pour uploader un fichier"}
+                  {selectedFile ? selectedFile.name : "Click to upload a file"}
                 </span>
                 {selectedFile && (
                   <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
@@ -514,8 +514,8 @@ const StudentDeliverables: React.FC = () => {
                   <div className="flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 16, background: '#f4f3f1' }}>
                     <MessageSquare size={22} color="#c5b98a" />
                   </div>
-                  <p className="font-medium text-[#7f7664]" style={{ fontSize: 14, margin: 0 }}>Aucun commentaire</p>
-                  <p style={{ fontSize: 12, color: '#b0a88a', marginTop: 4 }}>Les commentaires du professeur apparaîtront ici.</p>
+                  <p className="font-medium text-[#7f7664]" style={{ fontSize: 14, margin: 0 }}>No comments</p>
+                  <p style={{ fontSize: 12, color: '#b0a88a', marginTop: 4 }}>Professor's comments will appear here.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -600,7 +600,7 @@ const StudentDeliverables: React.FC = () => {
               <div className="flex flex-col items-center justify-center gap-2">
                 <Upload size={24} className="text-[#7f7664]" />
                 <span className="text-sm font-medium text-[#4d4636]">
-                  {selectedFile ? selectedFile.name : "Cliquez pour uploader un fichier"}
+                  {selectedFile ? selectedFile.name : "Click to upload a file"}
                 </span>
                 {selectedFile && (
                   <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>

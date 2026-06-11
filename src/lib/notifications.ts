@@ -96,7 +96,7 @@ export const notifyProjectStudents = async (options: NotifyOptions) => {
           await sendEmail(
             u.email,
             `[StudentHub] ${title}`,
-            `Bonjour ${u.prenom || ''},\n\nUne nouvelle notification pour votre projet :\n\n${message}\n\nConsultez votre tableau de bord pour plus de détails.`
+            `Hello ${u.prenom || ''},\n\nA new notification for your project:\n\n${message}\n\nCheck your dashboard for more details.`
           );
         }
       }
@@ -159,7 +159,7 @@ export const notifyProjectProfessor = async (options: NotifyOptions) => {
       await sendEmail(
         professor.email,
         `[StudentHub] ${title}`,
-        `Bonjour M. ${professor.nom || ''},\n\nUn étudiant a effectué une action sur le projet :\n\n${message}\n\nConsultez votre espace d'encadrement pour plus de détails.`
+        `Hello Prof. ${professor.nom || ''},\n\nA student has performed an action on the project:\n\n${message}\n\nCheck your supervisor space for more details.`
       );
     }
   } catch (err) {
@@ -209,7 +209,7 @@ export const notifyAdmins = async (options: Omit<NotifyOptions, 'projectId'> & {
         await sendEmail(
           admin.email,
           `[StudentHub Admin] ${title}`,
-          `Bonjour ${admin.prenom || 'Admin'},\n\nUne nouvelle action requiert votre attention :\n\n${message}\n\nConsultez le tableau de bord administrateur pour plus de détails.`
+          `Hello ${admin.prenom || 'Admin'},\n\nA new action requires your attention:\n\n${message}\n\nCheck the admin dashboard for more details.`
         );
       }
     }

@@ -85,13 +85,13 @@ const AdminMembers: React.FC = () => {
         const formatted: Student[] = (rows || []).map((row: any) => {
           const u = Array.isArray(row.utilisateurs) ? row.utilisateurs[0] : row.utilisateurs;
           const p = row.projet_id ? projectMap.get(String(row.projet_id)) : null;
-          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
+          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Student';
           return {
             id: row.id,
-            name: fullName || 'Etudiant',
+            name: fullName || 'Student',
             email: u?.email || '',
             cne: row.cne || 'N/A',
-            avatar: resolveAvatar(u?.avatar_url, fullName || 'Etudiant'),
+            avatar: resolveAvatar(u?.avatar_url, fullName || 'Student'),
             projet_id: row.projet_id || null,
             filiere: row.filiere || p?.domaine || null,
             nom_groupe: p?.nom_groupe || null,
@@ -103,9 +103,9 @@ const AdminMembers: React.FC = () => {
 
         const groupMap = new Map<string, Groupe>();
         for (const s of formatted) {
-          const key = s.nom_groupe || s.projet_id || 'Sans groupe';
+          const key = s.nom_groupe || s.projet_id || 'No group';
           if (!groupMap.has(key)) {
-            groupMap.set(key, { name: s.nom_groupe || 'Groupe sans nom', filiere: s.filiere || 'Non definie', students: [] });
+            groupMap.set(key, { name: s.nom_groupe || 'Unnamed group', filiere: s.filiere || 'Undefined', students: [] });
           }
           groupMap.get(key)?.students.push(s);
         }
@@ -114,7 +114,7 @@ const AdminMembers: React.FC = () => {
         const uniqueFilieres = Array.from(new Set(formatted.map((s) => s.filiere).filter(Boolean))) as string[];
         setFilieres(uniqueFilieres);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur lors du chargement');
+        setError(err instanceof Error ? err.message : 'Error loading data');
       } finally {
         setLoading(false);
       }
@@ -191,7 +191,7 @@ const AdminMembers: React.FC = () => {
           s.email,
           s.cne,
           s.filiere || 'N/A',
-          s.nom_groupe || 'Sans groupe'
+          s.nom_groupe || 'No group'
         ]);
         row.height = 20;
         row.alignment = { vertical: 'middle' };
@@ -313,7 +313,7 @@ const AdminMembers: React.FC = () => {
       </header>
 
       {/* Banners */}
-      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Chargement des etudiants...</div>}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Loading students...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">{error}</div>}
 
       {/* ── STUDENTS TAB ── */}
@@ -344,7 +344,7 @@ const AdminMembers: React.FC = () => {
                   className="fixed z-50 w-56 rounded-2xl border border-[#f4f3f1] bg-white p-4 shadow-[0_8px_24px_rgba(118,91,0,0.12)]"
                   style={{ top: filterPos.top, right: filterPos.right }}
                 >
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Filiere</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Category</p>
                   <div className="relative mb-4">
                     <button
                       type="button"
@@ -411,7 +411,7 @@ const AdminMembers: React.FC = () => {
           {/* Table */}
           <div className="flex-1 overflow-y-auto">
             {students.length === 0 && !loading && (
-              <p className="py-12 text-center text-sm text-[#7f7664]">Aucun etudiant trouve.</p>
+              <p className="py-12 text-center text-sm text-[#7f7664]">No students found.</p>
             )}
             {students.length > 0 && (
               <table className="w-full border-collapse table-fixed">
@@ -425,7 +425,7 @@ const AdminMembers: React.FC = () => {
                 </colgroup>
                 <thead className="sticky top-0 bg-[#f4f3f1]">
                   <tr>
-                    {['STUDENT', 'CNE', 'FILIERE', 'GROUPE', 'STATUS', ''].map((h) => (
+                    {['STUDENT', 'CNE', 'CATEGORY', 'GROUP', 'STATUS', ''].map((h) => (
                       <th key={h} className="border-b border-transparent px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-[#7f7664]">{h}</th>
                     ))}
                   </tr>
@@ -451,7 +451,7 @@ const AdminMembers: React.FC = () => {
                           </span>
                         </td>
                         <td className="border-b border-transparent px-4 py-3 text-sm text-[#4d4636]">
-                          <span className="block truncate">{s.nom_groupe || 'Sans groupe'}</span>
+                          <span className="block truncate">{s.nom_groupe || 'No group'}</span>
                         </td>
                         <td className="border-b border-transparent px-4 py-3">
                           <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: isActive ? '#10B981' : '#f59e0b' }}>
@@ -497,14 +497,14 @@ const AdminMembers: React.FC = () => {
                 value={selectedFiliere}
                 onChange={(e) => setSelectedFiliere(e.target.value)}
               >
-                <option value="">All Filieres</option>
+                <option value="">All Categories</option>
                 {filieres.map((f) => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
           )}
 
           {filteredGroupes.length === 0 && !loading && (
-            <p className="py-12 text-center text-sm text-[#7f7664]">Aucun groupe trouve.</p>
+            <p className="py-12 text-center text-sm text-[#7f7664]">No groups found.</p>
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

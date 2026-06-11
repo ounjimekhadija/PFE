@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 
 const AdminSettingsPage: React.FC = () => {
   const [profile, setProfile] = useState({
-    name: 'Chargement...',
+    name: 'Loading...',
     email: '',
     phone: '',
     website: '',
@@ -63,7 +63,7 @@ const AdminSettingsPage: React.FC = () => {
           avatar: resolveAvatarUrl(userData.avatar_url, fullName),
         });
       } catch (err) {
-        console.error('Erreur chargement profil admin:', err);
+        console.error('Error loading admin profile:', err);
       } finally {
         setLoading(false);
       }
@@ -93,7 +93,7 @@ const AdminSettingsPage: React.FC = () => {
       if (updateError) throw updateError;
       setProfile((prev) => ({ ...prev, avatar: publicUrl }));
     } catch (error: any) {
-      alert('Erreur lors du telechargement de la photo : ' + error.message);
+      alert('Error uploading photo: ' + error.message);
     } finally {
       setUploadingAvatar(false);
     }
@@ -122,14 +122,14 @@ const AdminSettingsPage: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (error: any) {
-      alert('Erreur lors de la sauvegarde: ' + error.message);
+      alert('Error saving: ' + error.message);
     }
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
-      alert('Les mots de passe ne correspondent pas.');
+      alert('Passwords do not match.');
       return;
     }
     try {
@@ -139,14 +139,14 @@ const AdminSettingsPage: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (error: any) {
-      alert('Erreur lors du changement de mot de passe: ' + error.message);
+      alert('Error changing password: ' + error.message);
     }
   };
 
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-[#faf9f6] p-8 text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-        Chargement des donnees...
+        Loading data...
       </div>
     );
   }

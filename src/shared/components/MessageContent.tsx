@@ -48,7 +48,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ text }) => {
             </div>
           </div>
           <a href={url} target="_blank" rel="noreferrer" download={name} className="ml-3 inline-flex items-center gap-2 text-sm font-medium text-white bg-white/10 px-3 py-1 rounded hover:bg-white/20">
-            Télécharger
+            Download
           </a>
         </div>
       </div>

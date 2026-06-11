@@ -54,10 +54,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const userPassword = password;
 
       if (!email || !userPassword) {
-        throw new Error('Veuillez saisir un email et un mot de passe.');
+        throw new Error('Please enter an email and password.');
       }
 
-      // 1. Connexion via Supabase Auth
+      // 1. Login via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: userPassword,
@@ -66,7 +66,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Récupérer le rôle de l'utilisateur depuis la table utilisateurs
+        // 2. Get user role from the users table
         const { data: userData, error: userError } = await supabase
           .from('utilisateurs')
           .select('role')
@@ -75,26 +75,26 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         if (userError) throw userError;
 
-        // Mapper le rôle Supabase (ADMINISTRATEUR, ENCADRANT, ETUDIANT) vers nos UserRoles internes
+        // Map Supabase role (ADMINISTRATEUR, ENCADRANT, ETUDIANT) to our internal UserRoles
         const userRole = mapDbRoleToUserRole(userData.role);
         
-        // 3. Déclencher onLogin avec le vrai rôle détecté automatiquement
+        // 3. Trigger onLogin with the automatically detected true role
         onLogin(userRole);
       }
     } catch (err: any) {
-      console.error('Erreur de connexion:', err);
-      const message = err?.message || 'Identifiants incorrects';
+      console.error('Login error:', err);
+      const message = err?.message || 'Incorrect credentials';
       if (message.toLowerCase().includes('invalid login credentials')) {
         const existingUser = await findUserByEmail(email);
 
         if (existingUser) {
           if (existingUser.role === 'ENCADRANT') {
-            setError("Compte encadrant trouvé. Mot de passe incorrect. Utilisez 'Forgot Password' pour réinitialiser.");
+            setError("Supervisor account found. Incorrect password. Use 'Forgot Password' to reset.");
           } else {
-            setError("Compte trouvé. Mot de passe incorrect ou compte Auth non synchronisé. Utilisez 'Forgot Password'.");
+            setError("Account found. Incorrect password or Auth account not synced. Use 'Forgot Password'.");
           }
         } else {
-          setError("Email ou mot de passe incorrect. Si le problème persiste, utilisez 'Forgot Password'.");
+          setError("Incorrect email or password. If the problem persists, use 'Forgot Password'.");
         }
       } else {
         setError(message);
@@ -110,7 +110,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setInfo(null);
 
     if (!email) {
-      setError('Saisissez d\'abord votre email, puis cliquez sur Forgot Password.');
+      setError('Enter your email first, then click Forgot Password.');
       return;
     }
 
@@ -118,9 +118,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email);
 
       if (resetError) throw resetError;
-      setInfo('Email de réinitialisation envoyé. Vérifiez votre boîte mail.');
+      setInfo('Password reset email sent. Check your inbox.');
     } catch (err: any) {
-      setError(err?.message || 'Impossible d\'envoyer l\'email de réinitialisation.');
+      setError(err?.message || 'Unable to send password reset email.');
     }
   };
 
@@ -166,7 +166,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="peer w-full bg-warm-surface-container rounded-lg py-4 px-4 text-warm-on-surface placeholder-transparent text-base font-medium focus:outline-none transition-all"
-              placeholder="Adresse email"
+              placeholder="Email address"
               required
             />
             <label
@@ -175,7 +175,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 ${username ? 'text-sm -top-3.5 text-warm-primary' : 'text-base top-4 text-warm-on-surface-variant/80'}
                 peer-focus:text-sm peer-focus:-top-3.5 peer-focus:text-warm-primary`}
             >
-              Adresse email
+              Email address
             </label>
           </div>
           <div className="relative">
@@ -185,7 +185,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="peer w-full bg-warm-surface-container rounded-lg py-4 px-4 text-warm-on-surface placeholder-transparent text-base font-medium focus:outline-none transition-all"
-              placeholder="Mot de passe"
+              placeholder="Password"
               required
             />
             <label
@@ -194,7 +194,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 ${password ? 'text-sm -top-3.5 text-warm-primary' : 'text-base top-4 text-warm-on-surface-variant/80'}
                 peer-focus:text-sm peer-focus:-top-3.5 peer-focus:text-warm-primary`}
             >
-              Mot de passe
+              Password
             </label>
           </div>
           <button
@@ -202,7 +202,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             disabled={loading}
             className="w-full bg-warm-primary text-warm-on-primary font-bold py-4 px-6 rounded-xl text-lg shadow-lg shadow-warm-primary/30 hover:bg-warm-primary-dim transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl hover:-translate-y-1"
           >
-            {loading ? 'Connexion...' : 'Login'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         

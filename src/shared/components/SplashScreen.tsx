@@ -39,7 +39,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         {/* Logo / Brand Name */}
         <div className="mb-12 relative">
           <h1 className="text-6xl font-bold tracking-tighter text-white animate-fade-in-up">
-            Bar<span className="text-[#765b00]">Oun</span>
+            PFE<span className="text-[#765b00]">space</span>
           </h1>
           <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#765b00] to-transparent animate-expand"></div>
         </div>
@@ -54,7 +54,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         
         {/* Subtitle */}
         <p className="mt-4 text-[#7f7664] text-sm tracking-[0.2em] uppercase animate-pulse">
-          Initialisation de votre espace
+          Initializing your workspace
         </p>
       </div>
 

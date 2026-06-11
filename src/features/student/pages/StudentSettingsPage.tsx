@@ -9,8 +9,8 @@ const StudentSettingsPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [profile, setProfile] = useState({
-    name: 'Chargement...',
-    email: 'chargement@hub.student',
+    name: 'Loading...',
+    email: 'loading@hub.student',
     phone: '',
     website: '',
     github: '',
@@ -125,14 +125,14 @@ const StudentSettingsPage: React.FC = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (error: any) {
-      alert('Erreur lors du changement de mot de passe: ' + error.message);
+      alert('Error changing password: ' + error.message);
     }
   };
 
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-[#faf9f6] text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-        Chargement des donnees...
+        Loading data...
       </div>
     );
   }

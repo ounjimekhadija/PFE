@@ -186,7 +186,7 @@ const AdminProjects: React.FC = () => {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Erreur de chargement des projets.';
+          : 'Error loading projects.';
       setError(message);
     } finally {
       setLoading(false);
@@ -211,7 +211,7 @@ const AdminProjects: React.FC = () => {
     e.preventDefault();
     setFormError(null);
     setFormSuccess(null);
-    if (!form.title.trim()) { setFormError('Le titre du projet est obligatoire.'); return; }
+    if (!form.title.trim()) { setFormError('Project title is required.'); return; }
     try {
       setCreateLoading(true);
       const token = await getAccessToken();
@@ -227,8 +227,8 @@ const AdminProjects: React.FC = () => {
         }),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Creation echouee.');
-      setFormSuccess('Projet cree avec succes.');
+      if (!response.ok) throw new Error(body?.error || 'Creation failed.');
+      setFormSuccess('Project successfully created.');
       setShowModal(false);
       setForm({ title: '', domaine: '', encadrantId: '', deadline: '' });
       await fetchData();
@@ -236,7 +236,7 @@ const AdminProjects: React.FC = () => {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Erreur lors de la creation du projet.';
+          : 'Error creating project.';
       setFormError(message);
     } finally {
       setCreateLoading(false);
@@ -253,15 +253,15 @@ const AdminProjects: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Suppression echouee.');
-      setFormSuccess('Projet supprime avec succes.');
+      if (!response.ok) throw new Error(body?.error || 'Deletion failed.');
+      setFormSuccess('Project successfully deleted.');
       setDeleteConfirmId(null);
       await fetchData();
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Erreur lors de la suppression du projet.';
+          : 'Error deleting project.';
       setFormError(message);
       setDeleteConfirmId(null);
     } finally {
@@ -320,7 +320,7 @@ const AdminProjects: React.FC = () => {
       {/* Banners */}
       {formError && !showModal && <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">{formError}</div>}
       {formSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-green-700">{formSuccess}</div>}
-      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Chargement des projets...</div>}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Loading projects...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">{error}</div>}
 
       {/* Stat Cards */}
@@ -395,7 +395,7 @@ const AdminProjects: React.FC = () => {
                         onClick={() => { setDeleteConfirmId(project.id); setOpenMenuId(null); }}
                         className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]"
                       >
-                        Supprimer
+                        Delete
                       </button>
                     </div>
                   )}
@@ -516,7 +516,7 @@ const AdminProjects: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-[#4d4636]">Filière / Domaine</label>
+                <label className="block text-sm font-semibold text-[#4d4636]">Category / Domain</label>
                 <input
                   type="text"
                   className={inputClass}
@@ -537,7 +537,7 @@ const AdminProjects: React.FC = () => {
                     <span className={!form.encadrantId ? 'text-[#7f7664]' : 'text-[#1a1c1a]'}>
                       {form.encadrantId 
                         ? encadrantOptions.find(e => e.id === form.encadrantId)?.displayName 
-                        : '-- Aucun --'}
+                        : '-- None --'}
                     </span>
                     <MoreVertical size={14} className={`rotate-90 text-[#7f7664] transition-transform ${showSupervisorDropdown ? 'rotate-[270deg]' : ''}`} />
                   </button>
@@ -552,7 +552,7 @@ const AdminProjects: React.FC = () => {
                         }}
                         className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${!form.encadrantId ? 'bg-[#765b00] text-white' : 'text-[#1a1c1a] hover:bg-[#765b00]/5'}`}
                       >
-                        -- Aucun --
+                        -- None --
                       </button>
                       {encadrantOptions.map((enc) => (
                         <button
@@ -590,14 +590,14 @@ const AdminProjects: React.FC = () => {
                   className="rounded-xl border border-[#dcd6c1] bg-white px-6 py-2.5 text-sm font-semibold text-[#4d4636] transition-all hover:bg-[#f4f3f1] hover:border-[#c4b99a]"
                   onClick={() => setShowModal(false)}
                 >
-                  Annuler
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="rounded-xl bg-[#765b00] px-6 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(118,91,0,0.2)] transition-all hover:bg-[#594400] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
                   disabled={createLoading}
                 >
-                  {createLoading ? 'Creation...' : 'Create'}
+                  {createLoading ? 'Creating...' : 'Create'}
                 </button>
               </div>
             </form>
@@ -610,13 +610,13 @@ const AdminProjects: React.FC = () => {
       {deleteConfirmId && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
           <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-transparent bg-white p-8 shadow-xl">
-            <h2 className="text-xl font-bold text-[#1a1c1a]">Confirmer la suppression</h2>
-            <p className="text-sm text-[#7f7664]">Cette action supprimera le projet, ses itérations, ses tâches et détachera ses étudiants. Irréversible.</p>
+            <h2 className="text-xl font-bold text-[#1a1c1a]">Confirm Deletion</h2>
+            <p className="text-sm text-[#7f7664]">This action will delete the project, its iterations, tasks, and detach its students. Irreversible.</p>
             {formError && <div className="rounded-xl border border-[#fecaca] bg-[#ffdad6] px-3 py-2 text-sm text-[#ba1a1a]">{formError}</div>}
             <div className="mt-2 flex justify-end gap-3">
-              <button type="button" className="rounded-xl bg-[#efeeeb] px-5 py-2 text-sm font-semibold text-[#4d4636] hover:bg-[#e3e2e0]" onClick={() => setDeleteConfirmId(null)} disabled={deleteLoading}>Annuler</button>
+              <button type="button" className="rounded-xl bg-[#efeeeb] px-5 py-2 text-sm font-semibold text-[#4d4636] hover:bg-[#e3e2e0]" onClick={() => setDeleteConfirmId(null)} disabled={deleteLoading}>Cancel</button>
               <button type="button" className="rounded-xl bg-[#ba1a1a] px-5 py-2 text-sm font-bold text-white shadow hover:bg-[#93000a] disabled:opacity-50" onClick={() => handleDeleteProject(deleteConfirmId)} disabled={deleteLoading}>
-                {deleteLoading ? 'Suppression...' : 'Supprimer'}
+                {deleteLoading ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

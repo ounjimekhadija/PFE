@@ -283,7 +283,7 @@ const Deliverables: React.FC = () => {
         const url = deliverable.externalUrl.startsWith('http') ? deliverable.externalUrl : `https://${deliverable.externalUrl}`;
         window.open(url, '_blank', 'noopener,noreferrer'); return;
       }
-      if (!deliverable.filePath) { setError('Aucun fichier associé à ce livrable.'); return; }
+      if (!deliverable.filePath) { setError('No file associated with this deliverable.'); return; }
 
       const raw = deliverable.filePath.trim()
         .replace(/^https?:\/\/[^/]+\//, '')
@@ -312,9 +312,9 @@ const Deliverables: React.FC = () => {
         const { data, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 120);
         if (!signErr && data?.signedUrl) { window.open(data.signedUrl, '_blank', 'noopener,noreferrer'); return; }
       }
-      throw new Error('Fichier introuvable.');
+      throw new Error('File not found.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible d\'ouvrir ce livrable.');
+      setError(err instanceof Error ? err.message : 'Unable to open this deliverable.');
     }
   };
 
@@ -338,14 +338,14 @@ const Deliverables: React.FC = () => {
         <div>
           <h1 className="text-2xl font-semibold">Group Deliverables</h1>
           <p className="mt-1.5 text-sm text-[#7f7664]">View and manage all project deliverables by group</p>
-          <p className="mt-1 text-xs text-[#7f7664]">{totalCount} livrable(s)</p>
+          <p className="mt-1 text-xs text-[#7f7664]">{totalCount} deliverable(s)</p>
         </div>
       </header>
 
-      {loading && <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">Chargement des livrables...</p>}
-      {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a] flex-shrink-0">Erreur: {error}</p>}
+      {loading && <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">Loading deliverables...</p>}
+      {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a] flex-shrink-0">Error: {error}</p>}
       {!loading && !error && groups.length === 0 && (
-        <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">Aucun livrable trouvé pour les projets assignés à cet encadrant.</p>
+        <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">No deliverables found for the assigned projects.</p>
       )}
 
       {/* Liste scrollable */}
@@ -478,10 +478,10 @@ const Deliverables: React.FC = () => {
                             >
                               <div className="space-y-2 max-h-40 overflow-y-auto pt-2">
                                 {loadingCmts[deliverable.id] && (
-                                  <p className="text-[11px] text-[#7f7664]">Chargement...</p>
+                                  <p className="text-[11px] text-[#7f7664]">Loading...</p>
                                 )}
                                 {!loadingCmts[deliverable.id] && delivComments.length === 0 && (
-                                  <p className="text-[11px] text-[#d1c5b0] text-center py-1">Aucun commentaire.</p>
+                                  <p className="text-[11px] text-[#d1c5b0] text-center py-1">No comments.</p>
                                 )}
                                 {delivComments.map(c => (
                                   <div key={c.id} className="flex gap-2">

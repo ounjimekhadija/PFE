@@ -154,12 +154,12 @@ const Members: React.FC = () => {
 
         const formatted: MemberCard[] = (studentRows || []).map((row: any) => {
           const u = Array.isArray(row.utilisateurs) ? row.utilisateurs[0] : row.utilisateurs;
-          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : `Étudiant ${row.id}`;
+          const fullName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : `Student ${row.id}`;
           const project = (projectDetails || []).find(p => p.id === row.projet_id);
 
           return {
             id: row.id,
-            name: fullName || 'Étudiant',
+            name: fullName || 'Student',
             email: u?.email || 'N/A',
             phone: u?.telephone || 'N/A',
             cne: row.cne || 'N/A',
@@ -173,8 +173,8 @@ const Members: React.FC = () => {
 
         setMembers(formatted);
       } catch (error) {
-        console.error('Erreur chargement membres:', error);
-        setLoadError(error instanceof Error ? error.message : 'Erreur inconnue lors du chargement des membres.');
+        console.error('Error loading members:', error);
+        setLoadError(error instanceof Error ? error.message : 'Unknown error loading members.');
         setMembers([]);
       } finally {
         setLoading(false);
@@ -197,10 +197,10 @@ const Members: React.FC = () => {
         </div>
       </header>
 
-      {loading && <p className="mb-6 text-sm text-[#7f7664] flex-shrink-0">Chargement des membres...</p>}
-      {!loading && loadError && <p className="mb-6 text-sm text-[#ba1a1a] flex-shrink-0">Erreur de chargement: {loadError}</p>}
+      {loading && <p className="mb-6 text-sm text-[#7f7664] flex-shrink-0">Loading members...</p>}
+      {!loading && loadError && <p className="mb-6 text-sm text-[#ba1a1a] flex-shrink-0">Loading error: {loadError}</p>}
       {!loading && members.length === 0 && (
-        <p className="mb-6 text-sm text-[#7f7664] flex-shrink-0">Aucun membre trouvé pour vos groupes.</p>
+        <p className="mb-6 text-sm text-[#7f7664] flex-shrink-0">No members found for your groups.</p>
       )}
 
       {/* Liste scrollable */}

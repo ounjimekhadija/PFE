@@ -180,7 +180,7 @@ const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
                       onClick={handleMarkAllRead}
                       className="text-[11px] font-bold text-[#765b00] hover:underline cursor-pointer"
                     >
-                      Tout marquer comme lu
+                      Mark all as read
                     </button>
                   )}
                 </div>

@@ -174,8 +174,8 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
     const hours = Math.floor(mins / 60);
     const days = Math.floor(hours / 24);
 
-    if (mins < 60) return `il y a ${mins}m`;
-    if (hours < 24) return `il y a ${hours}h`;
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
     return d.toLocaleDateString();
   };
 
@@ -240,14 +240,14 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
                     onClick={handleMarkAllRead}
                     className="text-[11px] font-bold text-[#765b00] hover:underline"
                   >
-                    Tout marquer comme lu
+                      Mark all as read
                   </button>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
-                  {loading && <p className="py-8 text-center text-xs text-[#7f7664]">Chargement...</p>}
+                  {loading && <p className="py-8 text-center text-xs text-[#7f7664]">Loading...</p>}
                   {!loading && notifications.length === 0 ? (
-                    <p className="py-8 text-center text-xs text-[#7f7664]">Aucune notification.</p>
+                    <p className="py-8 text-center text-xs text-[#7f7664]">No notifications.</p>
                   ) : (
                     notifications.map((n) => (
                       <div 

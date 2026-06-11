@@ -10,7 +10,7 @@ interface EmailModalProps {
 }
 
 const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser }) => {
-  const [subject, setSubject] = useState('Objectif de votre email');
+  const [subject, setSubject] = useState('Purpose of your email');
   const [body, setBody] = useState('');
   const [status, setStatus] = useState<'sending' | 'sent' | 'failed' | null>(null);
 

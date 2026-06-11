@@ -1,47 +1,47 @@
 import { z } from 'zod';
 
-// Schéma pour un Étudiant
+// Schema for a Student
 export const studentSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  email: z.string().email("Adresse email invalide"),
+  name: z.string().min(2, "Name must contain at least 2 characters"),
+  email: z.string().email("Invalid email address"),
 });
 
-// Schéma pour une Tâche
+// Schema for a Task
 export const taskSchema = z.object({
-  title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
+  title: z.string().min(3, "Title must contain at least 3 characters"),
   description: z.string().optional(),
-  priority: z.enum(['Faible', 'Moyenne', 'Haute']),
-  status: z.enum(['À faire', 'En cours', 'Terminé']),
-  assignee: z.string().optional(), // L'ID de l'étudiant assigné
+  priority: z.enum(['Low', 'Medium', 'High']),
+  status: z.enum(['To Do', 'In Progress', 'Done']),
+  assignee: z.string().optional(), // The ID of the assigned student
 });
 
-// Schéma pour une Itération
+// Schema for an Iteration
 export const iterationSchema = z.object({
-  objectives: z.string().min(10, "Les objectifs doivent contenir au moins 10 caractères"),
+  objectives: z.string().min(10, "Objectives must contain at least 10 characters"),
   startDate: z.date(),
   endDate: z.date(),
 });
 
-// Schéma pour une Réunion
+// Schema for a Meeting
 export const meetingSchema = z.object({
-  title: z.string().min(5, "Le titre doit contenir au moins 5 caractères"),
+  title: z.string().min(5, "Title must contain at least 5 characters"),
   date: z.date(),
-  location: z.string().min(3, "Le lieu doit contenir au moins 3 caractères"),
+  location: z.string().min(3, "Location must contain at least 3 characters"),
 });
 
-// Schéma pour la connexion
+// Schema for login
 export const loginSchema = z.object({
-  email: z.string().email("Adresse email invalide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must contain at least 6 characters"),
 });
 
-// Schémas pour l'inscription
+// Schemas for registration
 const baseUserSchema = z.object({
-  email: z.string().trim().email("Adresse email invalide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-  nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères"),
-  prenom: z.string().trim().min(2, "Le prénom doit contenir au moins 2 caractères"),
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(6, "Password must contain at least 6 characters"),
+  nom: z.string().trim().min(2, "Last name must contain at least 2 characters"),
+  prenom: z.string().trim().min(2, "First name must contain at least 2 characters"),
 });
 
 export const registerAdminSchema = baseUserSchema.extend({
@@ -76,7 +76,7 @@ export const registerSchema = z.discriminatedUnion("role", [
   registerEtudiantSchema,
 ]);
 
-// Pour l'inférence de type
+// For type inference
 export type Student = z.infer<typeof studentSchema>;
 export type Task = z.infer<typeof taskSchema>;
 export type Iteration = z.infer<typeof iterationSchema>;

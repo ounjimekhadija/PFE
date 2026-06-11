@@ -242,9 +242,9 @@ const Chat: React.FC = () => {
 
           return {
             id: String(p.id),
-            name: p.titre || `Projet ${idx + 1}`,
+            name: p.titre || `Project ${idx + 1}`,
             groupName: p.nom_groupe || '',
-            lastMsg: latest ? `${latestSender ? `${latestSender}: ` : ''}${latest.contenu}` : 'Aucun message pour ce projet',
+            lastMsg: latest ? `${latestSender ? `${latestSender}: ` : ''}${latest.contenu}` : 'No messages for this project',
             time: latest ? formatTime(latest.created_at) : '',
             unread: 0,
             active: idx === 0,
@@ -265,8 +265,8 @@ const Chat: React.FC = () => {
           setMessages([]);
         }
       } catch (err) {
-        console.error('Erreur chargement chat encadrant:', err);
-        setError(err instanceof Error ? err.message : 'Erreur de chargement du chat.');
+        console.error('Error loading supervisor chat:', err);
+        setError(err instanceof Error ? err.message : 'Error loading chat.');
         setContacts([]);
         setMessages([]);
       } finally {
@@ -363,8 +363,8 @@ const Chat: React.FC = () => {
     try {
       await loadProjectMessages(project.id, currentUserId);
     } catch (err) {
-      console.error('Erreur chargement messages projet:', err);
-      setError(err instanceof Error ? err.message : 'Erreur de chargement des messages.');
+      console.error('Error loading project messages:', err);
+      setError(err instanceof Error ? err.message : 'Error loading messages.');
     }
   };
 
@@ -390,8 +390,8 @@ const Chat: React.FC = () => {
       await notifyProjectStudents({
         projectId: selectedProjectId,
         senderId: currentUserId,
-        title: 'Nouveau message',
-        message: `L'encadrant a envoyé un message dans "${selectedProjectTitle}".`,
+        title: 'New message',
+        message: `The supervisor sent a message in "${selectedProjectTitle}".`,
         type: 'MESSAGE'
       });
     }
@@ -424,12 +424,12 @@ const Chat: React.FC = () => {
       await notifyProjectStudents({
         projectId: selectedProjectId,
         senderId: currentUserId,
-        title: 'Nouveau fichier',
-        message: `L'encadrant a partagé un fichier dans "${selectedProjectTitle}".`,
+        title: 'New file',
+        message: `The supervisor shared a file in "${selectedProjectTitle}".`,
         type: 'MESSAGE'
       });
     } catch (err) {
-      setError('Erreur upload fichier.');
+      setError('Error uploading file.');
     } finally {
       setUploading(false);
     }
@@ -475,8 +475,8 @@ const Chat: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 space-y-2">
-          {loading && <div className="px-4 py-2 text-sm text-[#7f7664]">Chargement des discussions...</div>}
-          {!loading && filteredContacts.length === 0 && <div className="px-4 py-2 text-sm text-[#7f7664]">Aucune discussion trouvée.</div>}
+          {loading && <div className="px-4 py-2 text-sm text-[#7f7664]">Loading discussions...</div>}
+          {!loading && filteredContacts.length === 0 && <div className="px-4 py-2 text-sm text-[#7f7664]">No discussion found.</div>}
           {filteredContacts.map((c) => (
             <button
               key={c.id}
@@ -553,9 +553,9 @@ const Chat: React.FC = () => {
 
         {/* Message Container */}
         <div className="flex-1 overflow-y-auto px-10 py-10 flex flex-col gap-8 bg-[#faf9f6]/50">
-          {error && <div className="text-sm text-[#ba1a1a]">Erreur: {error}</div>}
-          {!loading && !selectedProjectId && <div className="text-sm text-[#7f7664]">Aucun projet assigné à cet encadrant.</div>}
-          {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#7f7664]">Aucun message pour ce projet.</div>}
+          {error && <div className="text-sm text-[#ba1a1a]">Error: {error}</div>}
+          {!loading && !selectedProjectId && <div className="text-sm text-[#7f7664]">No project assigned to this supervisor.</div>}
+          {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#7f7664]">No messages for this project.</div>}
           {filteredMessages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} group`}>
               <div className={`max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>

@@ -44,7 +44,7 @@ const StudentDashboard: React.FC = () => {
           .eq('id', user.id)
           .single();
 
-        if (studentError || !student?.projet_id) throw new Error("Projet non trouvé.");
+        if (studentError || !student?.projet_id) throw new Error("Project not found.");
 
         const { data: project } = await supabase
           .from('projets')
@@ -106,7 +106,7 @@ const StudentDashboard: React.FC = () => {
           } else if (livrables) {
             iterationDeliverables = livrables.map((item: any) => ({
               id: String(item.id),
-              title: item.titre || 'Livrable',
+              title: item.titre || 'Deliverable',
               type: item.type_document || 'DOC',
               createdAt: item.created_at,
               status: item.statut || 'PENDING',
@@ -158,7 +158,7 @@ const StudentDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex flex-1 items-center justify-center bg-[#faf9f6] text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>Chargement des donnees...</div>;
+    return <div className="flex flex-1 items-center justify-center bg-[#faf9f6] text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>Loading data...</div>;
   }
 
   const completedCount = data?.completedTasks.length || 0;
@@ -235,9 +235,9 @@ const StudentDashboard: React.FC = () => {
                 }`}
               >
                 {data.iteration.statut === 'VALIDE'
-                  ? 'Valide'
+                  ? 'Validated'
                   : data.iteration.statut === 'EN_COURS'
-                    ? 'En cours'
+                    ? 'In progress'
                     : data.iteration.statut}
               </span>
             )}
@@ -251,7 +251,7 @@ const StudentDashboard: React.FC = () => {
                 {daysRemaining > 0 ? "Project Ends In" : "Project Status"}
               </p>
               <p className={`text-base font-bold ${daysRemaining > 0 ? 'text-[#594400]' : 'text-[#ba1a1a]'}`}>
-                {daysRemaining > 0 ? `${daysRemaining} Days` : "Terminée"}
+                {daysRemaining > 0 ? `${daysRemaining} Days` : "Ended"}
               </p>
             </div>
             <Clock className={daysRemaining > 0 ? "text-[#594400]" : "text-[#ba1a1a]"} size={18} />
@@ -269,10 +269,10 @@ const StudentDashboard: React.FC = () => {
                   <span className="text-xs font-bold uppercase tracking-widest text-white/70">Current Objective</span>
                 </div>
                 <h2 className="mb-2 text-3xl font-extrabold leading-tight text-white">
-                  {data?.iteration?.objectif || "Aucun objectif défini pour cette itération."}
+                  {data?.iteration?.objectif || "No objective defined for this iteration."}
                 </h2>
                 <p className="mb-4 max-w-xl text-xs text-white/70">
-                  Defined by {data?.supervisor ? `Prof. ${data.supervisor.prenom} ${data.supervisor.nom}` : "votre encadrant"}. Focus on delivering the expected results on time.
+                  Defined by {data?.supervisor ? `Prof. ${data.supervisor.prenom} ${data.supervisor.nom}` : "your supervisor"}. Focus on delivering the expected results on time.
                 </p>
               </div>
               <div className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-white/5 blur-3xl"></div>
@@ -318,7 +318,7 @@ const StudentDashboard: React.FC = () => {
             </h3>
             <div className="space-y-2.5 overflow-y-auto custom-scrollbar pr-1 w-full flex-1">
               {recentCompletedTasks.length === 0 ? (
-                <p className="text-xs text-[#7f7664]">Aucune tâche terminée récemment.</p>
+                <p className="text-xs text-[#7f7664]">No tasks completed recently.</p>
               ) : (
                 recentCompletedTasks.map((task) => (
                   <div key={task.id} className="flex items-center gap-2.5 rounded-2xl border border-transparent bg-[#f4f3f1] p-2.5 w-full shrink-0 transition-colors hover:border-[#d1c5b0]">
@@ -338,13 +338,13 @@ const StudentDashboard: React.FC = () => {
             <div className="mb-4 shrink-0">
               <h3 className="mb-3 text-sm font-bold flex items-center gap-2 text-[#1a1c1a]">
                 <FileText className="text-[#765b00]" size={16} />
-                Livrables (itération)
+                Deliverables (iteration)
               </h3>
               <div className="flex flex-wrap gap-1.5 text-[9px] font-bold uppercase tracking-wider">
-                <span className="rounded-md bg-[#dcfce7] px-2 py-1 text-[#166534]">Validé {validatedDeliverables}</span>
-                <span className="rounded-md bg-[#fff4cc] px-2 py-1 text-[#765b00]">Attente {pendingDeliverables}</span>
-                {lateDeliverables > 0 && <span className="rounded-md bg-[#fde68a] px-2 py-1 text-[#92400e]">Retard {lateDeliverables}</span>}
-                {rejectedDeliverables > 0 && <span className="rounded-md bg-[#ffdad6] px-2 py-1 text-[#ba1a1a]">Rejeté {rejectedDeliverables}</span>}
+                <span className="rounded-md bg-[#dcfce7] px-2 py-1 text-[#166534]">Validated {validatedDeliverables}</span>
+                <span className="rounded-md bg-[#fff4cc] px-2 py-1 text-[#765b00]">Pending {pendingDeliverables}</span>
+                {lateDeliverables > 0 && <span className="rounded-md bg-[#fde68a] px-2 py-1 text-[#92400e]">Late {lateDeliverables}</span>}
+                {rejectedDeliverables > 0 && <span className="rounded-md bg-[#ffdad6] px-2 py-1 text-[#ba1a1a]">Rejected {rejectedDeliverables}</span>}
               </div>
             </div>
 
@@ -353,7 +353,7 @@ const StudentDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                    <MessageSquare size={14} className="text-[#765b00]" />
                    <span className="text-[10px] font-bold text-[#1a1c1a] uppercase tracking-widest">
-                     {data.newCommentsCount === 1 ? 'Nouveau commentaire' : 'Nouveaux commentaires'}
+                     {data.newCommentsCount === 1 ? 'New comment' : 'New comments'}
                    </span>
                    <span className="ml-auto rounded-full bg-[#ffd464] px-2 py-0.5 text-[10px] font-bold text-[#765b00]">
                      {data.newCommentsCount}
@@ -399,8 +399,8 @@ const StudentDashboard: React.FC = () => {
             />
           </div>
           <div className="mt-2 flex items-center justify-between text-[10px] text-[#7f7664]">
-            <span>{data?.project?.date_debut ? new Date(data.project.date_debut).toLocaleDateString('fr-FR') : 'N/A'}</span>
-            <span>{data?.project?.deadline_globale ? new Date(data.project.deadline_globale).toLocaleDateString('fr-FR') : 'N/A'}</span>
+            <span>{data?.project?.date_debut ? new Date(data.project.date_debut).toLocaleDateString() : 'N/A'}</span>
+            <span>{data?.project?.deadline_globale ? new Date(data.project.deadline_globale).toLocaleDateString() : 'N/A'}</span>
           </div>
         </div>
       </div>

@@ -22,7 +22,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
   const [newTask, setNewTask] = useState<Partial<TaskType>>({ 
     title: '', 
     description: '', 
-    priority: 'Moyenne', 
+    priority: 'Medium', 
     assignee: '' 
   });
   const [errors, setErrors] = useState<any>(null);
@@ -50,7 +50,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
   const handleCreateTask = async () => {
     setLoading(true);
     // Add status to satisfy schema if needed, although safeParse might ignore extra fields or error if missing
-    const taskToValidate = { ...newTask, status: 'À faire' };
+    const taskToValidate = { ...newTask, status: 'To Do' };
     const validationResult = taskSchema.safeParse(taskToValidate);
     
     if (!validationResult.success) {
@@ -61,17 +61,17 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
     setErrors(null);
 
     if (!currentIterationId) {
-      alert("Impossible de créer la tâche : Il n'y a pas d'itération (Sprint) active ou à faire pour votre projet.");
+      alert("Unable to create task: There is no active or 'to do' iteration (Sprint) for your project.");
       setLoading(false);
       return;
     }
 
     try {
       const dbPriority = {
-        'Faible': 'LOW',
-        'Moyenne': 'MEDIUM',
-        'Haute': 'HIGH'
-      }[newTask.priority || 'Moyenne'];
+        'Low': 'LOW',
+        'Medium': 'MEDIUM',
+        'High': 'HIGH'
+      }[newTask.priority || 'Medium'];
 
       const { data: newDbTask, error } = await supabase
         .from('taches')
@@ -86,8 +86,8 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
         .single();
 
       if (error) {
-        console.error("Erreur lors de la création", error);
-        alert("Erreur de création de tâche: " + error.message);
+        console.error("Creation error", error);
+        alert("Error creating task: " + error.message);
         setLoading(false);
         return;
       }
@@ -108,13 +108,13 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           });
 
         if (assignError) {
-          console.error("Erreur lors de l'assignation", assignError);
+          console.error("Error assigning task", assignError);
         }
       }
       
       onTaskCreated(newDbTask, newTask.assignee);
       onClose();
-      setNewTask({ title: '', description: '', priority: 'Moyenne', assignee: '' });
+      setNewTask({ title: '', description: '', priority: 'Medium', assignee: '' });
 
     } catch (err) {
       console.error(err);
@@ -126,9 +126,9 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
   if (!isOpen) return null;
 
   const priorities = [
-    { value: 'Faible', color: 'text-blue-500', bg: 'bg-blue-50' },
-    { value: 'Moyenne', color: 'text-amber-500', bg: 'bg-amber-50' },
-    { value: 'Haute', color: 'text-rose-500', bg: 'bg-rose-50' },
+    { value: 'Low', color: 'text-blue-500', bg: 'bg-blue-50' },
+    { value: 'Medium', color: 'text-amber-500', bg: 'bg-amber-50' },
+    { value: 'High', color: 'text-rose-500', bg: 'bg-rose-50' },
   ];
 
   const selectedPriority = priorities.find(p => p.value === newTask.priority) || priorities[1];
@@ -143,8 +143,8 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
       >
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-[#1a1c1a]">Créer une nouvelle tâche</h2>
-            <p className="text-sm text-[#7f7664] mt-1">Ajoutez des détails pour votre équipe.</p>
+            <h2 className="text-2xl font-bold text-[#1a1c1a]">Create a new task</h2>
+            <p className="text-sm text-[#7f7664] mt-1">Add details for your team.</p>
           </div>
           <button 
             onClick={onClose} 
@@ -157,11 +157,11 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
         <div className="space-y-6">
           {/* Title Input */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#4d4636] ml-1">Titre de la tâche</label>
+            <label className="text-sm font-bold text-[#4d4636] ml-1">Task title</label>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Ex: Conception de la base de données"
+                placeholder="Ex: Database design"
                 className={`w-full p-4 rounded-xl border ${errors?.title ? 'border-red-500' : 'border-[#d1c5b0]'} bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-4 focus:ring-[#765b00]/10 transition-all`}
                 value={newTask.title || ''}
                 onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
@@ -179,7 +179,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           <div className="space-y-2">
             <label className="text-sm font-bold text-[#4d4636] ml-1">Description</label>
             <textarea
-              placeholder="Décrivez ce qui doit être fait..."
+              placeholder="Describe what needs to be done..."
               rows={3}
               className="w-full p-4 rounded-xl border border-[#d1c5b0] bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-4 focus:ring-[#765b00]/10 transition-all resize-none"
               value={newTask.description || ''}
@@ -190,7 +190,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Priority Dropdown */}
             <div className="space-y-2" ref={priorityRef}>
-              <label className="text-sm font-bold text-[#4d4636] ml-1">Priorité</label>
+              <label className="text-sm font-bold text-[#4d4636] ml-1">Priority</label>
               <div className="relative">
                 <button
                   type="button"
@@ -227,7 +227,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
 
             {/* Assignee Dropdown */}
             <div className="space-y-2" ref={assigneeRef}>
-              <label className="text-sm font-bold text-[#4d4636] ml-1">Assigner à</label>
+              <label className="text-sm font-bold text-[#4d4636] ml-1">Assign to</label>
               <div className="relative">
                 <button
                   type="button"
@@ -237,7 +237,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
                   <div className="flex items-center gap-2">
                     <User size={16} className="text-[#7f7664]" />
                     <span className="text-sm font-medium truncate">
-                      {selectedAssignee ? selectedAssignee.name : 'Choisir un membre'}
+                      {selectedAssignee ? selectedAssignee.name : 'Select a member'}
                     </span>
                   </div>
                   <ChevronDown size={16} className={`text-[#7f7664] transition-transform duration-300 ${showAssigneeDropdown ? 'rotate-180' : ''}`} />
@@ -253,7 +253,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
                       }}
                       className="w-full px-4 py-3 text-sm text-left hover:bg-[#765b00]/5 transition-colors font-medium text-[#7f7664]"
                     >
-                      Non assigné
+                      Unassigned
                     </button>
                     {assigneeOptions.map((option) => (
                       <button
@@ -285,7 +285,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
             onClick={onClose}
             className="px-6 py-3 rounded-xl font-bold text-[#4d4636] bg-[#f4f3f1] hover:bg-[#efeeeb] transition-all"
           >
-            Annuler
+            Cancel
           </button>
           <button 
             onClick={handleCreateTask}
@@ -295,7 +295,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : null}
-            <span>Créer la tâche</span>
+            <span>Create task</span>
           </button>
         </div>
       </div>

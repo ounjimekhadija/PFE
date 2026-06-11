@@ -276,7 +276,7 @@ const AdminUsers: React.FC = () => {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Erreur de chargement des utilisateurs.';
+          : 'Error loading users.';
       setError(message);
       setRows([]);
       setProjectOptions([]);
@@ -343,15 +343,15 @@ const AdminUsers: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Suppression echouee.');
-      setCreateSuccess('Utilisateur supprime avec succes.');
+      if (!response.ok) throw new Error(body?.error || 'Deletion failed.');
+      setCreateSuccess('User successfully deleted.');
       setDeleteConfirmId(null);
       await fetchUsers();
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Erreur lors de la suppression.';
+          : 'Error during deletion.';
       setCreateError(message);
       setDeleteConfirmId(null);
     } finally {
@@ -379,7 +379,7 @@ const AdminUsers: React.FC = () => {
       setCreateSuccess(null);
       setExportLoading(true);
 
-      if (rows.length === 0) throw new Error('Aucune donnee a exporter.');
+      if (rows.length === 0) throw new Error('No data to export.');
 
       const data = rows.map((row) => ({
         Nom: row.nom,
@@ -399,12 +399,12 @@ const AdminUsers: React.FC = () => {
       const stamp = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `users_export_${stamp}.xlsx`);
 
-      setCreateSuccess('Export Excel reussi.');
+      setCreateSuccess('Excel export successful.');
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : "Erreur pendant l'export Excel.";
+          : "Error during Excel export.";
       setCreateError(message);
     } finally {
       setExportLoading(false);
@@ -420,7 +420,7 @@ const AdminUsers: React.FC = () => {
     if (!validation.success) {
       const flattenedErrors = validation.error.flatten().fieldErrors;
       setFormErrors(flattenedErrors as Record<string, string[]>);
-      setCreateError('Veuillez corriger les erreurs dans le formulaire.');
+      setCreateError('Please fix the errors in the form.');
       return;
     }
     setFormErrors({});
@@ -450,7 +450,7 @@ const AdminUsers: React.FC = () => {
         projetId: form.role === 'ETUDIANT' && form.projetId ? form.projetId : null,
       });
 
-      setCreateSuccess('Utilisateur cree avec succes.');
+      setCreateSuccess('User successfully created.');
       await fetchUsers();
       setShowAddModal(false);
       resetForm();
@@ -458,9 +458,9 @@ const AdminUsers: React.FC = () => {
       // If backend returns field-specific errors (from validate middleware)
       if (err.errors) {
         setFormErrors(err.errors);
-        setCreateError('Erreur de validation du serveur.');
+        setCreateError('Server validation error.');
       } else {
-        const message = err.error || err.message || 'Erreur lors de la creation utilisateur.';
+        const message = err.error || err.message || 'Error creating user.';
         setCreateError(message);
       }
     } finally {
@@ -506,7 +506,7 @@ const AdminUsers: React.FC = () => {
       </header>
 
       {/* Banners */}
-      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Chargement des utilisateurs...</div>}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Loading users...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{error}</div>}
       {!showAddModal && createError && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{createError}</div>}
       {!showAddModal && createSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
@@ -540,7 +540,7 @@ const AdminUsers: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#7f7664]">Aucun utilisateur trouve.</p>}
+          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#7f7664]">No users found.</p>}
           {rows.length > 0 && (
             <table className="w-full border-collapse table-fixed">
               <colgroup>
@@ -598,7 +598,7 @@ const AdminUsers: React.FC = () => {
                           <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.12)]">
                             <button type="button" onClick={() => { setDeleteConfirmId(row.id); setOpenMenuId(null); }}
                               className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]">
-                              Supprimer
+                              Delete
                             </button>
                           </div>
                         )}
@@ -632,7 +632,7 @@ const AdminUsers: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
           <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]">
             <div className="flex items-center justify-between border-b border-transparent px-6 py-4">
-              <h2 className="text-xl font-semibold text-[#1a1c1a]">Creer un utilisateur</h2>
+              <h2 className="text-xl font-semibold text-[#1a1c1a]">Create a user</h2>
               <button className="text-[#7f7664]" onClick={() => setShowAddModal(false)} aria-label="Close">
                 &times;
               </button>
@@ -680,7 +680,7 @@ const AdminUsers: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom</label>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Last name</label>
                     <input
                       type="text"
                       className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
@@ -691,7 +691,7 @@ const AdminUsers: React.FC = () => {
                     {formErrors.nom && <p className="mt-1 text-xs text-red-500">{formErrors.nom[0]}</p>}
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Prenom</label>
+                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">First name</label>
                     <input
                       type="text"
                       className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
@@ -706,7 +706,7 @@ const AdminUsers: React.FC = () => {
                 {form.role !== 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero de telephone</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Phone number</label>
                       <input
                         type="tel"
                         className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
@@ -743,7 +743,7 @@ const AdminUsers: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">Mot de passe</label>
+                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">Password</label>
                   <input
                     type="password"
                     className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
@@ -757,7 +757,7 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ADMINISTRATEUR' && (
                   <>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Nom organisation</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Organization name</label>
                       <input
                         type="text"
                         className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
@@ -775,7 +775,7 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Numero etudiant</label>
+                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Student number</label>
                       <input
                         type="text"
                         className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
@@ -805,14 +805,14 @@ const AdminUsers: React.FC = () => {
                   className="rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-5 py-2 text-sm font-semibold text-[#4d4636]"
                   onClick={() => setShowAddModal(false)}
                 >
-                  Annuler
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="rounded-xl bg-[#765b00] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(118,91,0,0.2)] disabled:opacity-50"
                   disabled={createLoading}
                 >
-                  {createLoading ? 'Creation...' : 'Creer'}
+                  {createLoading ? 'Creating...' : 'Create'}
                 </button>
               </div>
             </form>
@@ -824,8 +824,8 @@ const AdminUsers: React.FC = () => {
       {deleteConfirmId && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
           <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
-            <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirmer la suppression</h2>
-            <p className="mt-2 text-sm text-[#7f7664]">Cette action est irreversible. L'utilisateur sera supprime definitivement.</p>
+            <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirm Deletion</h2>
+            <p className="mt-2 text-sm text-[#7f7664]">This action is irreversible. The user will be permanently deleted.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
@@ -833,7 +833,7 @@ const AdminUsers: React.FC = () => {
                 onClick={() => setDeleteConfirmId(null)}
                 disabled={deleteLoading}
               >
-                Annuler
+                Cancel
               </button>
               <button
                 type="button"
@@ -841,7 +841,7 @@ const AdminUsers: React.FC = () => {
                 onClick={() => handleDeleteUser(deleteConfirmId)}
                 disabled={deleteLoading}
               >
-                {deleteLoading ? 'Suppression...' : 'Supprimer'}
+                {deleteLoading ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

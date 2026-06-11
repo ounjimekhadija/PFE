@@ -8,14 +8,14 @@ export const useAppController = () => {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isInitializing, setIsInitializing] = useState(true);
 
-  // Vérifier la session Supabase au chargement
+  // Check Supabase session on load
   useEffect(() => {
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // L'utilisateur est connecté dans Supabase, on récupère son rôle
+          // User is logged in to Supabase, we fetch their role
           const { data: userData } = await supabase
             .from('utilisateurs')
             .select('role')
@@ -32,7 +32,7 @@ export const useAppController = () => {
           }
         }
       } catch (error) {
-        console.error("Erreur lors de l'initialisation de l'auth:", error);
+        console.error("Error during auth initialization:", error);
       } finally {
         setIsInitializing(false);
       }
@@ -40,7 +40,7 @@ export const useAppController = () => {
 
     initAuth();
 
-    // Écouter les changements d'authentification (ex: déconnexion depuis un autre onglet)
+    // Listen for authentication changes (e.g. logout from another tab)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
