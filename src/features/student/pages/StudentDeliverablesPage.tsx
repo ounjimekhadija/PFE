@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, History, Download, Trash2, Plus, ExternalLink, Eye, PlusCircle, FileCode, FileImage, MessageSquare } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Upload, FileText, History, Download, Trash2, Eye, PlusCircle, FileCode, FileImage, MessageSquare, X, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectProfessor } from '../../../lib/notifications';
@@ -26,17 +27,16 @@ const StudentDeliverables: React.FC = () => {
   const [deliverables, setDeliverables] = useState<StudentDeliverable[]>([]);
   const [loading, setLoading] = useState(true);
 
-
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [comments, setComments] = useState<{ id: string; contenu: string; created_at: string; auteur_nom: string; auteur_prenom: string; }[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<StudentDeliverable | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showAddVersionModal, setShowAddVersionModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState('Report');
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [versionComment, setVersionComment] = useState('Nouvelle version');
@@ -112,22 +112,16 @@ const StudentDeliverables: React.FC = () => {
     }
   };
 
-
   const handleShowComments = async (doc: StudentDeliverable) => {
     setSelectedDoc(doc);
+    setComments([]);
     setShowCommentModal(true);
     try {
       const { data, error } = await supabase.rpc('get_comments_with_author', {
         p_livrable_id: doc.id
       });
-
-      if (error) {
-        console.error("Supabase RPC error:", error);
-        throw error;
-      }
-      
-      console.log('Comments received from database:', data); // Debugging line
-      setComments(data);
+      if (error) throw error;
+      setComments(data || []);
     } catch (error) {
       console.error("Erreur lors de la récupération des commentaires:", error);
       setComments([]);
@@ -139,16 +133,14 @@ const StudentDeliverables: React.FC = () => {
       alert("Veuillez entrer un titre et sélectionner un fichier.");
       return;
     }
-
     try {
       setUploading(true);
-
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `uploads/${fileName}`;
 
       const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, selectedFile);
-      if (uploadError) throw new Error(`Erreur Storage (Bucket 'documents' introuvable ou RLS bloqué): ${uploadError.message}`);
+      if (uploadError) throw new Error(`Erreur Storage: ${uploadError.message}`);
 
       const fileSizeInMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
       const { studentId, projectId } = await getCurrentStudentContext();
@@ -178,16 +170,14 @@ const StudentDeliverables: React.FC = () => {
       setSelectedFile(null);
       fetchDeliverables();
 
-      // Notify professor
       await notifyProjectProfessor({
-        projectId: projectId,
+        projectId,
         senderId: studentId,
         title: 'New Deliverable Submitted',
         message: `Student submitted a new deliverable: "${newTitle.trim()}".`,
         type: 'SUBMISSION_LIVRABLE'
       });
     } catch (error: any) {
-      console.error(error);
       alert(`Erreur lors de la création du livrable: \n${error.message}`);
     } finally {
       setUploading(false);
@@ -199,10 +189,8 @@ const StudentDeliverables: React.FC = () => {
       alert("Veuillez sélectionner un fichier.");
       return;
     }
-
     try {
       setUploading(true);
-
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `uploads/${fileName}`;
@@ -238,17 +226,15 @@ const StudentDeliverables: React.FC = () => {
       setVersionComment('Nouvelle version');
       fetchDeliverables();
 
-      // Notify professor
       const { projectId } = await getCurrentStudentContext();
       await notifyProjectProfessor({
-        projectId: projectId,
+        projectId,
         senderId: studentId,
         title: 'New Deliverable Version',
         message: `Student uploaded a new version of "${selectedDoc.title}".`,
         type: 'SUBMISSION_LIVRABLE'
       });
     } catch (error: any) {
-      console.error(error);
       alert(`Erreur lors de l'ajout de version: \n${error.message}`);
     } finally {
       setUploading(false);
@@ -270,9 +256,18 @@ const StudentDeliverables: React.FC = () => {
     return <FileText className="text-[#765b00]" size={24} />;
   };
 
+  const getInitials = (prenom: string, nom: string) =>
+    `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase();
+
   return (
-    <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div className="relative flex h-full w-full flex-col">
+    // Conteneur racine : hauteur pleine et scroll
+    <div
+      className="bg-[#faf9f6] text-[#1a1c1a] h-screen overflow-y-auto"
+      style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
+    >
+      {/* Conteneur interne avec un grand padding-bottom pour voir le bas des cartes */}
+      <div className="p-6 md:p-8 pb-32">
+        {/* Header */}
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-[#1a1c1a]">Deliverables</h1>
@@ -287,297 +282,350 @@ const StudentDeliverables: React.FC = () => {
           </button>
         </header>
 
-        {showUploadModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center border border-transparent">
-              <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Nouveau document</h2>
-              <input
-                type="text"
-                placeholder="Titre du document..."
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                className="w-full mb-4 px-4 py-2 border border-transparent rounded-xl focus:outline-none focus:border-transparent text-center"
-                autoFocus
-              />
-              <select
-                value={newType}
-                onChange={e => setNewType(e.target.value)}
-                className="w-full mb-4 px-4 py-2 border border-transparent rounded-xl focus:outline-none focus:border-transparent text-center bg-white"
-              >
-                <option value="Report">Report / Rapport</option>
-                <option value="Diagram">Diagram / Schéma</option>
-                <option value="PDF">Document PDF</option>
-              </select>
+        {/* Grille des livrables avec marge basse supplémentaire */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+          {deliverables.map((doc) => (
+            <motion.div
+              key={doc.id}
+              onClick={() => setSelectedDoc(doc)}
+              className={`cursor-pointer rounded-2xl border-2 p-5 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all ${
+                selectedDoc?.id === doc.id
+                  ? 'border-transparent bg-[#ffd464]/10'
+                  : 'border-transparent bg-white hover:border-transparent'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getStatusClass(doc.status)}`}>
+                  {doc.status}
+                </span>
+              </div>
 
-              <div className="w-full mb-6 border-2 border-dashed border-transparent rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
-                <input
-                  type="file"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
-                />
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <Upload size={24} className="text-[#7f7664]" />
-                  <span className="text-sm font-medium text-[#4d4636]">
-                    {selectedFile ? selectedFile.name : "Cliquez pour uploader un fichier"}
-                  </span>
-                  {selectedFile && (
-                    <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                  )}
+              <h3 className="mb-1 text-base font-bold text-[#1a1c1a]">{doc.title}</h3>
+              <p className="mb-4 text-sm text-[#7f7664]">{doc.type} • Last updated {doc.lastModified}</p>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#7f7664]">
+                  <History size={14} />
+                  {doc.versions.length} Versions
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                    title="View comments"
+                    onClick={e => { e.stopPropagation(); handleShowComments(doc); }}
+                  >
+                    <MessageSquare size={18} />
+                  </button>
+                  <button
+                    className="rounded-xl border border-transparent bg-[#765b00] p-2 text-white transition-all hover:bg-[#594400]"
+                    title="View versions"
+                    onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                    title="Upload new version"
+                    onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
+                  >
+                    <PlusCircle size={18} />
+                  </button>
+                  <button
+                    className="rounded-xl border border-transparent bg-[#ffd464] p-2 text-white transition-all hover:bg-[#ebc254]"
+                    title="Download latest version"
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (doc.versions && doc.versions.length > 0 && doc.versions[0].url) {
+                        let fileUrl = doc.versions[0].url;
+                        if (fileUrl.includes('/storage/v1/object/public/documents/')) {
+                          fileUrl = fileUrl.split('/storage/v1/object/public/documents/')[1];
+                        }
+                        if (fileUrl.startsWith('http')) {
+                          window.open(fileUrl, '_blank');
+                        } else {
+                          supabase.storage.from('documents').createSignedUrl(fileUrl, 3600, { download: true }).then(({ data, error }) => {
+                            if (error) { alert("Erreur d'accès au fichier: " + error.message); return; }
+                            if (data?.signedUrl) {
+                              const link = document.createElement('a');
+                              link.href = data.signedUrl;
+                              link.setAttribute('download', '');
+                              link.target = '_blank';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }
+                          });
+                        }
+                      } else {
+                        alert("Le fichier n'est pas disponible dans le Storage.");
+                      }
+                    }}
+                  >
+                    <Download size={18} />
+                  </button>
+                  <button
+                    className="rounded-xl border border-transparent bg-[#ba1a1a] p-2 text-white transition-all hover:bg-[#8c1d18]"
+                    title="Delete deliverable"
+                    onClick={async e => {
+                      e.stopPropagation();
+                      if (window.confirm('Voulez-vous vraiment supprimer ce livrable et effacer définitivement ses fichiers du Storage ?')) {
+                        try {
+                          const { data: versions } = await supabase
+                            .from('livrable_versions')
+                            .select('chemin_fichier')
+                            .eq('livrable_id', doc.id);
+
+                          if (versions && versions.length > 0) {
+                            const filesToRemove = versions.map((v: any) => v.chemin_fichier).filter(Boolean);
+                            if (filesToRemove.length > 0) {
+                              await supabase.storage.from('documents').remove(filesToRemove);
+                            }
+                          }
+                          await supabase.from('livrable_versions').delete().eq('livrable_id', doc.id);
+                          await supabase.from('livrables').delete().eq('id', doc.id);
+                          fetchDeliverables();
+                        } catch (err) {
+                          alert("Impossible de supprimer le livrable.");
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </div>
-
-              <div className="flex gap-3 w-full">
-                <button
-                  className={`flex-1 font-bold py-2 rounded-xl transition-all ${
-                    (!newTitle.trim() || !selectedFile || uploading)
-                      ? 'bg-[#ebc254] text-white cursor-not-allowed'
-                      : 'bg-[#765b00] hover:bg-[#594400] text-white'
-                  }`}
-                  onClick={handleUpload}
-                  disabled={!newTitle.trim() || !selectedFile || uploading}
-                >
-                  {uploading ? 'Upload...' : 'Upload'}
-                </button>
-                <button
-                  className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
-                  onClick={() => { setShowUploadModal(false); setNewTitle(''); setSelectedFile(null); }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-1 gap-8 overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-4">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {deliverables.map((doc) => (
-                <motion.div
-                  key={doc.id}
-                  onClick={() => setSelectedDoc(doc)}
-                  className={`mb-6 cursor-pointer rounded-2xl border-2 p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all ${
-                    selectedDoc?.id === doc.id
-                      ? 'border-transparent bg-[#ffd464]/10'
-                      : 'border-transparent bg-white hover:border-transparent'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="rounded-2xl bg-[#f4f3f1] p-4 shadow-sm">
-                      {getDocIcon(doc.type)}
-                    </div>
-                    <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getStatusClass(doc.status)}`}>
-                      {doc.status}
-                    </span>
-                  </div>
-
-                  <h3 className="mb-1 text-lg font-bold text-[#1a1c1a]">{doc.title}</h3>
-                  <p className="mb-6 text-sm text-[#7f7664]">{doc.type} • Last updated {doc.lastModified}</p>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#7f7664]">
-                      <History size={14} />
-                      {doc.versions.length} Versions
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
-                        title="View comments"
-                        onClick={e => { e.stopPropagation(); handleShowComments(doc); }}
-                      >
-                        <MessageSquare size={18} />
-                      </button>
-                      <button
-                        className="rounded-xl border border-transparent bg-[#765b00] p-2 text-white transition-all hover:bg-[#594400]"
-                        title="View versions"
-                        onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
-                      >
-                        <Eye size={18} />
-                      </button>
-                      <button
-                        className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
-                        title="Upload new version"
-                        onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
-                      >
-                        <PlusCircle size={18} />
-                      </button>
-                      <button
-                        className="rounded-xl border border-transparent bg-[#ffd464] p-2 text-white transition-all hover:bg-[#ebc254]"
-                        title="Download latest version"
-                        onClick={e => {
-                          e.stopPropagation();
-                          if (doc.versions && doc.versions.length > 0 && doc.versions[0].url) {
-                            let fileUrl = doc.versions[0].url;
-                            if (fileUrl.includes('/storage/v1/object/public/documents/')) {
-                              fileUrl = fileUrl.split('/storage/v1/object/public/documents/')[1];
-                            }
-                            if (fileUrl.startsWith('http')) {
-                              window.open(fileUrl, '_blank');
-                            } else {
-                              supabase.storage.from('documents').createSignedUrl(fileUrl, 3600, { download: true }).then(({ data, error }) => {
-                                if (error) { alert("Erreur d'accès au fichier sécurisé dans le Storage: " + error.message); return; }
-                                if (data?.signedUrl) {
-                                  const link = document.createElement('a');
-                                  link.href = data.signedUrl;
-                                  link.setAttribute('download', '');
-                                  link.target = '_blank';
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                }
-                              });
-                            }
-                          } else {
-                            alert("Le fichier n'est pas disponible dans le Storage.");
-                          }
-                        }}
-                      >
-                        <Download size={18} />
-                      </button>
-                      <button
-                        className="rounded-xl border border-transparent bg-[#ba1a1a] p-2 text-white transition-all hover:bg-[#8c1d18]"
-                        title="Delete deliverable"
-                        onClick={async e => {
-                          e.stopPropagation();
-                          if (window.confirm('Voulez-vous vraiment supprimer ce livrable et effacer définitivement ses fichiers du Storage ?')) {
-                            try {
-                              const { data: versions } = await supabase
-                                .from('livrable_versions')
-                                .select('chemin_fichier')
-                                .eq('livrable_id', doc.id);
-
-                              if (versions && versions.length > 0) {
-                                const filesToRemove = versions.map(v => v.chemin_fichier).filter(Boolean);
-                                if (filesToRemove.length > 0) {
-                                  await supabase.storage.from('documents').remove(filesToRemove);
-                                }
-                              }
-
-                              await supabase.from('livrable_versions').delete().eq('livrable_id', doc.id);
-                              await supabase.from('livrables').delete().eq('id', doc.id);
-                              fetchDeliverables();
-                            } catch (err) {
-                              console.error("Erreur globale de suppression:", err);
-                              alert("Impossible de supprimer le livrable.");
-                            }
-                          }
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+            </motion.div>
+          ))}
         </div>
-
-        {showCommentModal && selectedDoc && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-[40px] p-8 border border-transparent flex flex-col w-full max-w-lg relative">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-bold text-[#1a1c1a]">Commentaires sur "{selectedDoc.title}"</h3>
-                <button onClick={() => setShowCommentModal(false)} className="text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold" aria-label="Close">&times;</button>
-              </div>
-              {comments.length === 0 ? (
-                <p className="text-center text-[#7f7664] py-4">Aucun commentaire pour ce livrable.</p>
-              ) : (
-                <div className="flex-1 space-y-4 overflow-y-auto pr-2">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="bg-[#f4f3f1] p-4 rounded-xl">
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-sm font-bold text-[#4d4636]">{`${comment.auteur_prenom} ${comment.auteur_nom}`}</p>
-                        <p className="text-xs text-right text-[#7f7664]">{new Date(comment.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <p className="text-sm text-[#4d4636]">{comment.contenu}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {showModal && selectedDoc && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-[40px] p-8 border border-transparent flex flex-col w-full max-w-lg relative">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-bold text-[#1a1c1a]">Version History</h3>
-                <button onClick={() => setShowModal(false)} className="text-[#7f7664] hover:text-[#4d4636] text-2xl font-bold" aria-label="Close">&times;</button>
-              </div>
-              {selectedDoc.versions.length === 0 ? (
-                <p className="text-center text-[#7f7664] py-4">Aucune version disponible.</p>
-              ) : (
-                <div className="flex-1 space-y-6 overflow-y-auto pr-2">
-                  {selectedDoc.versions.map((v, i) => (
-                    <div key={i} className="relative pl-8 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-0.5 before:bg-[#d1c5b0] last:before:hidden">
-                      <div className="absolute left-[-4px] top-2 w-2.5 h-2.5 rounded-full bg-[#765b00] border-2 border-white"></div>
-                      <div className="bg-white p-5 rounded-2xl border border-transparent shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-bold text-[#765b00]">{v.version}</span>
-                          <span className="text-[10px] font-bold text-[#7f7664] uppercase tracking-widest">{v.date}</span>
-                        </div>
-                        <p className="text-sm text-[#4d4636] mb-3">{v.comment}</p>
-                        <div className="flex items-center gap-2">
-                          <img src={`https://picsum.photos/seed/${v.author.replace(/ /g, '')}/50/50`} className="w-5 h-5 rounded-full" alt={v.author} />
-                          <span className="text-xs font-medium text-[#7f7664]">{v.author}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {showAddVersionModal && selectedDoc && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center border border-transparent">
-              <h2 className="text-xl font-bold mb-2 text-[#1a1c1a]">Nouvelle version</h2>
-              <p className="text-sm text-[#7f7664] mb-6 text-center">{selectedDoc.title}</p>
-
-              <div className="w-full mb-6 border-2 border-dashed border-transparent rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
-                <input
-                  type="file"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
-                />
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <Upload size={24} className="text-[#7f7664]" />
-                  <span className="text-sm font-medium text-[#4d4636]">
-                    {selectedFile ? selectedFile.name : "Cliquez pour uploader un fichier"}
-                  </span>
-                  {selectedFile && (
-                    <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-3 w-full">
-                <button
-                  className={`flex-1 font-bold py-2 rounded-xl transition-all ${
-                    (!selectedFile || uploading)
-                      ? 'bg-[#ebc254] text-white cursor-not-allowed'
-                      : 'bg-[#765b00] hover:bg-[#594400] text-white'
-                  }`}
-                  onClick={handleAddNewVersion}
-                  disabled={!selectedFile || uploading}
-                >
-                  {uploading ? 'Upload...' : 'Update'}
-                </button>
-                <button
-                  className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
-                  onClick={() => { setShowAddVersionModal(false); setSelectedFile(null); }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Modaux - inchangés */}
+      {showUploadModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Nouveau document</h2>
+            <input
+              type="text"
+              placeholder="Titre du document..."
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              className="w-full mb-4 px-4 py-2 border border-[#e8e6e0] rounded-xl focus:outline-none text-center"
+              autoFocus
+            />
+            <div className="relative w-full mb-4">
+              <button
+                type="button"
+                onClick={() => setTypeDropdownOpen(!typeDropdownOpen)}
+                className="w-full px-4 py-2 border border-[#e8e6e0] rounded-xl focus:outline-none bg-white flex justify-between items-center text-[#1a1c1a] text-center"
+              >
+                <span className="flex-1 font-medium">{newType === 'Report' ? 'Report / Rapport' : newType === 'Diagram' ? 'Diagram / Schéma' : 'Document PDF'}</span>
+                <ChevronDown size={16} className={`text-[#7f7664] transition-transform ${typeDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {typeDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-[100]" onClick={() => setTypeDropdownOpen(false)} />
+                  <div className="absolute top-full left-0 right-0 z-[101] mt-1 bg-white border border-[#e8e6e0] rounded-xl shadow-lg overflow-hidden py-1">
+                    {[
+                      { value: 'Report', label: 'Report / Rapport' },
+                      { value: 'Diagram', label: 'Diagram / Schéma' },
+                      { value: 'PDF', label: 'Document PDF' },
+                    ].map(type => (
+                      <div
+                        key={type.value}
+                        className={`px-4 py-2 cursor-pointer transition-colors text-sm font-bold text-center ${
+                          newType === type.value ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'
+                        }`}
+                        onClick={() => {
+                          setNewType(type.value);
+                          setTypeDropdownOpen(false);
+                        }}
+                      >
+                        {type.label}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
+              <input
+                type="file"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+              />
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Upload size={24} className="text-[#7f7664]" />
+                <span className="text-sm font-medium text-[#4d4636]">
+                  {selectedFile ? selectedFile.name : "Cliquez pour uploader un fichier"}
+                </span>
+                {selectedFile && (
+                  <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                className={`flex-1 font-bold py-2 rounded-xl transition-all ${(!newTitle.trim() || !selectedFile || uploading) ? 'bg-[#ebc254] text-white cursor-not-allowed' : 'bg-[#765b00] hover:bg-[#594400] text-white'}`}
+                onClick={handleUpload}
+                disabled={!newTitle.trim() || !selectedFile || uploading}
+              >
+                {uploading ? 'Upload...' : 'Upload'}
+              </button>
+              <button
+                className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
+                onClick={() => { setShowUploadModal(false); setNewTitle(''); setSelectedFile(null); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showCommentModal && selectedDoc && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
+          <div
+            className="bg-white flex flex-col w-full max-w-lg relative overflow-hidden"
+            style={{ borderRadius: '24px', boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}
+          >
+            <div className="flex items-center gap-3 px-6 pt-6 pb-4" style={{ borderBottom: '1px solid #f0ede6' }}>
+              <div className="flex items-center justify-center flex-shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: '#f4f3f1' }}>
+                <MessageSquare size={20} color="#765b00" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#1a1c1a]" style={{ fontSize: 15, margin: 0 }}>Commentaires</p>
+                <p className="text-[#7f7664] uppercase tracking-widest font-semibold truncate" style={{ fontSize: 11, margin: 0 }}>
+                  {selectedDoc.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCommentModal(false)}
+                className="flex items-center justify-center flex-shrink-0 text-[#7f7664] hover:text-[#1a1c1a] transition-colors"
+                style={{ width: 32, height: 32, borderRadius: 10, background: '#f4f3f1', border: 'none', cursor: 'pointer' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 420 }}>
+              {comments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 16, background: '#f4f3f1' }}>
+                    <MessageSquare size={22} color="#c5b98a" />
+                  </div>
+                  <p className="font-medium text-[#7f7664]" style={{ fontSize: 14, margin: 0 }}>Aucun commentaire</p>
+                  <p style={{ fontSize: 12, color: '#b0a88a', marginTop: 4 }}>Les commentaires du professeur apparaîtront ici.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {comments.map((comment) => (
+                    <div key={comment.id} style={{ display: 'flex', gap: 12 }}>
+                      <div
+                        className="flex items-center justify-center flex-shrink-0 font-bold text-[#594400]"
+                        style={{ width: 36, height: 36, borderRadius: '50%', background: '#ffd464', fontSize: 12 }}
+                      >
+                        {getInitials(comment.auteur_prenom, comment.auteur_nom)}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span className="font-bold text-[#1a1c1a]" style={{ fontSize: 14 }}>
+                            {comment.auteur_prenom} {comment.auteur_nom}
+                          </span>
+                          <span className="text-[#b0a88a]" style={{ fontSize: 12 }}>
+                            🕐 {new Date(comment.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div style={{ background: '#f4f3f1', borderRadius: '0 12px 12px 12px', padding: '10px 14px' }}>
+                          <p className="text-[#4d4636]" style={{ fontSize: 14, margin: 0, lineHeight: 1.6 }}>{comment.contenu}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showModal && selectedDoc && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 flex flex-col w-full max-w-lg relative" style={{ maxHeight: '80vh' }}>
+            <div className="flex justify-between items-center mb-8 flex-shrink-0">
+              <h3 className="text-xl font-bold text-[#1a1c1a]">Version History</h3>
+              <button onClick={() => setShowModal(false)} className="flex items-center justify-center text-[#7f7664] hover:text-[#1a1c1a] transition-colors" style={{ width: 32, height: 32, borderRadius: 10, background: '#f4f3f1' }}>
+                <X size={16} />
+              </button>
+            </div>
+            {selectedDoc.versions.length === 0 ? (
+              <p className="text-center text-[#7f7664] py-4">Aucune version disponible.</p>
+            ) : (
+              <div className="overflow-y-auto pr-2" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {selectedDoc.versions.map((v, i) => (
+                  <div key={i} className="relative pl-8 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-0.5 before:bg-[#d1c5b0] last:before:hidden">
+                    <div className="absolute left-[-4px] top-2 w-2.5 h-2.5 rounded-full bg-[#765b00] border-2 border-white" />
+                    <div className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-[#f0ede6]">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-bold text-[#765b00]">{v.version}</span>
+                        <span className="text-[10px] font-bold text-[#7f7664] uppercase tracking-widest">{v.date}</span>
+                      </div>
+                      <p className="text-sm text-[#4d4636] mb-3">{v.comment}</p>
+                      <div className="flex items-center gap-2">
+                        <img src={`https://picsum.photos/seed/${v.author.replace(/ /g, '')}/50/50`} className="w-5 h-5 rounded-full" alt={v.author} />
+                        <span className="text-xs font-medium text-[#7f7664]">{v.author}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showAddVersionModal && selectedDoc && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center">
+            <h2 className="text-xl font-bold mb-2 text-[#1a1c1a]">Nouvelle version</h2>
+            <p className="text-sm text-[#7f7664] mb-6 text-center">{selectedDoc.title}</p>
+            <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
+              <input
+                type="file"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+              />
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Upload size={24} className="text-[#7f7664]" />
+                <span className="text-sm font-medium text-[#4d4636]">
+                  {selectedFile ? selectedFile.name : "Cliquez pour uploader un fichier"}
+                </span>
+                {selectedFile && (
+                  <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                className={`flex-1 font-bold py-2 rounded-xl transition-all ${(!selectedFile || uploading) ? 'bg-[#ebc254] text-white cursor-not-allowed' : 'bg-[#765b00] hover:bg-[#594400] text-white'}`}
+                onClick={handleAddNewVersion}
+                disabled={!selectedFile || uploading}
+              >
+                {uploading ? 'Upload...' : 'Update'}
+              </button>
+              <button
+                className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
+                onClick={() => { setShowAddVersionModal(false); setSelectedFile(null); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

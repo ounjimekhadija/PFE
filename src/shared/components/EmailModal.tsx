@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface EmailModalProps {
@@ -57,8 +58,8 @@ const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
       <div className="bg-warm-surface rounded-2xl shadow-xl p-8 w-full max-w-lg flex flex-col border border-warm-border" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-warm-text">Send Email to {user.prenom} {user.nom}</h2>
@@ -108,7 +109,8 @@ const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, UserPlus, Mail, Github, Linkedin, MoreVertical, Filter, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
@@ -231,8 +232,8 @@ const StudentGroups: React.FC = () => {
         </div>
       )}
 
-      {showGroupModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      {showGroupModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md flex flex-col items-center border border-transparent">
             <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Choose a Project</h2>
             <div className="relative w-full mb-6 text-left">
@@ -285,7 +286,8 @@ const StudentGroups: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Header — fixed, ne scroll pas */}

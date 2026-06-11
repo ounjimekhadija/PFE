@@ -131,7 +131,6 @@ const Deliverables: React.FC = () => {
         const result = Object.entries(grouped).map(([groupName, deliverables]) => ({ groupName, deliverables }));
         setGroups(result);
 
-        // Load all comments in bulk
         const allIds = (rows || []).map((r: any) => String(r.id));
         if (allIds.length > 0) {
           const { data: cmtRows, error: cmtErr } = await supabase
@@ -143,7 +142,6 @@ const Deliverables: React.FC = () => {
           console.log('[load comments]', cmtRows, cmtErr);
 
           if (cmtRows && cmtRows.length > 0) {
-            // Fetch author names in one query
             const authorIds = [...new Set(cmtRows.map((c: any) => c.auteur_id))];
             const { data: users } = await supabase
               .from('utilisateurs')
@@ -200,7 +198,6 @@ const Deliverables: React.FC = () => {
         deliverables: g.deliverables.map(d => d.id === deliverableId ? { ...d, status: newStatus } : d),
       })));
 
-      // Notify students
       const { data: { user } } = await supabase.auth.getUser();
       const deliverable = groups.flatMap(g => g.deliverables).find(d => d.id === deliverableId);
       if (user && deliverable) {
@@ -224,7 +221,6 @@ const Deliverables: React.FC = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSendingComment(prev => ({ ...prev, [deliverableId]: false })); return; }
 
-    // Step 1: insert
     const { data: inserted, error: insertError } = await supabase
       .from('livrable_commentaires')
       .insert({ livrable_id: deliverableId, auteur_id: user.id, contenu: text })
@@ -239,7 +235,6 @@ const Deliverables: React.FC = () => {
       return;
     }
 
-    // Step 2: get author name from utilisateurs
     const { data: utilData } = await supabase
       .from('utilisateurs')
       .select('nom, prenom')
@@ -261,7 +256,6 @@ const Deliverables: React.FC = () => {
     setCommentInputs(prev => ({ ...prev, [deliverableId]: '' }));
     setSendingComment(prev => ({ ...prev, [deliverableId]: false }));
 
-    // Notify students
     const deliverable = groups.flatMap(g => g.deliverables).find(d => d.id === deliverableId);
     if (deliverable) {
       await notifyProjectStudents({
@@ -296,12 +290,11 @@ const Deliverables: React.FC = () => {
         .replace(/^storage\/v1\/object\/(public|sign)\//, '')
         .replace(/^\/+/, '');
 
-      // Build (bucket, path) candidates from most-specific to least
       const candidates: [string, string][] = [];
       const uploadsMatch = raw.match(/^uploads\/(.+)$/);
       if (uploadsMatch) {
-        candidates.push(['uploads', uploadsMatch[1]]); // bucket=uploads, path=filename
-        candidates.push(['documents', raw]);            // bucket=documents, path=uploads/filename
+        candidates.push(['uploads', uploadsMatch[1]]);
+        candidates.push(['documents', raw]);
         candidates.push(['livrables', raw]);
       } else {
         candidates.push(['documents', raw]);
@@ -336,23 +329,31 @@ const Deliverables: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div>
-        <header className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Group Deliverables</h1>
-            <p className="mt-1.5 text-sm text-[#7f7664]">View and manage all project deliverables by group</p>
-            <p className="mt-1 text-xs text-[#7f7664]">{totalCount} livrable(s)</p>
-          </div>
-        </header>
+    <div
+      className="flex flex-col h-full overflow-hidden bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]"
+      style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
+    >
+      {/* Header — fixe, ne scroll pas */}
+      <header className="mb-6 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h1 className="text-2xl font-semibold">Group Deliverables</h1>
+          <p className="mt-1.5 text-sm text-[#7f7664]">View and manage all project deliverables by group</p>
+          <p className="mt-1 text-xs text-[#7f7664]">{totalCount} livrable(s)</p>
+        </div>
+      </header>
 
-        {loading && <p className="mb-4 text-sm text-[#7f7664]">Chargement des livrables...</p>}
-        {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a]">Erreur: {error}</p>}
-        {!loading && !error && groups.length === 0 && (
-          <p className="mb-4 text-sm text-[#7f7664]">Aucun livrable trouvé pour les projets assignés à cet encadrant.</p>
-        )}
+      {loading && <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">Chargement des livrables...</p>}
+      {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a] flex-shrink-0">Erreur: {error}</p>}
+      {!loading && !error && groups.length === 0 && (
+        <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">Aucun livrable trouvé pour les projets assignés à cet encadrant.</p>
+      )}
 
-        <div className="space-y-7">
+      {/* Liste scrollable */}
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1c5b0 transparent' }}
+      >
+        <div className="space-y-7 pb-6">
           {groups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-4">
               <div className="flex items-center gap-3">
@@ -399,7 +400,6 @@ const Deliverables: React.FC = () => {
                               <div className="absolute right-0 top-full z-50 mt-1 w-32 origin-top-right rounded-xl border border-transparent bg-white p-1 shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-in fade-in zoom-in-95 duration-200">
                                 {STATUS_OPTIONS.map(o => {
                                   const isSel = deliverable.status === o.value;
-                                  // Color mapping for options based on their value
                                   const optColors: Record<string, string> = {
                                     VALIDATED: isSel ? 'bg-[#dcfce7] text-[#166534]' : 'hover:bg-[#dcfce7]/40 text-[#166534]',
                                     REJECTED:  isSel ? 'bg-[#ffdad6] text-[#ba1a1a]' : 'hover:bg-[#ffdad6]/40 text-[#ba1a1a]',
@@ -453,7 +453,6 @@ const Deliverables: React.FC = () => {
                         <button
                           onClick={() => setShowComments(prev => {
                             const alreadyOpen = prev[deliverable.id];
-                            // close all, then toggle this one
                             const reset: Record<string, boolean> = {};
                             return alreadyOpen ? reset : { ...reset, [deliverable.id]: true };
                           })}

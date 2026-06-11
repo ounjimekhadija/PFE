@@ -73,7 +73,7 @@ const toDaysDelay = (deadlineIso: string | null): number => {
 
 
 const resolveAvatar = (avatarUrl: string | null | undefined, name: string): string => {
-  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&size=64`;
+  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&color=1a1c1a&bold=true&size=64`;
   if (!avatarUrl) return fallback;
   const raw = avatarUrl.trim();
   if (!raw) return fallback;
@@ -252,21 +252,7 @@ const AdminDashboard: React.FC = () => {
 
   const ringProgress = Math.max(6, completionRate);
 
-  const timelineItems = useMemo(() => {
-    const delayedIds = new Set(delayedProjects.map((p) => p.id));
-    return [...projects]
-      .filter((p) => !!p.deadline)
-      .sort((a, b) => new Date(a.deadline || '').getTime() - new Date(b.deadline || '').getTime())
-      .map((p) => ({
-        id: p.id,
-        title: p.title,
-        progress: p.progress,
-        subtitle: delayedIds.has(p.id)
-          ? `${toDaysDelay(p.deadline)} days delay`
-          : new Date(p.deadline!).toLocaleDateString(),
-        accent: delayedIds.has(p.id) ? '#F97316' : '#765b00',
-      }));
-  }, [projects, delayedProjects]);
+
 
   const handleExportReport = () => {
     const summary = [
@@ -292,16 +278,23 @@ const AdminDashboard: React.FC = () => {
   };
 
   const barData = useMemo(() => {
-    const map = new Map<string, number>();
-    projects.forEach((p) => map.set(p.category, (map.get(p.category) || 0) + 1));
+    const map = new Map<string, { totalProgress: number; count: number }>();
+    projects.forEach((p) => {
+      const current = map.get(p.supervisor) || { totalProgress: 0, count: 0 };
+      map.set(p.supervisor, { totalProgress: current.totalProgress + p.progress, count: current.count + 1 });
+    });
     const entries = Array.from(map.entries());
     const colors = ['#765b00', '#ffd464', '#4d4636', '#d1c5b0', '#F97316'];
     return entries.length > 0
-      ? entries.map(([name, count], i) => ({ name, count, color: colors[i % colors.length] }))
+      ? entries.map(([name, stats], i) => ({ 
+          name, 
+          count: Math.round(stats.totalProgress / stats.count), 
+          color: colors[i % colors.length] 
+        }))
       : projectStatus.map((s) => ({ name: s.name, count: s.value, color: s.color }));
   }, [projects, projectStatus]);
 
-  const maxBarCount = useMemo(() => Math.max(...barData.map((b) => b.count), 1), [barData]);
+  const maxBarCount = 100;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
@@ -363,8 +356,8 @@ const AdminDashboard: React.FC = () => {
         <article className="flex min-h-0 flex-col rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
           <div className="mb-4 flex items-center justify-between shrink-0">
             <div>
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Project Distribution</h2>
-              <p className="text-[9px] text-[#7f7664]/60">Breakdown by domain</p>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Project Progress</h2>
+              <p className="text-[9px] text-[#7f7664]/60">Average completion by supervisor</p>
             </div>
             <div className="flex flex-wrap gap-3">
               {barData.slice(0, 4).map((b) => (
@@ -384,7 +377,7 @@ const AdminDashboard: React.FC = () => {
             {barData.map((bar) => (
               <div key={bar.name} className="group relative flex flex-1 flex-col items-center gap-2">
                 <div className="absolute -top-6 opacity-0 transition-all group-hover:-top-8 group-hover:opacity-100">
-                  <span className="rounded-md bg-[#1a1c1a] px-2 py-1 text-[9px] font-bold text-white shadow-lg">{bar.count} Projects</span>
+                  <span className="rounded-md bg-[#1a1c1a] px-2 py-1 text-[9px] font-bold text-white shadow-lg">{bar.count}% Progress</span>
                 </div>
                 <div
                   className="w-full rounded-t-2xl transition-all duration-500 ease-out group-hover:brightness-110"
@@ -402,9 +395,9 @@ const AdminDashboard: React.FC = () => {
           </div>
         </article>
 
-        {/* Quarterly Progress Ring */}
+        {/* Overall Progress Ring */}
         <article className="flex min-h-0 flex-col items-center justify-between rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664] self-start">Quarterly Progress</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664] self-start">Overall Progress</h2>
           <div
             className="relative h-36 w-36 rounded-full"
             style={{ background: `conic-gradient(#ffd464 ${ringProgress}%, #e8e3da 0%)` }}
@@ -429,66 +422,25 @@ const AdminDashboard: React.FC = () => {
                   src={m.avatar}
                   alt={m.name}
                   title={m.name}
-                  className="h-9 w-9 rounded-full border-2 border-[#1a1c1a] object-cover"
+                  className="h-10 w-10 rounded-full border-2 border-[#1a1c1a] object-cover"
                 />
               ))}
               {(totalStudents + totalProfessors) > 4 && (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#1a1c1a] bg-[#efeeeb] text-xs font-bold text-[#1a1c1a]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#1a1c1a] bg-[#efeeeb] text-xs font-bold text-[#1a1c1a]">
                   +{totalStudents + totalProfessors - 4}
                 </div>
               )}
             </div>
-            <p className="text-sm font-semibold leading-snug text-white">
+            <p className="text-sm font-bold leading-snug text-white">
               {totalStudents + totalProfessors} new members joined this week
             </p>
           </div>
-          <Link to="/users" className="mt-3 flex items-center justify-center rounded-xl border border-[#4d4636] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4d4636]">
+          <Link to="/users" className="mt-4 flex items-center justify-center rounded-2xl border border-[#4d4636] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#4d4636]">
             View List
           </Link>
         </article>
       </section>
 
-      {/* Team Sync Timeline — Minimized Height */}
-      <section className="shrink-0 rounded-2xl border border-transparent bg-white px-6 py-2 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-        {timelineItems.length === 0 ? (
-          <p className="text-[10px] text-[#7f7664]">No upcoming updates.</p>
-        ) : (
-          <div className="relative py-2">
-            {/* Connecting line */}
-            <div className="absolute left-0 right-0 h-px bg-[#e8e3da]" style={{ top: '50%' }} />
-
-            <div className="flex justify-between items-center px-2">
-              {timelineItems.map((item) => (
-                <div key={item.id} className="group relative flex flex-col items-center">
-                  {/* Tooltip on Hover */}
-                  <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
-                    <div className="whitespace-nowrap rounded-xl bg-[#1a1c1a] px-3 py-2 text-center shadow-xl">
-                      <p className="text-[10px] font-bold text-white/60 uppercase tracking-tighter">{item.subtitle}</p>
-                      <p className="text-xs font-bold text-white mt-0.5">{item.title}</p>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <div className="h-1 flex-1 w-20 rounded-full bg-white/20 overflow-hidden">
-                          <div className="h-full bg-[#ffd464]" style={{ width: `${item.progress}%` }} />
-                        </div>
-                        <span className="text-[9px] font-bold text-[#ffd464]">{item.progress}%</span>
-                      </div>
-                    </div>
-                    {/* Tooltip Arrow */}
-                    <div className="h-2 w-2 rotate-45 bg-[#1a1c1a] -mt-1" />
-                  </div>
-
-                  {/* Dot on the line */}
-                  <div
-                    className="relative z-10 h-3 w-3 cursor-help rounded-full border-2 border-white shadow-sm transition-all group-hover:scale-125 group-hover:shadow-md"
-                    style={{ backgroundColor: item.accent }}
-                  />
-                  
-                  <div className="absolute inset-0 z-0 h-3 w-3 scale-0 rounded-full bg-current opacity-0 transition-all group-hover:scale-[2.5] group-hover:opacity-10" style={{ color: item.accent }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
     </div>
   );
 };

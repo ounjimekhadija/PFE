@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, GraduationCap, Rocket, CheckCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
@@ -31,6 +31,44 @@ interface IterationEvent {
   statut: string;
 }
 
+interface IterationHistory {
+  id: string;
+  projectName: string;
+  numero: number;
+  statut: string;
+  date: string;
+}
+
+const polarToCartesian = (cx: number, cy: number, r: number, angleInDegrees: number) => {
+  const angleInRadians = (angleInDegrees - 90) * (Math.PI / 180.0);
+  return {
+    x: cx + (r * Math.cos(angleInRadians)),
+    y: cy + (r * Math.sin(angleInRadians))
+  };
+};
+
+const generatePieSlice = (cx: number, cy: number, r: number, startAngle: number, endAngle: number) => {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  
+  if (endAngle - startAngle >= 360) {
+    return `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`;
+  }
+
+  return [
+    "M", cx, cy,
+    "L", start.x, start.y,
+    "A", r, r, 0, largeArcFlag, 0, end.x, end.y,
+    "Z"
+  ].join(" ");
+};
+
+const pieColors = [
+  '#ffff00', '#a0a0ff', '#8b2a52', '#ffffcc', '#ccffff', 
+  '#4a004a', '#ff8080', '#0066cc', '#cceeff', '#000080', '#ff00ff'
+];
+
 const resolveAvatar = (v: string | null | undefined, name: string) => {
   const fb = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
   if (!v) return fb;
@@ -50,8 +88,10 @@ const Dashboard: React.FC = () => {
   const [avgDelay, setAvgDelay] = useState(0);
   const [projectBars, setProjectBars] = useState<ProjectBar[]>([]);
   const [iterations, setIterations] = useState<IterationEvent[]>([]);
+  const [iterationsHistory, setIterationsHistory] = useState<IterationHistory[]>([]);
   const [recentMembers, setRecentMembers] = useState<Member[]>([]);
   const [unreadMsgs, setUnreadMsgs] = useState(0);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -75,8 +115,8 @@ const Dashboard: React.FC = () => {
           { data: msgs },
         ] = await Promise.all([
           supabase.from('etudiants').select('id, projet_id, utilisateurs(nom, prenom, avatar_url)').in('projet_id', projectIds),
-          supabase.from('iterations').select('id, projet_id, statut, date_debut, date_fin').in('projet_id', projectIds).order('date_debut', { ascending: true }),
-          supabase.from('messages').select('id').in('projet_id', projectIds).neq('auteur_id', user.id),
+          supabase.from('iterations').select('id, projet_id, numero, statut, date_debut, date_fin').in('projet_id', projectIds).order('date_debut', { ascending: true }),
+          supabase.from('messages').select('id').in('projet_id', projectIds).neq('auteur_id', user.id).eq('lu', false),
         ]);
 
         setTotalStudents(students?.length || 0);
@@ -89,24 +129,32 @@ const Dashboard: React.FC = () => {
         });
         setRecentMembers(memberList);
 
-        const now = new Date().toISOString();
-        const timelineIters = (iters || [])
-          .filter((it: any) => it.date_fin >= now || it.statut === 'EN_COURS')
-          .slice(0, 4);
-        setIterations(timelineIters.map((it: any) => ({
+        setIterations((iters || []).map((it: any) => ({
           id: it.id,
-          label: it.statut === 'EN_COURS' ? 'Sprint en cours' : it.statut === 'VALIDE' ? 'Sprint validé' : 'À faire',
+          label: it.statut === 'EN_COURS' ? 'Itération en cours' : it.statut === 'VALIDE' ? `Itération ${it.numero}` : 'À faire',
           description: `Du ${new Date(it.date_debut).toLocaleDateString('fr-FR')} au ${new Date(it.date_fin).toLocaleDateString('fr-FR')}`,
           date: it.date_debut,
           statut: it.statut,
         })));
 
+        setIterationsHistory((iters || []).map((it: any) => {
+          const project = projects.find((p: any) => p.id === it.projet_id);
+          return {
+            id: it.id,
+            projectName: project ? project.titre : 'Projet',
+            numero: it.numero,
+            statut: it.statut,
+            date: it.date_debut || new Date().toISOString()
+          };
+        }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
         const iterIds = (iters || []).map((it: any) => it.id);
         let tasks: any[] = [];
         if (iterIds.length > 0) {
-          const { data: taskData } = await supabase.from('taches').select('id, iteration_id, etat, titre, created_at').in('iteration_id', iterIds);
+          const { data: taskData } = await supabase.from('taches').select('id, iteration_id, etat, titre, created_at, priorite').in('iteration_id', iterIds);
           tasks = taskData || [];
         }
+        setAllTasks(tasks);
 
         const total = tasks.length;
         const done = tasks.filter((t: any) => t.etat === 'TERMINE').length;
@@ -150,10 +198,12 @@ const Dashboard: React.FC = () => {
             };
           }
 
-          const pRecentDone = pTasks
-            .filter((t: any) => t.etat === 'TERMINE')
-            .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-            .slice(0, 3);
+          const pRecentDone = currentIter
+            ? pTasks
+                .filter((t: any) => t.etat === 'TERMINE' && t.iteration_id === currentIter.id)
+                .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+                .slice(0, 3)
+            : [];
 
           return {
             id: p.id,
@@ -215,10 +265,10 @@ const Dashboard: React.FC = () => {
   const dashOffset = circ - (completionRate / 100) * circ;
 
   const stats = [
-    { label: 'TOTAL STUDENTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: '🎓' },
-    { label: 'ACTIVE PROJECTS', value: activeProjects, badge: 'Steady', badgeGreen: false, icon: '🚀' },
-    { label: 'COMPLETION RATE', value: `${completionRate}%`, badge: `${completionRate}%`, badgeGreen: true, icon: '✅' },
-    { label: 'AVG. DELAY', value: `${avgDelay} Days`, badge: avgDelay > 0 ? `+${avgDelay}d` : 'On time', badgeGreen: avgDelay === 0, icon: '⏱' },
+    { label: 'TOTAL STUDENTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: <GraduationCap size={20} className="text-[#765b00]" /> },
+    { label: 'ACTIVE PROJECTS', value: activeProjects, badge: 'Steady', badgeGreen: false, icon: <Rocket size={20} className="text-[#f59e0b]" /> },
+    { label: 'COMPLETION RATE', value: `${completionRate}%`, badge: `${completionRate}%`, badgeGreen: true, icon: <CheckCircle size={20} className="text-[#22c55e]" /> },
+    { label: 'AVG. DELAY', value: `${avgDelay} Days`, badge: avgDelay > 0 ? `+${avgDelay}d` : 'On time', badgeGreen: avgDelay === 0, icon: <Clock size={20} className="text-[#7f7664]" /> },
   ];
 
   return (
@@ -239,7 +289,9 @@ const Dashboard: React.FC = () => {
         {stats.map((s) => (
           <div key={s.label} className="rounded-2xl border border-transparent bg-white px-4 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xl">{s.icon}</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#faf9f6] border border-[#efeeeb] shadow-sm">
+                {s.icon}
+              </div>
               <span className={`text-[11px] font-bold ${s.badgeGreen ? 'text-green-500' : 'text-[#f59e0b]'}`}>{s.badge}</span>
             </div>
             <p className="text-[9px] font-bold uppercase tracking-widest text-[#7f7664]">{s.label}</p>
@@ -350,23 +402,31 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="flex min-h-0 flex-col gap-3">
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl border border-transparent bg-white px-4 py-3 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-            <p className="mb-2 self-start text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Quarterly Progress</p>
-            <svg width="110" height="110" viewBox="0 0 130 130">
-              <circle cx="65" cy="65" r={r} fill="none" stroke="#f4f3f1" strokeWidth="14" />
-              <circle
-                cx="65" cy="65" r={r}
-                fill="none" stroke="#ffd464" strokeWidth="14" strokeLinecap="round"
-                strokeDasharray={String(circ)}
-                strokeDashoffset={dashOffset}
-                transform="rotate(-90 65 65)"
-                style={{ transition: 'stroke-dashoffset 1s ease' }}
-              />
-              <text x="65" y="70" textAnchor="middle" style={{ fontSize: 20, fontWeight: 700, fill: '#1a1c1a' }}>
-                {loading ? '—' : `${completionRate}%`}
-              </text>
-            </svg>
-            <p className="mt-1 text-[10px] text-[#7f7664]">Overall completion</p>
+          <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-transparent bg-white px-5 py-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+            <p className="mb-4 self-start text-[10px] font-bold uppercase tracking-widest text-[#4d4636]">Iterations History</p>
+            <div className="flex-1 overflow-y-auto max-h-[240px] pr-2 custom-scrollbar space-y-3">
+              {loading ? (
+                <p className="text-xs text-[#7f7664]">Chargement...</p>
+              ) : iterationsHistory.length === 0 ? (
+                <p className="text-xs text-[#7f7664]">Aucune itération.</p>
+              ) : (
+                iterationsHistory.map((it) => (
+                  <div key={it.id} className="flex flex-col border-b border-[#f4f3f1] pb-2 last:border-0 last:pb-0">
+                    <p className="text-xs font-bold text-[#1a1c1a] truncate" title={it.projectName}>{it.projectName}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="text-[10px] text-[#7f7664]">Iteration {it.numero}</span>
+                      <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${
+                        it.statut === 'VALIDE' ? 'bg-green-100 text-green-700' :
+                        it.statut === 'EN_COURS' ? 'bg-[#ffd464]/20 text-[#765b00]' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {it.statut === 'VALIDE' ? 'Done' : it.statut === 'EN_COURS' ? 'In Progress' : 'To Do'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           <div className="shrink-0 rounded-2xl bg-[#1a1c1a] px-4 py-3 text-white shadow-[0_4px_12px_rgba(0,0,0,0.15)]">
@@ -388,15 +448,19 @@ const Dashboard: React.FC = () => {
         {loading ? (
           <p className="text-xs text-[#7f7664]">Chargement...</p>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {iterations.map((it) => (
-              <div key={it.id} className="border-l-2 pl-3" style={{ borderColor: it.statut === 'EN_COURS' ? '#765b00' : '#d1c5b0' }}>
-                <p className="text-[10px] font-bold" style={{ color: it.statut === 'EN_COURS' ? '#765b00' : '#7f7664' }}>
-                  {new Date(it.date).toLocaleDateString('fr-FR')}
-                </p>
-                <p className="text-xs font-semibold text-[#1a1c1a]">{it.label}</p>
-              </div>
-            ))}
+          <div className="flex gap-8 overflow-x-auto pb-2 custom-scrollbar">
+            {iterations.map((it) => {
+              const borderColor = it.statut === 'VALIDE' ? '#22c55e' : it.statut === 'EN_COURS' ? '#f59e0b' : '#d1c5b0';
+              const textColor = it.statut === 'VALIDE' ? '#16a34a' : it.statut === 'EN_COURS' ? '#d97706' : '#7f7664';
+              return (
+                <div key={it.id} className="border-l-2 pl-3 shrink-0" style={{ borderColor }}>
+                  <p className="text-[10px] font-bold" style={{ color: textColor }}>
+                    {new Date(it.date).toLocaleDateString('fr-FR')}
+                  </p>
+                  <p className="text-xs font-semibold text-[#1a1c1a]">{it.label}</p>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

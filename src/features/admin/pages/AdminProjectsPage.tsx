@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, MoreVertical, Plus, Search, Trash2, TrendingUp, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
@@ -474,8 +475,8 @@ const AdminProjects: React.FC = () => {
       </div>
 
       {/* Create Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4 transition-all animate-in fade-in">
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
           <div className="relative my-8 w-full max-w-md overflow-hidden rounded-[2rem] border border-[#dcd6c1] bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)] animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#f4f3f1] bg-white px-8 py-6">
@@ -601,12 +602,13 @@ const AdminProjects: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirm Modal */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      {deleteConfirmId && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
           <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-transparent bg-white p-8 shadow-xl">
             <h2 className="text-xl font-bold text-[#1a1c1a]">Confirmer la suppression</h2>
             <p className="text-sm text-[#7f7664]">Cette action supprimera le projet, ses itérations, ses tâches et détachera ses étudiants. Irréversible.</p>
@@ -618,7 +620,8 @@ const AdminProjects: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronDown, Flag, User, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { taskSchema, Task as TaskType } from '../schemas';
@@ -60,7 +61,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
     setErrors(null);
 
     if (!currentIterationId) {
-      alert("Impossible de créer la tâche : Il n'y a pas d'itération (Sprint) active 'EN_COURS' pour votre projet.");
+      alert("Impossible de créer la tâche : Il n'y a pas d'itération (Sprint) active ou à faire pour votre projet.");
       setLoading(false);
       return;
     }
@@ -90,6 +91,13 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
         setLoading(false);
         return;
       }
+
+      // Automatically set iteration status to EN_COURS if it was A_FAIRE
+      await supabase
+        .from('iterations')
+        .update({ statut: 'EN_COURS' })
+        .eq('id', currentIterationId)
+        .eq('statut', 'A_FAIRE');
 
       if (newTask.assignee) {
         const { error: assignError } = await supabase
@@ -126,7 +134,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
   const selectedPriority = priorities.find(p => p.value === newTask.priority) || priorities[1];
   const selectedAssignee = assigneeOptions.find(a => a.id === newTask.assignee);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
       <div 
         className="bg-[#faf9f6] rounded-[24px] shadow-[0_20px_50px_rgba(118,91,0,0.15)] p-8 w-full max-w-lg flex flex-col border border-[#d1c5b0] relative overflow-visible" 
@@ -291,7 +299,8 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

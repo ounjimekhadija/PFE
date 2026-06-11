@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layers, Clock, Target, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Layers, Clock, Target, CheckCircle2, AlertCircle, ArrowRight, FileText, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 
@@ -15,6 +15,7 @@ interface DashboardData {
   pendingTasks: any[];
   totalTasks: number;
   iterationDeliverables: DashboardDeliverable[];
+  newCommentsCount: number;
 }
 
 interface DashboardDeliverable {
@@ -80,6 +81,7 @@ const StudentDashboard: React.FC = () => {
         let pendingTasks: any[] = [];
         let totalTasks = 0;
         let iterationDeliverables: DashboardDeliverable[] = [];
+        let newCommentsCount = 0;
 
         if (iteration) {
           const { data: tasks } = await supabase
@@ -109,6 +111,22 @@ const StudentDashboard: React.FC = () => {
               createdAt: item.created_at,
               status: item.statut || 'PENDING',
             }));
+
+            const livrableIds = livrables.map((l: any) => String(l.id));
+            if (livrableIds.length > 0) {
+              const threeDaysAgo = new Date();
+              threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+              const { count, error: countErr } = await supabase
+                .from('livrable_commentaires')
+                .select('*', { count: 'exact', head: true })
+                .in('livrable_id', livrableIds)
+                .gte('created_at', threeDaysAgo.toISOString());
+
+              if (!countErr && count !== null) {
+                newCommentsCount = count;
+              }
+            }
           }
         }
 
@@ -123,6 +141,7 @@ const StudentDashboard: React.FC = () => {
           pendingTasks,
           totalTasks,
           iterationDeliverables,
+          newCommentsCount,
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -186,6 +205,15 @@ const StudentDashboard: React.FC = () => {
   }
   const timelineLightness = Math.max(28, 70 - timelineProgress * 0.4);
   const timelineBarColor = `hsl(36, 60%, ${timelineLightness}%)`;
+
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+  const recentCompletedTasks = (data?.completedTasks || []).filter((task) => {
+    const dateStr = task.updated_at || task.created_at;
+    if (!dateStr) return true;
+    return new Date(dateStr) >= threeDaysAgo;
+  });
 
   return (
     <div
@@ -280,22 +308,22 @@ const StudentDashboard: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <button
-            className="mb-6 h-[190px] rounded-2xl border border-transparent bg-white p-5 text-left shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition hover:border-transparent"
+            className="mb-6 h-[190px] flex flex-col rounded-2xl border border-transparent bg-white p-5 text-left shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition hover:border-[#ebc254]"
             type="button"
             onClick={() => navigate('/tasks')}
           >
-            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2 shrink-0">
               <CheckCircle2 className="text-green-500" size={16} />
               Completed Tasks
             </h3>
-            <div className="space-y-2.5">
-              {data?.completedTasks.length === 0 ? (
-                <p className="text-xs text-[#7f7664]">Aucune tache terminee.</p>
+            <div className="space-y-2.5 overflow-y-auto custom-scrollbar pr-1 w-full flex-1">
+              {recentCompletedTasks.length === 0 ? (
+                <p className="text-xs text-[#7f7664]">Aucune tâche terminée récemment.</p>
               ) : (
-                data?.completedTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-2.5 rounded-2xl border border-transparent bg-[#f4f3f1] p-2.5">
+                recentCompletedTasks.map((task) => (
+                  <div key={task.id} className="flex items-center gap-2.5 rounded-2xl border border-transparent bg-[#f4f3f1] p-2.5 w-full shrink-0 transition-colors hover:border-[#d1c5b0]">
                     <div className="min-w-[8px] h-2 w-2 rounded-full bg-[#22C55E]"></div>
-                    <span className="line-clamp-1 text-xs font-medium text-[#4d4636]">{task.titre}</span>
+                    <span className="line-clamp-1 text-xs font-medium text-[#4d4636] flex-1">{task.titre}</span>
                   </div>
                 ))
               )}
@@ -303,22 +331,36 @@ const StudentDashboard: React.FC = () => {
           </button>
 
           <button
-            className="mb-6 rounded-2xl border border-transparent bg-white p-5 text-left shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition hover:border-transparent"
+            className="mb-6 h-[190px] flex flex-col rounded-2xl border border-transparent bg-white p-5 text-left shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition hover:border-[#ebc254]"
             type="button"
             onClick={() => navigate('/deliverables')}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-bold flex items-center gap-2">
-                <AlertCircle className="text-amber-500" size={16} />
-                Livrables (iteration)
+            <div className="mb-4 shrink-0">
+              <h3 className="mb-3 text-sm font-bold flex items-center gap-2 text-[#1a1c1a]">
+                <FileText className="text-[#765b00]" size={16} />
+                Livrables (itération)
               </h3>
-              <div className="flex items-center gap-2 text-[10px] font-bold">
-                <span className="rounded-full bg-[#dcfce7] px-2 py-0.5 text-[#166534]">Valide {validatedDeliverables}</span>
-                <span className="rounded-full bg-[#fff4cc] px-2 py-0.5 text-[#765b00]">En attente {pendingDeliverables}</span>
-                <span className="rounded-full bg-[#fde68a] px-2 py-0.5 text-[#92400e]">En retard {lateDeliverables}</span>
-                <span className="rounded-full bg-[#ffdad6] px-2 py-0.5 text-[#ba1a1a]">Rejete {rejectedDeliverables}</span>
+              <div className="flex flex-wrap gap-1.5 text-[9px] font-bold uppercase tracking-wider">
+                <span className="rounded-md bg-[#dcfce7] px-2 py-1 text-[#166534]">Validé {validatedDeliverables}</span>
+                <span className="rounded-md bg-[#fff4cc] px-2 py-1 text-[#765b00]">Attente {pendingDeliverables}</span>
+                {lateDeliverables > 0 && <span className="rounded-md bg-[#fde68a] px-2 py-1 text-[#92400e]">Retard {lateDeliverables}</span>}
+                {rejectedDeliverables > 0 && <span className="rounded-md bg-[#ffdad6] px-2 py-1 text-[#ba1a1a]">Rejeté {rejectedDeliverables}</span>}
               </div>
             </div>
+
+            {data?.newCommentsCount !== undefined && data.newCommentsCount > 0 && (
+              <div className="mt-auto pt-3 border-t border-[#f4f3f1] w-full shrink-0">
+                <div className="flex items-center gap-2">
+                   <MessageSquare size={14} className="text-[#765b00]" />
+                   <span className="text-[10px] font-bold text-[#1a1c1a] uppercase tracking-widest">
+                     {data.newCommentsCount === 1 ? 'Nouveau commentaire' : 'Nouveaux commentaires'}
+                   </span>
+                   <span className="ml-auto rounded-full bg-[#ffd464] px-2 py-0.5 text-[10px] font-bold text-[#765b00]">
+                     {data.newCommentsCount}
+                   </span>
+                </div>
+              </div>
+            )}
           </button>
 
           <div className="mb-4 flex h-auto flex-col justify-between rounded-[1.5rem] border border-[#9a7b16]/30 bg-[#7b6100] p-4 text-white shadow-[0_16px_40px_rgba(95,71,0,0.28)]">

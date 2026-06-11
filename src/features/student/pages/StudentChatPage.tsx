@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Send, Video, Paperclip, Smile, CheckCheck } from 'lucide-react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { supabase } from '../../../lib/supabase';
+import { notifyProjectStudents, notifyProjectProfessor } from '../../../lib/notifications';
 
 interface ContactItem {
   id: string;
@@ -243,17 +244,21 @@ const StudentChat: React.FC = () => {
       .order('created_at', { ascending: true });
 
     if (msgs) {
-      const formattedMsgs = msgs.map((m: any) => ({
-        id: m.id,
-        senderId: m.auteur_id,
-        name: m.auteur_id === myUserId ? 'MOI' : selectedContactName.toUpperCase(),
-        text: m.contenu,
-        time: formatTime(m.created_at),
-        isMe: m.auteur_id === myUserId,
-        isRead: m.lu === true,
-        avatar: m.auteur_id === myUserId ? '' : (contacts.find(c => c.id === selectedContactId)?.id || ''),
-        createdAt: m.created_at
-      }));
+      const formattedMsgs = msgs.map((m: any) => {
+        const u = Array.isArray(m.utilisateurs) ? m.utilisateurs[0] : m.utilisateurs;
+        const senderName = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Utilisateur' : 'Utilisateur';
+        return {
+          id: m.id,
+          senderId: m.auteur_id,
+          name: m.auteur_id === myUserId ? 'MOI' : senderName.toUpperCase(),
+          text: m.contenu,
+          time: formatTime(m.created_at),
+          isMe: m.auteur_id === myUserId,
+          isRead: m.lu === true,
+          avatar: resolveAvatar(u?.avatar_url, senderName),
+          createdAt: m.created_at
+        };
+      });
       setMessages(formattedMsgs);
       if (activeProjectId && myUserId) {
         await markProjectMessagesAsRead(activeProjectId, myUserId);
@@ -293,7 +298,7 @@ const StudentChat: React.FC = () => {
               text: row.contenu,
               isMe: row.auteur_id === currentUserId,
               isRead: row.lu === true,
-              avatar: row.auteur_id === currentUserId ? '' : (contacts.find(c => c.id === selectedContactId)?.id || ''),
+              avatar: resolveAvatar(u?.avatar_url, senderName),
               createdAt: row.created_at,
             };
 
@@ -370,6 +375,22 @@ const StudentChat: React.FC = () => {
 
       if (sendError) throw sendError;
 
+      await notifyProjectProfessor({
+        projectId,
+        senderId: currentUserId,
+        title: 'Nouveau message',
+        message: 'Un membre du groupe a envoyé un message.',
+        type: 'MESSAGE'
+      });
+
+      await notifyProjectStudents({
+        projectId,
+        senderId: currentUserId,
+        title: 'Nouveau message',
+        message: 'Un membre du groupe a envoyé un message.',
+        type: 'MESSAGE'
+      });
+
       setInput('');
       fetchMessages(projectId, currentUserId);
     } catch (err: any) {
@@ -407,6 +428,22 @@ const StudentChat: React.FC = () => {
         });
 
       if (sendError) throw sendError;
+
+      await notifyProjectProfessor({
+        projectId,
+        senderId: currentUserId,
+        title: 'Nouveau fichier',
+        message: 'Un membre du groupe a partagé un fichier.',
+        type: 'MESSAGE'
+      });
+
+      await notifyProjectStudents({
+        projectId,
+        senderId: currentUserId,
+        title: 'Nouveau fichier',
+        message: 'Un membre du groupe a partagé un fichier.',
+        type: 'MESSAGE'
+      });
 
       fetchMessages(projectId, currentUserId);
     } catch (err: any) {
@@ -560,13 +597,11 @@ const StudentChat: React.FC = () => {
                         </div>
   
                         <div className={`flex items-end gap-3 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                          {!msg.isMe && (
-                            <img
-                              src={resolveAvatar(selectedContact?.avatar_url, msg.name)}
-                              alt={msg.name}
-                              className="h-8 w-8 rounded-full object-cover"
-                            />
-                          )}
+                          <img
+                            src={msg.avatar}
+                            alt={msg.name}
+                            className="h-8 w-8 rounded-full object-cover shrink-0"
+                          />
                           <div className={`overflow-hidden text-[15px] font-medium leading-relaxed shadow-sm ${
                             msg.isMe
                               ? 'rounded-3xl rounded-tr-none bg-[#765b00] text-white'

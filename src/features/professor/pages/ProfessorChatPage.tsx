@@ -390,8 +390,8 @@ const Chat: React.FC = () => {
       await notifyProjectStudents({
         projectId: selectedProjectId,
         senderId: currentUserId,
-        title: 'New Message',
-        message: `Professor sent a message in "${selectedProjectTitle}".`,
+        title: 'Nouveau message',
+        message: `L'encadrant a envoyé un message dans "${selectedProjectTitle}".`,
         type: 'MESSAGE'
       });
     }
@@ -424,8 +424,8 @@ const Chat: React.FC = () => {
       await notifyProjectStudents({
         projectId: selectedProjectId,
         senderId: currentUserId,
-        title: 'New File',
-        message: `Professor shared a file in "${selectedProjectTitle}".`,
+        title: 'Nouveau fichier',
+        message: `L'encadrant a partagé un fichier dans "${selectedProjectTitle}".`,
         type: 'MESSAGE'
       });
     } catch (err) {
@@ -564,13 +564,20 @@ const Chat: React.FC = () => {
                   <span className="text-[11px] font-medium text-[#d1c5b0]">{msg.time}</span>
                 </div>
 
-                <div className={`shadow-sm text-[15px] leading-relaxed font-medium overflow-hidden ${
-                  msg.isMe
-                    ? 'bg-[#765b00] text-white rounded-3xl rounded-tr-none'
-                    : 'bg-white border border-[#d1c5b0] text-[#4d4636] rounded-3xl rounded-tl-none'
-                }`}>
-                  <div className="px-6 py-4">
-                    <MessageContent text={msg.text} />
+                <div className={`flex items-end gap-3 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <img
+                    src={msg.avatar}
+                    alt={msg.name}
+                    className="h-8 w-8 rounded-full object-cover shrink-0"
+                  />
+                  <div className={`shadow-sm text-[15px] leading-relaxed font-medium overflow-hidden ${
+                    msg.isMe
+                      ? 'bg-[#765b00] text-white rounded-3xl rounded-tr-none'
+                      : 'bg-white border border-[#d1c5b0] text-[#4d4636] rounded-3xl rounded-tl-none'
+                  }`}>
+                    <div className="px-6 py-4">
+                      <MessageContent text={msg.text} />
+                    </div>
                   </div>
                 </div>
 

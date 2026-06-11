@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageSquare, Send, X, ChevronDown, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectStudents } from '../../../lib/notifications';
@@ -196,7 +197,7 @@ const Tasks: React.FC = () => {
         setAllIterations(mappedIters);
         setValidatedIterations(mappedIters.filter(it => it.statut === 'VALIDE'));
 
-        const currentIter = mappedIters.find(it => it.statut === 'EN_COURS');
+        const currentIter = mappedIters.find((it: any) => it.statut === 'EN_COURS') || mappedIters.find((it: any) => it.statut === 'A_FAIRE');
         setCurrentIteration(currentIter || null);
         setSelectedIterationId(currentIter?.id || 'all');
 
@@ -230,13 +231,14 @@ const Tasks: React.FC = () => {
           } as TaskCard & { iterationId: string };
         });
 
+        const firstProjId = projectList[0]?.id || null;
         setAllTasks(mapped);
-        setTasks(mapped);
-        setSelectedProjectId('all');
+        setTasks(firstProjId ? mapped.filter((t: any) => t.projectId === firstProjId) : []);
+        setSelectedProjectId(firstProjId);
         
-        const current = mappedIters.find(it => it.statut === 'EN_COURS');
+        const current = mappedIters.find((it: any) => it.statut === 'EN_COURS') || mappedIters.find((it: any) => it.statut === 'A_FAIRE');
         setCurrentIteration(current || null);
-        setSelectedIterationId(current?.id || null);
+        setSelectedIterationId(current?.id || 'all');
 
       } finally {
         setLoading(false);
@@ -274,7 +276,7 @@ const Tasks: React.FC = () => {
 
   useEffect(() => {
     if (selectedIterationId) {
-      const baseTasks = selectedProjectId === 'all' || !selectedProjectId
+      const baseTasks = !selectedProjectId
         ? allTasks
         : allTasks.filter((t: any) => t.projectId === selectedProjectId);
       
@@ -301,14 +303,14 @@ const Tasks: React.FC = () => {
   }, []);
 
 
-  const visibleIterations = selectedProjectId === 'all' || !selectedProjectId
+  const visibleIterations = !selectedProjectId
     ? allIterations
     : allIterations.filter(it => it.projectId === selectedProjectId);
-
+ 
   const handleProjectFilter = (id: string) => {
     setSelectedProjectId(id);
     setSelectedIterationId('all');
-    setTasks(id === 'all' ? allTasks : allTasks.filter((t: any) => t.projectId === id));
+    setTasks(allTasks.filter((t: any) => t.projectId === id));
   };
 
   const handleIterationFilter = (id: string) => {
@@ -413,24 +415,13 @@ const Tasks: React.FC = () => {
                 className="flex items-center justify-between gap-3 min-w-[160px] rounded-xl border border-[#d1c5b0] bg-white py-2 px-4 text-sm font-semibold text-[#4d4636] shadow-sm transition hover:border-[#765b00] hover:shadow-md active:scale-95"
               >
                 <span className="truncate">
-                  {selectedProjectId === 'all' || !selectedProjectId 
-                    ? 'All Projects' 
-                    : projects.find(p => p.id === selectedProjectId)?.title || 'All Projects'}
+                  {projects.find(p => p.id === selectedProjectId)?.title || 'Select Project'}
                 </span>
                 <ChevronDown size={14} className={`text-[#7f7664] transition-transform duration-200 ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isProjectDropdownOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right rounded-2xl border border-transparent bg-white/95 p-1.5 shadow-[0_8px_32px_rgba(118,91,0,0.12)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
-                  <button
-                    type="button"
-                    onClick={() => { handleProjectFilter('all'); setIsProjectDropdownOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${selectedProjectId === 'all' ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
-                  >
-                    <div className={`h-1.5 w-1.5 rounded-full ${selectedProjectId === 'all' ? 'bg-[#765b00]' : 'bg-transparent'}`} />
-                    All Projects
-                  </button>
-                  <div className="my-1 border-t border-[#f4f3f1]" />
                   {projects.map(p => (
                     <button
                       key={p.id}
@@ -552,8 +543,8 @@ const Tasks: React.FC = () => {
       {/* end kanban */}
 
       {/* Create Iteration Modal */}
-      {showIterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]" onClick={() => setShowIterModal(false)}>
+      {showIterModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={() => setShowIterModal(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(118,91,0,0.15)]" onClick={e => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#1a1c1a]">New Iteration</h2>
@@ -683,12 +674,13 @@ const Tasks: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Task detail panel */}
-      {selectedTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-[2px]" onClick={() => setSelectedTask(null)}>
+      {selectedTask && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={() => setSelectedTask(null)}>
           <div className="relative flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]" onClick={e => e.stopPropagation()}>
 
             {/* Panel header */}
@@ -768,7 +760,8 @@ const Tasks: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

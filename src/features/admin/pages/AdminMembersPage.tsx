@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Filter, MoreVertical, User, Users } from 'lucide-react';
+import { ChevronDown, Filter, MoreVertical, User, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface Student {
@@ -35,6 +35,7 @@ const AdminMembers: React.FC = () => {
   const [filterFiliere, setFilterFiliere] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'pending'>('all');
   const [filterPos, setFilterPos] = useState({ top: 0, right: 0 });
+  const [filiereDropdownOpen, setFiliereDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
@@ -198,24 +199,48 @@ const AdminMembers: React.FC = () => {
                   className="fixed z-50 w-56 rounded-2xl border border-[#f4f3f1] bg-white p-4 shadow-[0_8px_24px_rgba(118,91,0,0.12)]"
                   style={{ top: filterPos.top, right: filterPos.right }}
                 >
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#7f7664]">Filiere</p>
-                  <select
-                    value={filterFiliere}
-                    onChange={(e) => { setFilterFiliere(e.target.value); setCurrentPage(1); }}
-                    className="mb-3 w-full rounded-lg border border-[#f4f3f1] bg-[#faf9f6] px-2 py-1.5 text-sm text-[#4d4636] outline-none focus:border-[#765b00]"
-                  >
-                    <option value="">All</option>
-                    {filieres.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </select>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Filiere</p>
+                  <div className="relative mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setFiliereDropdownOpen((o) => !o)}
+                      className={`flex w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-sm text-[#4d4636] outline-none transition ${filiereDropdownOpen ? 'border-[#765b00] ring-2 ring-[#765b00]/20' : 'border-[#e8e3da]'}`}
+                    >
+                      <span className="truncate pr-2">{filterFiliere || 'All'}</span>
+                      <ChevronDown size={14} className={`shrink-0 text-[#7f7664] transition-transform ${filiereDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {filiereDropdownOpen && (
+                      <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[#e8e3da] bg-white p-1 shadow-lg">
+                        <button
+                          type="button"
+                          className={`w-full text-left rounded-lg px-3 py-2 text-sm transition ${!filterFiliere ? 'bg-[#765b00] text-white font-semibold' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                          onClick={() => { setFilterFiliere(''); setCurrentPage(1); setFiliereDropdownOpen(false); }}
+                        >
+                          All
+                        </button>
+                        {filieres.map((f) => (
+                          <button
+                            key={f}
+                            type="button"
+                            className={`w-full text-left rounded-lg px-3 py-2 text-sm transition ${filterFiliere === f ? 'bg-[#765b00] text-white font-semibold' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                            onClick={() => { setFilterFiliere(f); setCurrentPage(1); setFiliereDropdownOpen(false); }}
+                          >
+                            {f}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#7f7664]">Status</p>
-                  <div className="flex flex-col gap-1">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Status</p>
+                  <div className="mb-2 flex flex-col gap-1">
                     {(['all', 'active', 'pending'] as const).map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() => { setFilterStatus(s); setCurrentPage(1); }}
-                        className={`rounded-lg px-3 py-1.5 text-left text-sm font-semibold capitalize transition ${filterStatus === s ? 'bg-[#765b00] text-white' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                        className={`rounded-lg px-3 py-2 text-left text-sm font-semibold capitalize transition ${filterStatus === s ? 'bg-[#765b00] text-white' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
                       >
                         {s}
                       </button>
@@ -223,13 +248,15 @@ const AdminMembers: React.FC = () => {
                   </div>
 
                   {(filterFiliere || filterStatus !== 'all') && (
-                    <button
-                      type="button"
-                      onClick={() => { setFilterFiliere(''); setFilterStatus('all'); setCurrentPage(1); }}
-                      className="mt-3 w-full rounded-lg py-1 text-xs font-semibold text-[#ba1a1a] hover:bg-[#ffdad6] transition"
-                    >
-                      Clear filters
-                    </button>
+                    <div className="mt-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => { setFilterFiliere(''); setFilterStatus('all'); setCurrentPage(1); }}
+                        className="text-sm font-semibold text-[#ba1a1a] transition hover:text-[#901313]"
+                      >
+                        Clear filters
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

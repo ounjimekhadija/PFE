@@ -85,15 +85,22 @@ const StudentTasks: React.FC = () => {
           setAssigneeOptions(formattedMembers);
         }
 
-        const { data: iteration } = await supabase
+        const { data: iterations } = await supabase
           .from('iterations')
-          .select('id')
+          .select('id, statut')
           .eq('projet_id', projectId)
-          .eq('statut', 'EN_COURS')
-          .single();
+          .in('statut', ['EN_COURS', 'A_FAIRE'])
+          .order('numero', { ascending: true });
 
-        if (!iteration) return;
-        setCurrentIterationId(iteration.id);
+        if (!iterations || iterations.length === 0) return;
+        
+        let activeIteration = iterations.find((it: any) => it.statut === 'EN_COURS');
+        if (!activeIteration) {
+          activeIteration = iterations.find((it: any) => it.statut === 'A_FAIRE');
+        }
+
+        if (!activeIteration) return;
+        setCurrentIterationId(activeIteration.id);
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('taches')
@@ -107,7 +114,7 @@ const StudentTasks: React.FC = () => {
             ),
             tache_commentaires ( id )
           `)
-          .eq('iteration_id', iteration.id);
+          .eq('iteration_id', activeIteration.id);
 
         if (tasksError) {
           console.error("Error fetching tasks:", tasksError);
@@ -230,14 +237,19 @@ const StudentTasks: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-[#faf9f6] p-8 flex flex-col overflow-hidden" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <header className="mb-8 flex justify-between items-center">
+    // h-screen + flex-col : le board occupe exactement la hauteur du viewport
+    <div
+      className="bg-[#faf9f6] p-8 flex flex-col"
+      style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif', height: '100vh' }}
+    >
+      {/* Header — hauteur fixe, ne rétrécit jamais */}
+      <header className="mb-8 flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-[#1a1c1a]">Tasks Board</h1>
           <p className="text-[#7f7664] mt-1">Manage your team's tasks and sub-tasks.</p>
         </div>
         <button
-          className="bg-[#1a1c1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-[#4d4636] transition-all shadow-md min-w-0"
+          className="bg-[#1a1c1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-[#4d4636] transition-all shadow-md"
           onClick={() => setIsCreateModalOpen(true)}
         >
           <Plus size={16} />
@@ -254,24 +266,41 @@ const StudentTasks: React.FC = () => {
       />
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 flex gap-6 overflow-x-auto pb-4 justify-center">
+        {/*
+          flex-1 + min-h-0 : prend tout l'espace restant SANS dépasser le viewport.
+          min-h-0 est indispensable — sans lui, flex-1 ignore la contrainte de hauteur
+          et le conteneur grossit au-delà de l'écran, rendant le scroll impossible.
+        */}
+        <div className="flex gap-6 justify-center overflow-x-auto pb-4 flex-1 min-h-0">
           {columns.map((column) => (
-            <div key={column.id} className="w-[370px] flex flex-col flex-1 max-w-[370px] min-h-[420px]">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <div className="flex items-center gap-3">
-                  <h3 className="font-bold text-[#4d4636]">{column.title}</h3>
-                  <span className="bg-[#d1c5b0] text-[#7f7664] text-xs font-bold px-2 py-0.5 rounded-full">
-                    {column.tasks.length}
-                  </span>
-                </div>
+            /*
+              Chaque colonne : flex-col + min-h-0.
+              flex-shrink-0 pour ne pas écraser les colonnes lors du scroll horizontal.
+            */
+            <div
+              key={column.id}
+              className="flex flex-col flex-shrink-0 min-h-0"
+              style={{ width: 370 }}
+            >
+              {/* En-tête colonne — hauteur fixe */}
+              <div className="flex items-center gap-3 mb-4 px-2 flex-shrink-0">
+                <h3 className="font-bold text-[#4d4636]">{column.title}</h3>
+                <span className="bg-[#d1c5b0] text-[#7f7664] text-xs font-bold px-2 py-0.5 rounded-full">
+                  {column.tasks.length}
+                </span>
               </div>
 
               <DroppableComponent droppableId={column.id}>
                 {(provided: any, snapshot: any) => (
+                  /*
+                    flex-1 + min-h-0 + overflow-y-auto :
+                    la liste occupe tout l'espace colonne disponible et scroll
+                    indépendamment des autres colonnes.
+                  */
                   <div
                     {...provided.droppableProps}
                     ref={provided.innerRef}
-                    className={`flex-1 space-y-4 overflow-y-auto pr-2 transition-colors rounded-2xl ${
+                    className={`flex-1 min-h-0 overflow-y-auto space-y-4 pr-2 rounded-2xl transition-colors ${
                       snapshot.isDraggingOver ? 'bg-[#ffd464]/10' : ''
                     }`}
                   >
@@ -283,19 +312,20 @@ const StudentTasks: React.FC = () => {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             className={`bg-white rounded-[24px] p-6 border border-transparent transition-all ${
-                              snapshot.isDragging ? 'shadow-2xl ring-2 ring-[#765b00]/20 scale-105 rotate-2 z-50' : 'shadow-sm hover:shadow-md'
+                              snapshot.isDragging
+                                ? 'shadow-2xl ring-2 ring-[#765b00]/20 scale-105 rotate-2 z-50'
+                                : 'shadow-sm hover:shadow-md'
                             }`}
                           >
                             <div className="mb-3 flex items-center justify-between">
                               <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                task.priority === 'High' ? 'text-rose-600 bg-rose-50' : 
-                                task.priority === 'Medium' ? 'text-amber-600 bg-amber-50' : 
-                                'text-blue-600 bg-blue-50'
+                                task.priority === 'High'   ? 'text-rose-600 bg-rose-50' :
+                                task.priority === 'Medium' ? 'text-amber-600 bg-amber-50' :
+                                                             'text-blue-600 bg-blue-50'
                               }`}>
                                 <Flag size={10} strokeWidth={3} />
-                                {task.priority === 'High' ? 'Haute' : 
-                                 task.priority === 'Medium' ? 'Moyenne' : 
-                                 'Faible'}
+                                {task.priority === 'High'   ? 'Haute'   :
+                                 task.priority === 'Medium' ? 'Moyenne' : 'Faible'}
                               </div>
                             </div>
 
@@ -312,19 +342,17 @@ const StudentTasks: React.FC = () => {
                                 <span className="text-xs font-semibold text-[#4d4636]">{task.assignee}</span>
                               </div>
 
-                              <div className="flex items-center gap-4 text-[#7f7664]">
-                                <button
-                                  className="flex items-center gap-1 text-xs font-bold focus:outline-none"
-                                  onClick={() => {
-                                    setSelectedTaskId(task.db_id || null);
-                                    setIsCommentOpen(true);
-                                  }}
-                                  type="button"
-                                >
-                                  <MessageSquare size={14} />
-                                  {task.comments}
-                                </button>
-                              </div>
+                              <button
+                                className="flex items-center gap-1 text-xs font-bold text-[#7f7664] focus:outline-none"
+                                onClick={() => {
+                                  setSelectedTaskId(task.db_id || null);
+                                  setIsCommentOpen(true);
+                                }}
+                                type="button"
+                              >
+                                <MessageSquare size={14} />
+                                {task.comments}
+                              </button>
                             </div>
                           </div>
                         )}
@@ -338,6 +366,7 @@ const StudentTasks: React.FC = () => {
           ))}
         </div>
       </DragDropContext>
+
       <CommentModal
         isOpen={isCommentOpen}
         onClose={() => setIsCommentOpen(false)}

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, Filter, GraduationCap, MoreVertical, ShieldCheck, User, UserPlus, Users } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
@@ -631,8 +632,8 @@ const AdminUsers: React.FC = () => {
         </div>
       </section>
 
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-4">
+      {showAddModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
           <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]">
             <div className="flex items-center justify-between border-b border-transparent px-6 py-4">
               <h2 className="text-xl font-semibold text-[#1a1c1a]">Creer un utilisateur</h2>
@@ -821,11 +822,12 @@ const AdminUsers: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+      {deleteConfirmId && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
           <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
             <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirmer la suppression</h2>
             <p className="mt-2 text-sm text-[#7f7664]">Cette action est irreversible. L'utilisateur sera supprime definitivement.</p>
@@ -848,7 +850,8 @@ const AdminUsers: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

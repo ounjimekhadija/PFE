@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Send, X, MessageSquare, Clock } from 'lucide-react';
 
@@ -75,10 +76,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Blur background */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
       
       <div 
         className="relative z-10 w-full max-w-2xl bg-[#faf9f6] rounded-[32px] shadow-[0_20px_60px_rgba(118,91,0,0.2)] border border-[#d1c5b0] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300"
@@ -87,15 +86,6 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
       >
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-[#d1c5b0]/50 bg-white/50 backdrop-blur-sm shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[#765b00]/10 rounded-xl text-[#765b00]">
-              <MessageSquare size={20} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-[#1a1c1a]">Commentaires</h2>
-              <p className="text-xs text-[#7f7664] font-medium uppercase tracking-wider">Discussions de la tâche</p>
-            </div>
-          </div>
           <button 
             onClick={onClose}
             className="p-2 rounded-full hover:bg-[#1a1c1a]/5 text-[#7f7664] transition-colors"
@@ -170,7 +160,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

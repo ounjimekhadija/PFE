@@ -77,6 +77,24 @@ const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
     }
   };
 
+  const handleMarkAllRead = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
+  };
+
   const handleNotificationClick = async (n: Notification) => {
     if (!n.is_read) {
       await markAsRead(n.id);
@@ -149,8 +167,22 @@ const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
              {showNotif && (
               <div className="absolute right-0 z-50 mt-2 w-80 rounded-[24px] border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_8px_32px_rgba(118,91,0,0.15)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-4 px-1">
-                  <h3 className="text-sm font-bold text-[#1a1c1a] dark:text-[#e8e3da]">Notifications</h3>
-                  {unreadCount > 0 && <span className="text-[10px] font-bold bg-[#ffd464] text-[#765b00] px-2 py-0.5 rounded-full">{unreadCount} New</span>}
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#1a1c1a] dark:text-[#e8e3da]">Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] font-bold bg-[#ffd464] text-[#765b00] px-2 py-0.5 rounded-full">
+                        {unreadCount} New
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={handleMarkAllRead}
+                      className="text-[11px] font-bold text-[#765b00] hover:underline cursor-pointer"
+                    >
+                      Tout marquer comme lu
+                    </button>
+                  )}
                 </div>
                 
                 <div className="max-h-[320px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
