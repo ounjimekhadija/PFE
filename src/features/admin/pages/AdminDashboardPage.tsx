@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Clock3, Download, Layers, TrendingUp, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { supabase } from '../../../lib/supabase';
 
 interface ProjectRow {
@@ -254,27 +256,148 @@ const AdminDashboard: React.FC = () => {
 
 
 
-  const handleExportReport = () => {
-    const summary = [
-      { Metric: 'Total Students', Value: totalStudents },
-      { Metric: 'Total Professors', Value: totalProfessors },
-      { Metric: 'Active Projects', Value: projects.length },
-      { Metric: 'Completion Rate', Value: `${completionRate}%` },
-      { Metric: 'Avg Delay (days)', Value: avgDelay },
-      { Metric: 'Delayed Projects', Value: delayedProjects.length },
-    ];
-    const projectRows = projects.map((p) => ({
-      Title: p.title,
-      Category: p.category,
-      Supervisor: p.supervisor,
-      'Progress (%)': p.progress,
-      Deadline: p.deadline || 'N/A',
-      Students: p.studentCount,
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'Summary');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projectRows), 'Projects');
-    XLSX.writeFile(wb, `dashboard_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  const handleExportReport = async () => {
+    try {
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Admin Dashboard';
+      workbook.created = new Date();
+
+      const sheet = workbook.addWorksheet('Dashboard Report', {
+        views: [{ showGridLines: false }]
+      });
+
+      // Title Section
+      sheet.mergeCells('A1:G2');
+      const titleCell = sheet.getCell('A1');
+      titleCell.value = 'PLATFORM PERFORMANCE REPORT';
+      titleCell.font = { name: 'Arial', size: 22, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      // Generation Date
+      sheet.mergeCells('A3:G3');
+      const dateCell = sheet.getCell('A3');
+      dateCell.value = `Generated on ${new Date().toLocaleDateString()}`;
+      dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF7F7664' } };
+      dateCell.alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // Summary Section
+      sheet.mergeCells('A5:C5');
+      const summaryTitle = sheet.getCell('A5');
+      summaryTitle.value = 'Executive Summary';
+      summaryTitle.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1A1C1A' } };
+      summaryTitle.border = { bottom: { style: 'medium', color: { argb: 'FFFFD464' } } };
+
+      // Add summary metrics
+      const summaryData = [
+        ['Total Students', totalStudents, 'Completion Rate', `${completionRate}%`],
+        ['Total Professors', totalProfessors, 'Avg Delay (days)', avgDelay],
+        ['Active Projects', projects.length, 'Delayed Projects', delayedProjects.length],
+      ];
+
+      sheet.addRow([]); // Row 6 is empty
+      summaryData.forEach((row, i) => {
+        const addedRow = sheet.addRow(['', row[0], row[1], '', row[2], row[3]]);
+        addedRow.height = 20;
+        addedRow.alignment = { vertical: 'middle' };
+        
+        // Style Metric Names
+        addedRow.getCell(2).font = { name: 'Arial', bold: true, color: { argb: 'FF4D4636' } };
+        addedRow.getCell(5).font = { name: 'Arial', bold: true, color: { argb: 'FF4D4636' } };
+        
+        // Style Metric Values
+        addedRow.getCell(3).font = { name: 'Arial', bold: true, size: 12, color: { argb: 'FF10B981' } };
+        addedRow.getCell(6).font = { name: 'Arial', bold: true, size: 12, color: { argb: 'FF765B00' } };
+        
+        // Highlight values for emphasis
+        if (i === 2) addedRow.getCell(6).font = { name: 'Arial', bold: true, size: 12, color: { argb: 'FFF97316' } }; // Delayed Projects
+      });
+
+      sheet.addRow([]);
+      sheet.addRow([]);
+
+      // Projects Section
+      sheet.mergeCells('B11:F11');
+      const projectTitle = sheet.getCell('B11');
+      projectTitle.value = 'Detailed Project Progress';
+      projectTitle.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1A1C1A' } };
+      projectTitle.border = { bottom: { style: 'medium', color: { argb: 'FFFFD464' } } };
+      
+      sheet.addRow([]); // Row 12 is empty
+
+      // Table Header
+      const headerRow = sheet.addRow(['ID', 'Project Title', 'Category', 'Supervisor', 'Progress', 'Deadline', 'Students']);
+      headerRow.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.height = 25;
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      for (let i = 1; i <= 7; i++) {
+        const cell = headerRow.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF765B00' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        };
+      }
+
+      // Table Data
+      projects.forEach((p, index) => {
+        const row = sheet.addRow([
+          index + 1,
+          p.title,
+          p.category,
+          p.supervisor,
+          p.progress / 100, // Format as percentage later
+          p.deadline || 'N/A',
+          p.studentCount
+        ]);
+        row.height = 22;
+        row.alignment = { vertical: 'middle', wrapText: true };
+        
+        // Center some columns
+        row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(5).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Progress percentage format
+        row.getCell(5).numFmt = '0%';
+
+        // Zebra striping
+        if (index % 2 === 0) {
+          for (let i = 1; i <= 7; i++) {
+            row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F3F1' } };
+          }
+        }
+        
+        // Progress coloring
+        const progressCell = row.getCell(5);
+        if (p.progress >= 80) progressCell.font = { color: { argb: 'FF10B981' }, bold: true };
+        else if (p.progress > 0) progressCell.font = { color: { argb: 'FF765B00' }, bold: true };
+        else progressCell.font = { color: { argb: 'FF7F7664' }, bold: true };
+      });
+
+      // Columns width
+      sheet.columns = [
+        { width: 8 },  // ID
+        { width: 40 }, // Title
+        { width: 22 }, // Category
+        { width: 25 }, // Supervisor
+        { width: 15 }, // Progress
+        { width: 15 }, // Deadline
+        { width: 12 }, // Students
+      ];
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Platform_Performance_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to generate the Excel report.');
+    }
   };
 
   const barData = useMemo(() => {

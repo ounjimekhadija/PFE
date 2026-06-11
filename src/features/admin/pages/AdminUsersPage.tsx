@@ -497,10 +497,6 @@ const AdminUsers: React.FC = () => {
           <p className="mt-0.5 text-sm text-[#7f7664]">Oversee your organization's members and their specific roles.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={handleExportExcel} disabled={exportLoading}
-            className="inline-flex items-center gap-2 rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-medium text-[#4d4636] shadow-sm transition hover:border-[#c4b99a] disabled:opacity-50">
-            <Download size={14} />{exportLoading ? 'Exporting...' : 'Export Excel'}
-          </button>
           <button type="button"
             className="inline-flex items-center gap-2 rounded-xl bg-[#765b00] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(118,91,0,0.2)] transition hover:bg-[#594400]"
             onClick={() => { setCreateError(null); setCreateSuccess(null); resetForm(); setShowAddModal(true); }}>
@@ -518,10 +514,10 @@ const AdminUsers: React.FC = () => {
       {/* Stat Cards */}
       <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
         {[
-          { label: 'TOTAL USERS',  value: stats.total,      icon: Users,         iconBg: 'bg-[#ffd464]',   iconColor: 'text-[#765b00]', trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
-          { label: 'ADMINS',       value: stats.admins,     icon: ShieldCheck,   iconBg: 'bg-[#f4f3f1]',   iconColor: 'text-[#4d4636]', trend: null },
-          { label: 'ENCADRANTS',   value: stats.encadrants, icon: GraduationCap, iconBg: 'bg-[#f4f3f1]',   iconColor: 'text-[#4d4636]', trend: null },
-          { label: 'ETUDIANTS',    value: stats.etudiants,  icon: User,          iconBg: 'bg-[#f4f3f1]',   iconColor: 'text-[#4d4636]', trend: null },
+          { label: 'TOTAL USERS', value: stats.total, icon: Users, iconBg: 'bg-[#ffd464]', iconColor: 'text-[#765b00]', trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
+          { label: 'ADMINS', value: stats.admins, icon: ShieldCheck, iconBg: 'bg-[#f4f3f1]', iconColor: 'text-[#4d4636]', trend: null },
+          { label: 'ENCADRANTS', value: stats.encadrants, icon: GraduationCap, iconBg: 'bg-[#f4f3f1]', iconColor: 'text-[#4d4636]', trend: null },
+          { label: 'ETUDIANTS', value: stats.etudiants, icon: User, iconBg: 'bg-[#f4f3f1]', iconColor: 'text-[#4d4636]', trend: null },
         ].map((card) => (
           <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
             <div className="mb-3 flex items-start justify-between">
@@ -670,11 +666,10 @@ const AdminUsers: React.FC = () => {
                             setForm((f) => ({ ...f, role: role.value }));
                             setShowRoleDropdown(false);
                           }}
-                          className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${
-                            form.role === role.value
-                              ? 'bg-[#765b00] text-white'
-                              : 'text-[#1a1c1a] hover:bg-[#765b00]/5'
-                          }`}
+                          className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${form.role === role.value
+                            ? 'bg-[#765b00] text-white'
+                            : 'text-[#1a1c1a] hover:bg-[#765b00]/5'
+                            }`}
                         >
                           {role.label}
                         </button>

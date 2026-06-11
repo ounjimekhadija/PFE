@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MessageSquare, Send, X, ChevronDown, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { notifyProjectStudents } from '../../../lib/notifications';
+import { notifyProjectStudents, notifyAdmins } from '../../../lib/notifications';
 import DeliverablesCard from '../../../shared/components/DeliverablesCard';
 
 interface TaskCard {
@@ -129,16 +129,18 @@ const Tasks: React.FC = () => {
       // Add to validated list
       setValidatedIterations(prev => [...prev, { ...currentIteration, statut: 'VALIDE' }]);
 
-      // Create notification for admins
-      await supabase.from('notifications').insert({
-        title: 'Itération Validée',
-        message: `L'itération ${currentIteration.numero} du projet "${currentIteration.projectTitle}" a été validée.`,
-        type: 'ITERATION_VALIDATED'
-      });
-
-      // Notify students
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Notify admins
+        await notifyAdmins({
+          senderId: user.id,
+          projectId: currentIteration.projectId,
+          title: 'Itération Validée',
+          message: `L'itération ${currentIteration.numero} du projet "${currentIteration.projectTitle}" a été validée.`,
+          type: 'VALIDATION_ITERATION'
+        });
+
+        // Notify students
         await notifyProjectStudents({
           projectId: currentIteration.projectId,
           senderId: user.id,
@@ -235,8 +237,8 @@ const Tasks: React.FC = () => {
         setAllTasks(mapped);
         setTasks(firstProjId ? mapped.filter((t: any) => t.projectId === firstProjId) : []);
         setSelectedProjectId(firstProjId);
-        
-        const current = mappedIters.find((it: any) => it.statut === 'EN_COURS') || mappedIters.find((it: any) => it.statut === 'A_FAIRE');
+        const firstProjectIters = firstProjId ? mappedIters.filter((it: any) => it.projectId === firstProjId) : [];
+        const current = firstProjectIters.find((it: any) => it.statut === 'EN_COURS') || firstProjectIters.find((it: any) => it.statut === 'A_FAIRE');
         setCurrentIteration(current || null);
         setSelectedIterationId(current?.id || 'all');
 
@@ -311,6 +313,10 @@ const Tasks: React.FC = () => {
     setSelectedProjectId(id);
     setSelectedIterationId('all');
     setTasks(allTasks.filter((t: any) => t.projectId === id));
+    
+    const projectIters = allIterations.filter(it => it.projectId === id);
+    const current = projectIters.find(it => it.statut === 'EN_COURS') || projectIters.find(it => it.statut === 'A_FAIRE');
+    setCurrentIteration(current || null);
   };
 
   const handleIterationFilter = (id: string) => {

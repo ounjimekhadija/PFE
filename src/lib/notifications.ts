@@ -7,7 +7,8 @@ export type NotificationType =
   | 'VALIDATION_LIVRABLE' 
   | 'VALIDATION_ITERATION'
   | 'SUBMISSION_LIVRABLE'
-  | 'MEETING_REQUEST';
+  | 'MEETING_REQUEST'
+  | 'GROUP_CREATED';
 
 interface NotifyOptions {
   projectId: string;
@@ -163,5 +164,56 @@ export const notifyProjectProfessor = async (options: NotifyOptions) => {
     }
   } catch (err) {
     console.error('Unexpected error in notifyProjectProfessor:', err);
+  }
+};
+
+/**
+ * Notifies all administrators.
+ */
+export const notifyAdmins = async (options: Omit<NotifyOptions, 'projectId'> & { projectId?: string }) => {
+  const { senderId, title, message, type, projectId } = options;
+
+  try {
+    // 1. Fetch admin users
+    const { data: admins, error: adminError } = await supabase
+      .from('utilisateurs')
+      .select('id, email, nom, prenom')
+      .eq('role', 'ADMINISTRATEUR');
+
+    if (adminError || !admins || admins.length === 0) {
+      console.error('Error fetching admins:', adminError);
+      return;
+    }
+
+    const notifications = admins.map(admin => ({
+      user_id: admin.id,
+      sender_id: senderId,
+      projet_id: projectId || null,
+      title,
+      message,
+      type,
+    }));
+
+    // 2. Insert in-app notifications
+    const { error: notifyError } = await supabase
+      .from('notifications')
+      .insert(notifications);
+
+    if (notifyError) {
+      console.error('Error inserting admin notifications:', notifyError);
+    }
+
+    // 3. Send email notification
+    for (const admin of admins) {
+      if (admin.email) {
+        await sendEmail(
+          admin.email,
+          `[StudentHub Admin] ${title}`,
+          `Bonjour ${admin.prenom || 'Admin'},\n\nUne nouvelle action requiert votre attention :\n\n${message}\n\nConsultez le tableau de bord administrateur pour plus de détails.`
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Unexpected error in notifyAdmins:', err);
   }
 };

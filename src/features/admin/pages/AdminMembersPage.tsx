@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Filter, MoreVertical, User, Users } from 'lucide-react';
+import { ChevronDown, Download, Filter, MoreVertical, User, Users } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { supabase } from '../../../lib/supabase';
 
 interface Student {
@@ -139,6 +141,139 @@ const AdminMembers: React.FC = () => {
     [filteredStudents, currentPage]
   );
 
+  const handleExportExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Admin System';
+      workbook.created = new Date();
+
+      // --- SHEET 1: STUDENTS ---
+      const studentSheet = workbook.addWorksheet('Students List', { views: [{ showGridLines: false }] });
+      
+      // Title
+      studentSheet.mergeCells('A1:E2');
+      const titleCell = studentSheet.getCell('A1');
+      titleCell.value = 'STUDENTS DIRECTORY';
+      titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      // Generation Date
+      studentSheet.mergeCells('A3:E3');
+      const dateCell = studentSheet.getCell('A3');
+      dateCell.value = `Generated on ${new Date().toLocaleDateString()}`;
+      dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF7F7664' } };
+      dateCell.alignment = { vertical: 'middle', horizontal: 'right' };
+      
+      studentSheet.addRow([]);
+
+      // Headers
+      const studentHeader = studentSheet.addRow(['Name', 'Email', 'CNE', 'Filiere', 'Group']);
+      studentHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      studentHeader.height = 25;
+      studentHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      for (let i = 1; i <= 5; i++) {
+        const cell = studentHeader.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF765B00' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        };
+      }
+
+      // Data
+      students.forEach((s, index) => {
+        const row = studentSheet.addRow([
+          s.name,
+          s.email,
+          s.cne,
+          s.filiere || 'N/A',
+          s.nom_groupe || 'Sans groupe'
+        ]);
+        row.height = 20;
+        row.alignment = { vertical: 'middle' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
+
+        if (index % 2 === 0) {
+          for (let i = 1; i <= 5; i++) {
+            row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F3F1' } };
+          }
+        }
+      });
+
+      studentSheet.columns = [
+        { width: 30 },
+        { width: 35 },
+        { width: 15 },
+        { width: 15 },
+        { width: 25 },
+      ];
+
+      // --- SHEET 2: GROUPS ---
+      const groupSheet = workbook.addWorksheet('Groups Summary', { views: [{ showGridLines: false }] });
+      
+      groupSheet.mergeCells('A1:C2');
+      const gTitleCell = groupSheet.getCell('A1');
+      gTitleCell.value = 'GROUPS SUMMARY';
+      gTitleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+      gTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
+      gTitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      groupSheet.addRow([]);
+      groupSheet.addRow([]);
+
+      const groupHeader = groupSheet.addRow(['Group Name', 'Filiere', 'Members Count']);
+      groupHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      groupHeader.height = 25;
+      groupHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      for (let i = 1; i <= 3; i++) {
+        const cell = groupHeader.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF765B00' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        };
+      }
+
+      groupes.forEach((g, index) => {
+        const row = groupSheet.addRow([
+          g.name,
+          g.filiere,
+          g.students.length
+        ]);
+        row.height = 20;
+        row.alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+
+        if (index % 2 === 0) {
+          for (let i = 1; i <= 3; i++) {
+            row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F3F1' } };
+          }
+        }
+      });
+
+      groupSheet.columns = [
+        { width: 35 },
+        { width: 20 },
+        { width: 15 },
+      ];
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Student_Management_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to generate the Excel report.');
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
@@ -148,22 +283,32 @@ const AdminMembers: React.FC = () => {
           <h1 className="text-2xl font-bold text-[#1a1c1a]">Student Management</h1>
           <p className="mt-0.5 text-sm text-[#7f7664]">Manage enrollments, group assignments, and progress tracking.</p>
         </div>
-        {/* Segmented toggle */}
-        <div className="flex items-center gap-1 rounded-xl border border-transparent bg-[#f4f3f1] p-1">
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => setActiveTab('students')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${activeTab === 'students' ? 'bg-white text-[#1a1c1a] shadow-sm' : 'text-[#7f7664] hover:text-[#1a1c1a]'}`}
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 rounded-xl bg-[#ffd464] px-4 py-2 text-sm font-semibold text-[#594400] shadow-[0_4px_16px_rgba(118,91,0,0.2)] transition hover:bg-[#ebc254]"
           >
-            <User size={14} /> Students
+            <Download size={14} /> Export Report
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('groups')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${activeTab === 'groups' ? 'bg-white text-[#1a1c1a] shadow-sm' : 'text-[#7f7664] hover:text-[#1a1c1a]'}`}
-          >
-            <Users size={14} /> Groups
-          </button>
+          
+          {/* Segmented toggle */}
+          <div className="flex items-center gap-1 rounded-xl border border-transparent bg-[#f4f3f1] p-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('students')}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${activeTab === 'students' ? 'bg-white text-[#1a1c1a] shadow-sm' : 'text-[#7f7664] hover:text-[#1a1c1a]'}`}
+            >
+              <User size={14} /> Students
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('groups')}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${activeTab === 'groups' ? 'bg-white text-[#1a1c1a] shadow-sm' : 'text-[#7f7664] hover:text-[#1a1c1a]'}`}
+            >
+              <Users size={14} /> Groups
+            </button>
+          </div>
         </div>
       </header>
 

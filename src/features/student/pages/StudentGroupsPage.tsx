@@ -4,6 +4,7 @@ import { Search, UserPlus, Mail, Github, Linkedin, MoreVertical, Filter, CheckCi
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 import EmailModal from '../../../shared/components/EmailModal';
+import { notifyAdmins } from '../../../lib/notifications';
 
 interface Student {
   id: string;
@@ -197,6 +198,16 @@ const StudentGroups: React.FC = () => {
           ? { ...s, status: 'In Group', groupName: selectedProject?.titre, projet_id: projectId }
           : s
       ));
+
+      if (currentUserId) {
+        await notifyAdmins({
+          senderId: currentUserId,
+          projectId: projectId,
+          title: 'Nouveau Groupe Formé',
+          message: `Un groupe d'étudiants s'est formé pour le projet "${selectedProject?.titre || 'Inconnu'}".`,
+          type: 'GROUP_CREATED'
+        });
+      }
 
       setShowGroupModal(false);
       setProjectName('');

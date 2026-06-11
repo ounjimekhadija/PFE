@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Download, GraduationCap, Rocket, CheckCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface ProjectBar {
   id: string;
@@ -92,6 +93,7 @@ const Dashboard: React.FC = () => {
   const [recentMembers, setRecentMembers] = useState<Member[]>([]);
   const [unreadMsgs, setUnreadMsgs] = useState(0);
   const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -114,7 +116,7 @@ const Dashboard: React.FC = () => {
           { data: iters },
           { data: msgs },
         ] = await Promise.all([
-          supabase.from('etudiants').select('id, projet_id, utilisateurs(nom, prenom, avatar_url)').in('projet_id', projectIds),
+          supabase.from('etudiants').select('id, projet_id, cne, filiere, utilisateurs(nom, prenom, avatar_url, email)').in('projet_id', projectIds),
           supabase.from('iterations').select('id, projet_id, numero, statut, date_debut, date_fin').in('projet_id', projectIds).order('date_debut', { ascending: true }),
           supabase.from('messages').select('id').in('projet_id', projectIds).neq('auteur_id', user.id).eq('lu', false),
         ]);
@@ -122,11 +124,25 @@ const Dashboard: React.FC = () => {
         setTotalStudents(students?.length || 0);
         setUnreadMsgs(msgs?.length || 0);
 
-        const memberList: Member[] = (students || []).slice(0, 4).map((s: any) => {
+        const formattedStudents = (students || []).map((s: any) => {
           const u = Array.isArray(s.utilisateurs) ? s.utilisateurs[0] : s.utilisateurs;
           const name = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() : 'Etudiant';
-          return { id: s.id, name, avatar: resolveAvatar(u?.avatar_url, name) };
+          const projectName = projects.find((p: any) => p.id === s.projet_id)?.titre || 'N/A';
+          return {
+            id: s.id,
+            name,
+            email: u?.email || 'N/A',
+            cne: s.cne || 'N/A',
+            filiere: s.filiere || 'N/A',
+            projectName,
+            avatar: resolveAvatar(u?.avatar_url, name)
+          };
         });
+        setAllStudents(formattedStudents);
+
+        const memberList: Member[] = formattedStudents.slice(0, 4).map((s: any) => ({
+          id: s.id, name: s.name, avatar: s.avatar
+        }));
         setRecentMembers(memberList);
 
         setIterations((iters || []).map((it: any) => ({
@@ -233,31 +249,209 @@ const Dashboard: React.FC = () => {
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
     .slice(0, 10);
 
-  const exportReport = () => {
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-      ['Dashboard Report', new Date().toLocaleDateString('fr-FR')],
-      [],
-      ['Metric', 'Value'],
-      ['Total Students', totalStudents],
-      ['Active Projects', activeProjects],
-      ['Completion Rate', `${completionRate}%`],
-      ['Avg. Delay', avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
-    ]), 'Summary');
+  const exportReport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Professor Dashboard';
+      workbook.created = new Date();
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
-      ['Project', 'Task Completion (%)', 'Time Progress (%)', 'Done', 'In Progress', 'Late'],
-      ...projectBars.map(p => [
-        p.name,
-        p.taskCompletion,
-        p.timeProgress,
-        p.tasks?.completed ?? '—',
-        p.tasks?.inProgress ?? '—',
-        p.tasks?.late ?? '—',
-      ]),
-    ]), 'Projects');
+      // --- SHEET 1: SUMMARY ---
+      const summarySheet = workbook.addWorksheet('Summary', { views: [{ showGridLines: false }] });
+      
+      // Title
+      summarySheet.mergeCells('A1:B2');
+      const titleCell = summarySheet.getCell('A1');
+      titleCell.value = 'DASHBOARD REPORT';
+      titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-    XLSX.writeFile(wb, `dashboard_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      // Generation Date
+      summarySheet.mergeCells('A3:B3');
+      const dateCell = summarySheet.getCell('A3');
+      dateCell.value = `Generated on ${new Date().toLocaleDateString('fr-FR')}`;
+      dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF7F7664' } };
+      dateCell.alignment = { vertical: 'middle', horizontal: 'right' };
+      
+      summarySheet.addRow([]);
+
+      // Headers
+      const summaryHeader = summarySheet.addRow(['Metric', 'Value']);
+      summaryHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      summaryHeader.height = 25;
+      summaryHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      for (let i = 1; i <= 2; i++) {
+        const cell = summaryHeader.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF765B00' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        };
+      }
+
+      // Summary Data
+      const summaryData = [
+        ['Total Students', totalStudents],
+        ['Active Projects', activeProjects],
+        ['Completion Rate', `${completionRate}%`],
+        ['Avg. Delay', avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
+      ];
+
+      summaryData.forEach((row, index) => {
+        const addedRow = summarySheet.addRow(row);
+        addedRow.height = 20;
+        addedRow.alignment = { vertical: 'middle' };
+        addedRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Highlight logic
+        addedRow.getCell(1).font = { name: 'Arial', bold: true, color: { argb: 'FF4D4636' } };
+        if (index === 2) addedRow.getCell(2).font = { name: 'Arial', bold: true, color: { argb: 'FF10B981' } };
+        if (index === 3 && avgDelay > 0) addedRow.getCell(2).font = { name: 'Arial', bold: true, color: { argb: 'FFF97316' } };
+
+        if (index % 2 === 0) {
+          for (let i = 1; i <= 2; i++) {
+            addedRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F3F1' } };
+          }
+        }
+      });
+
+      summarySheet.columns = [
+        { width: 25 },
+        { width: 25 },
+      ];
+
+      // --- SHEET 2: PROJECTS ---
+      const projectSheet = workbook.addWorksheet('Projects', { views: [{ showGridLines: false }] });
+      
+      projectSheet.mergeCells('A1:F2');
+      const pTitleCell = projectSheet.getCell('A1');
+      pTitleCell.value = 'PROJECTS PROGRESS';
+      pTitleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+      pTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
+      pTitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      projectSheet.addRow([]);
+
+      const projectHeader = projectSheet.addRow(['Project Name', 'Task Completion (%)', 'Time Progress (%)', 'Done', 'In Progress', 'Late']);
+      projectHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      projectHeader.height = 25;
+      projectHeader.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      
+      for (let i = 1; i <= 6; i++) {
+        const cell = projectHeader.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF765B00' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        };
+      }
+
+      projectBars.forEach((p, index) => {
+        const row = projectSheet.addRow([
+          p.name,
+          p.taskCompletion / 100,
+          p.timeProgress / 100,
+          p.tasks?.completed ?? '-',
+          p.tasks?.inProgress ?? '-',
+          p.tasks?.late ?? '-',
+        ]);
+        row.height = 20;
+        row.alignment = { vertical: 'middle', horizontal: 'center' };
+        row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        
+        row.getCell(2).numFmt = '0%';
+        row.getCell(3).numFmt = '0%';
+
+        if (index % 2 === 0) {
+          for (let i = 1; i <= 6; i++) {
+            row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F3F1' } };
+          }
+        }
+        
+        // Coloring Completion
+        const completionCell = row.getCell(2);
+        if (p.taskCompletion >= 75) completionCell.font = { color: { argb: 'FF10B981' }, bold: true };
+        else if (p.taskCompletion >= 40) completionCell.font = { color: { argb: 'FF765B00' }, bold: true };
+        else completionCell.font = { color: { argb: 'FFF97316' }, bold: true };
+      });
+
+      projectSheet.columns = [
+        { width: 35 },
+        { width: 22 },
+        { width: 22 },
+        { width: 12 },
+        { width: 15 },
+        { width: 12 },
+      ];
+
+      // --- SHEET 3: STUDENTS ---
+      const studentSheet = workbook.addWorksheet('Students List', { views: [{ showGridLines: false }] });
+      
+      studentSheet.mergeCells('A1:E2');
+      const stTitleCell = studentSheet.getCell('A1');
+      stTitleCell.value = 'STUDENTS DIRECTORY';
+      stTitleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+      stTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
+      stTitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      studentSheet.addRow([]);
+
+      const stHeader = studentSheet.addRow(['Name', 'Email', 'CNE', 'Filiere', 'Project']);
+      stHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
+      stHeader.height = 25;
+      stHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+      
+      for (let i = 1; i <= 5; i++) {
+        const cell = stHeader.getCell(i);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF765B00' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+          right: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+        };
+      }
+
+      allStudents.forEach((s, index) => {
+        const row = studentSheet.addRow([
+          s.name,
+          s.email,
+          s.cne,
+          s.filiere,
+          s.projectName
+        ]);
+        row.height = 20;
+        row.alignment = { vertical: 'middle' };
+        row.getCell(3).alignment = { horizontal: 'center' };
+        row.getCell(4).alignment = { horizontal: 'center' };
+
+        if (index % 2 === 0) {
+          for (let i = 1; i <= 5; i++) {
+            row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F3F1' } };
+          }
+        }
+      });
+
+      studentSheet.columns = [
+        { width: 30 },
+        { width: 35 },
+        { width: 15 },
+        { width: 15 },
+        { width: 40 },
+      ];
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `Professor_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to generate the Excel report.');
+    }
   };
 
   const r = 54;
