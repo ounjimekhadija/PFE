@@ -74,14 +74,17 @@ const AppRoutes: React.FC<AppRoutesProps> = ({ isAuthenticated, isInitializing, 
     );
   }
 
+  const shellClass = userRole === 'student' || userRole === 'professor' || userRole === 'admin'
+    ? 'flex h-dvh overflow-hidden bg-[#F8FAFC]'
+    : 'flex h-dvh bg-white';
+
   return (
-    <div className={userRole === 'admin' || userRole === 'professor' || userRole === 'student' ? 'flex flex-col h-screen overflow-hidden bg-[#F8FAFC]' : 'flex h-screen bg-white'}>
+    <div className={shellClass}>
+      {userRole === 'student' && <StudentTopNav onLogout={logout} />}
+      {userRole === 'professor' && <ProfessorTopNav onLogout={logout} />}
+      {userRole === 'admin' && <AdminTopNav onLogout={logout} />}
       {userRole !== 'admin' && userRole !== 'professor' && userRole !== 'student' && <Sidebar role={userRole} onLogout={logout} />}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {userRole === 'admin' && <AdminTopNav onLogout={logout} />}
-        {userRole === 'professor' && <ProfessorTopNav onLogout={logout} />}
-        {userRole === 'student' && <StudentTopNav onLogout={logout} />}
-
         <AnimatePresence mode="wait" initial={false}>
           <PageTransition key={location.key} className="flex-1 min-h-0 overflow-hidden">
             <Routes location={location}>

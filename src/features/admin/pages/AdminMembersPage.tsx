@@ -275,13 +275,13 @@ const AdminMembers: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
       <header className="mb-4 shrink-0 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1a]">Student Management</h1>
-          <p className="mt-0.5 text-sm text-[#64748B]">Manage enrollments, group assignments, and progress tracking.</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Gestion des etudiants</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Consultez les inscriptions, les groupes et les statuts des etudiants.</p>
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -289,7 +289,7 @@ const AdminMembers: React.FC = () => {
             onClick={handleExportExcel}
             className="flex items-center gap-2 rounded-xl bg-[#DCEBFA] px-4 py-2 text-sm font-semibold text-[#172D49] shadow-[0_4px_16px_rgba(15,23,42,0.2)] transition hover:bg-[#BFD7EF]"
           >
-            <Download size={14} /> Export Report
+            <Download size={14} /> Exporter
           </button>
           
           {/* Segmented toggle */}
@@ -299,14 +299,14 @@ const AdminMembers: React.FC = () => {
               onClick={() => setActiveTab('students')}
               className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${activeTab === 'students' ? 'bg-white text-[#1a1c1a] shadow-sm' : 'text-[#64748B] hover:text-[#1a1c1a]'}`}
             >
-              <User size={14} /> Students
+              <User size={14} /> Etudiants
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('groups')}
               className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition ${activeTab === 'groups' ? 'bg-white text-[#1a1c1a] shadow-sm' : 'text-[#64748B] hover:text-[#1a1c1a]'}`}
             >
-              <Users size={14} /> Groups
+              <Users size={14} /> Groupes
             </button>
           </div>
         </div>
@@ -318,11 +318,11 @@ const AdminMembers: React.FC = () => {
 
       {/* ── STUDENTS TAB ── */}
       {activeTab === 'students' && (
-        <section className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
 
           {/* Table header */}
-          <div className="shrink-0 flex items-center justify-between border-b border-transparent px-5 py-3">
-            <h2 className="font-semibold text-[#1a1c1a]">All Students</h2>
+          <div className="flex shrink-0 items-center justify-between border-b border-[#EEF3F8] px-5 py-3">
+            <h2 className="font-semibold text-[#1a1c1a]">Tous les etudiants</h2>
             <div className="relative flex items-center gap-2" ref={filterRef}>
               <button
                 ref={filterBtnRef}
@@ -409,12 +409,12 @@ const AdminMembers: React.FC = () => {
           </div>
 
           {/* Table */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-auto">
             {students.length === 0 && !loading && (
-              <p className="py-12 text-center text-sm text-[#64748B]">No students found.</p>
+            <p className="py-12 text-center text-sm text-[#64748B]">Aucun etudiant trouve.</p>
             )}
             {students.length > 0 && (
-              <table className="w-full border-collapse table-fixed">
+              <table className="w-full min-w-[760px] border-collapse table-fixed">
                 <colgroup>
                   <col style={{ width: '25%' }} />
                   <col style={{ width: '15%' }} />
@@ -472,7 +472,7 @@ const AdminMembers: React.FC = () => {
 
           {/* Pagination footer */}
           <div className="shrink-0 flex items-center justify-between border-t border-transparent px-5 py-3">
-            <p className="text-sm text-[#64748B]">Showing {paginatedStudents.length} of {filteredStudents.length} students</p>
+            <p className="text-sm text-[#64748B]">Affichage {paginatedStudents.length} sur {filteredStudents.length} etudiants</p>
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8] disabled:opacity-40">
@@ -489,7 +489,7 @@ const AdminMembers: React.FC = () => {
 
       {/* ── GROUPS TAB ── */}
       {activeTab === 'groups' && (
-        <section className="flex-1 min-h-0 overflow-y-auto">
+        <section className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           {filieres.length > 0 && (
             <div className="mb-4 shrink-0">
               <select
@@ -509,7 +509,7 @@ const AdminMembers: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredGroupes.map((g) => (
-              <div key={g.name} className="flex flex-col rounded-2xl border border-transparent bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+              <div key={g.name} className="flex flex-col rounded-2xl border border-[#E5EDF5] bg-[#F8FAFC] p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
                 <div className="mb-2 flex items-start justify-between">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-[#64748B]">{g.filiere}</p>
                   <span className="rounded-full bg-[#DCEBFA] px-2.5 py-0.5 text-xs font-bold text-[#172D49]">

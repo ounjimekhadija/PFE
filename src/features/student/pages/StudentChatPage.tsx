@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Send, Video, Paperclip, Smile, CheckCheck } from 'lucide-react';
+import { CalendarDays, CheckCheck, Paperclip, Search, Send, Smile, Users, Video } from 'lucide-react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectStudents, notifyProjectProfessor } from '../../../lib/notifications';
@@ -540,40 +540,46 @@ const StudentChat: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center text-[#64748B]">Loading...</div>;
+    return <div className="flex-1 flex items-center justify-center bg-[#F8FAFC] text-[#64748B]">Chargement...</div>;
   }
 
   if (error) {
-    return <div className="flex-1 flex items-center justify-center text-red-500">{error}</div>;
+    return <div className="flex-1 flex items-center justify-center bg-[#F8FAFC] text-red-500">{error}</div>;
   }
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#F8FAFC] text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div className="z-10 flex w-80 flex-col border-r border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-        <div className="p-6 pb-4">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden bg-[#F8FAFC] px-3 py-3 text-[#1a1c1a] sm:px-5 lg:px-7 md:flex-row" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+      <div className="flex max-h-[42dvh] w-full shrink-0 flex-col rounded-2xl border border-[#C8D6E5]/60 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] md:max-h-none md:w-[22rem] lg:w-96">
+        <div className="p-4 pb-3 sm:p-6 sm:pb-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-extrabold tracking-tight">Messages</h2>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-[#1a1c1a]">Messages</h1>
+              <p className="mt-1 text-xs text-[#64748B]">{projectTitle}</p>
+            </div>
+            <span className="rounded-full bg-[#DCEBFA] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#1E3A5F]">
+              {memberCount} membres
+            </span>
           </div>
           <div className="relative">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]" />
             <input
               type="text"
-              placeholder="Search contacts"
+              placeholder="Rechercher..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-2xl border-none bg-[#EEF3F8] py-3 pl-12 pr-4 text-sm font-medium text-[#1a1c1a] placeholder-[#64748B] outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
+              className="h-11 w-full rounded-xl border border-[#DCEBFA] bg-[#F8FAFC] pl-12 pr-4 text-sm font-medium text-[#1a1c1a] placeholder-[#64748B] outline-none focus:border-[#1E3A5F]/30 focus:ring-2 focus:ring-[#1E3A5F]/10"
             />
           </div>
         </div>
 
-        <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">
           {groupedContacts.professor && (
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-2 px-4">SUPERVISOR</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-2 px-4">ENCADRANT</h3>
               <div
                 key={groupedContacts.professor.id}
                 className={`flex w-full items-center gap-4 rounded-2xl px-4 py-4 text-left transition-all ${
-                  'border border-[#BFD7EF] bg-[#DCEBFA]/30 shadow-sm'
+                  'border border-[#BFD7EF] bg-[#DCEBFA]/35 shadow-sm'
                 }`}
               >
                 <div className="relative shrink-0">
@@ -589,7 +595,7 @@ const StudentChat: React.FC = () => {
                     <p className="truncate font-bold text-[#1a1c1a]">{groupedContacts.professor.name}</p>
                     <span className="text-[11px] font-bold uppercase text-[#64748B]">{groupedContacts.professor.time}</span>
                   </div>
-                  <p className="mb-0.5 truncate text-[11px] font-semibold text-[#1E3A5F]">Supervisor</p>
+                  <p className="mb-0.5 truncate text-[11px] font-semibold text-[#1E3A5F]">Encadrant</p>
                   <div className="flex items-center justify-between gap-3">
                     <p className="truncate text-sm font-medium text-[#64748B]">{groupedContacts.professor.lastMsg}</p>
                     {groupedContacts.professor.unread > 0 && <span className="rounded-lg bg-[#1E3A5F] px-2 py-1 text-[10px] font-bold text-white">{groupedContacts.professor.unread}</span>}
@@ -622,7 +628,7 @@ const StudentChat: React.FC = () => {
                       <p className="truncate font-bold text-[#1a1c1a]">{contact.name}</p>
                       <span className="text-[11px] font-bold uppercase text-[#64748B]">{contact.time}</span>
                     </div>
-                    <p className="mb-0.5 truncate text-[11px] font-semibold text-[#64748B]">Student</p>
+                    <p className="mb-0.5 truncate text-[11px] font-semibold text-[#64748B]">Etudiant</p>
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate text-sm font-medium text-[#64748B]">{contact.lastMsg}</p>
                       {contact.unread > 0 && <span className="rounded-lg bg-[#1E3A5F] px-2 py-1 text-[10px] font-bold text-white">{contact.unread}</span>}
@@ -635,20 +641,54 @@ const StudentChat: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col relative bg-white">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
         {selectedContactId ? (
           <>
-            <div className="flex-1 overflow-y-auto px-8 py-8">
+            <div className="hidden shrink-0 flex-col gap-3 border-b border-[#EEF3F8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <img
+                  src={selectedContact ? resolveAvatar(selectedContact.avatar_url, selectedContact.name) : 'https://ui-avatars.com/api/?name=Discussion&background=DCEBFA'}
+                  alt={selectedContactName}
+                  className="h-11 w-11 rounded-xl object-cover ring-1 ring-[#DCEBFA]"
+                />
+                <div className="min-w-0">
+                  <h2 className="truncate text-base font-bold text-[#1a1c1a]">{selectedContactName || 'Discussion projet'}</h2>
+                  <p className="truncate text-xs text-[#64748B]">{projectTitle} · {memberCount} membres</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-2 rounded-xl bg-[#F8FAFC] px-3 py-2 text-xs font-bold text-[#64748B] lg:flex">
+                  <CalendarDays size={15} />
+                  {nextMeeting ? formatTime(nextMeeting.dateHeure) : 'Aucune reunion'}
+                </div>
+                <div className="hidden items-center gap-2 rounded-xl bg-[#F8FAFC] px-3 py-2 text-xs font-bold text-[#64748B] sm:flex">
+                  <Users size={15} />
+                  {memberCount}
+                </div>
+                <button
+                  type="button"
+                  disabled={!activeMeetingUrl || creatingMeeting}
+                  aria-label="Creer un appel video"
+                  title="Creer un appel video"
+                  onClick={handleCreateMeeting}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Video size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10 sm:py-10">
               {filteredMessages.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-[#64748B]">
-                  No message
+                  Aucun message
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-14">
                   {filteredMessages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`flex max-w-[65%] flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
-                        <div className="mb-2 flex items-center gap-2 px-1">
+                      <div className={`flex max-w-[88%] flex-col sm:max-w-[68%] ${msg.isMe ? 'items-end' : 'items-start'}`}>
+                        <div className="mb-3 flex items-center gap-2 px-1">
                           <span className="text-[11px] font-bold uppercase tracking-widest text-[#64748B]">{msg.name}</span>
                           <span className="text-[11px] font-medium text-[#C8D6E5]">{msg.time}</span>
                         </div>
@@ -657,14 +697,14 @@ const StudentChat: React.FC = () => {
                           <img
                             src={msg.avatar}
                             alt={msg.name}
-                            className="h-8 w-8 rounded-full object-cover shrink-0"
+                            className="h-10 w-10 shrink-0 rounded-full object-cover"
                           />
                           <div className={`overflow-hidden text-[15px] font-medium leading-relaxed shadow-sm ${
                             msg.isMe
-                              ? 'rounded-3xl rounded-tr-none bg-[#1E3A5F] text-white'
-                              : 'rounded-3xl rounded-tl-none border border-[#C8D6E5] bg-white text-[#334155]'
+                              ? 'rounded-2xl rounded-tr-md bg-[#1E3A5F] text-white'
+                              : 'rounded-2xl border border-[#C8D6E5] bg-white text-[#334155]'
                           }`}>
-                            <div className="px-6 py-4">
+                            <div className="px-7 py-5">
                               <MessageContent text={msg.text} />
                             </div>
                           </div>
@@ -684,8 +724,8 @@ const StudentChat: React.FC = () => {
               <div ref={bottomRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="flex-shrink-0 bg-white px-6 py-3">
-              <div className="mx-auto flex max-w-4xl items-center gap-3">
+            <form onSubmit={handleSendMessage} className="shrink-0 bg-white px-5 py-4 sm:px-10">
+              <div className="mx-auto flex max-w-6xl items-center gap-2 border-t border-[#EEF3F8] pt-4 sm:gap-3">
                 <div className="relative" ref={emojiRef}>
                   <button
                     type="button"
@@ -699,7 +739,7 @@ const StudentChat: React.FC = () => {
                     <Smile size={22} />
                   </button>
                   {showEmoji && (
-                    <div className="absolute bottom-14 left-0 z-30 w-72 rounded-2xl border border-[#EEF3F8] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.15)]">
+                    <div className="absolute bottom-14 left-0 z-30 w-[calc(100vw-2rem)] max-w-72 rounded-2xl border border-[#EEF3F8] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.15)]">
                       <div className="grid grid-cols-8 gap-1">
                         {EMOJIS.map((em) => (
                           <button
@@ -731,10 +771,10 @@ const StudentChat: React.FC = () => {
                 <button
                   type="button"
                   disabled={!activeMeetingUrl || creatingMeeting}
-                  aria-label="Créer un appel vidéo"
-                  title="Créer un appel vidéo"
+                  aria-label="Creer un appel video"
+                  title="Creer un appel video"
                   onClick={handleCreateMeeting}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white shadow-sm transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Video size={20} />
                 </button>
@@ -743,14 +783,14 @@ const StudentChat: React.FC = () => {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Écrivez votre message..."
-                  className="h-12 flex-1 rounded-2xl border border-[#C8D6E5] bg-[#EEF3F8] px-5 text-[#1a1c1a] placeholder-[#64748B] outline-none focus:border-[#1E3A5F]/30 focus:ring-2 focus:ring-[#1E3A5F]/10"
+                  placeholder="Ecrivez votre message..."
+                  className="h-14 flex-1 rounded-xl border border-[#C8D6E5] bg-[#EEF3F8] px-6 text-[15px] font-medium text-[#334155] placeholder-[#64748B] outline-none focus:border-[#1E3A5F]/30 focus:ring-2 focus:ring-[#1E3A5F]/10"
                 />
 
                 <button
                   type="submit"
                   disabled={!input.trim() || uploading}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#8A99AD] text-white transition-all hover:bg-[#1E3A5F] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={20} />
                 </button>

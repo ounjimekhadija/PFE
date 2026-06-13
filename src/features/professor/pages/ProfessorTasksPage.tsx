@@ -52,9 +52,9 @@ interface Iteration {
 }
 
 const statusConfig = {
-  PENDING:     { label: 'Pending',     color: 'bg-[#EEF3F8] text-[#64748B]',       dot: '#C8D6E5' },
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-[#DCEBFA]/20 text-[#1E3A5F]',    dot: '#DCEBFA' },
-  DONE:        { label: 'Done',        color: 'bg-[#dcfce7] text-[#166534]',        dot: '#22c55e' },
+  PENDING:     { label: 'A faire',     color: 'bg-[#EEF3F8] text-[#64748B]',       dot: '#C8D6E5' },
+  IN_PROGRESS: { label: 'En cours',    color: 'bg-[#DCEBFA]/20 text-[#1E3A5F]',    dot: '#DCEBFA' },
+  DONE:        { label: 'Terminee',    color: 'bg-[#dcfce7] text-[#166534]',        dot: '#22c55e' },
 };
 
 const toStatus = (etat: string | null): TaskCard['status'] => {
@@ -397,31 +397,31 @@ const Tasks: React.FC = () => {
   };
 
   const columns: { key: TaskCard['status']; label: string; color: string }[] = [
-    { key: 'PENDING',     label: 'Pending',     color: '#C8D6E5' },
-    { key: 'IN_PROGRESS', label: 'In Progress', color: '#DCEBFA' },
-    { key: 'DONE',        label: 'Done',        color: '#22c55e' },
+    { key: 'PENDING',     label: 'A faire',     color: '#C8D6E5' },
+    { key: 'IN_PROGRESS', label: 'En cours',    color: '#DCEBFA' },
+    { key: 'DONE',        label: 'Terminees',   color: '#22c55e' },
   ];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
-      <header className="mb-4 flex shrink-0 items-center justify-between">
+      <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1a]">Task Board</h1>
-          <p className="text-sm text-[#64748B]">Group tasks — view only, leave comments</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Taches des groupes</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Consultez l'avancement, validez les iterations et laissez des commentaires.</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {projects.length > 1 && (
             <div className="relative" ref={projectDropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                className="flex items-center justify-between gap-3 min-w-[160px] rounded-xl border border-[#C8D6E5] bg-white py-2 px-4 text-sm font-semibold text-[#334155] shadow-sm transition hover:border-[#1E3A5F] hover:shadow-md active:scale-95"
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-white px-4 py-2 text-sm font-semibold text-[#334155] shadow-sm transition hover:border-[#1E3A5F] hover:shadow-md active:scale-95 sm:min-w-[160px]"
               >
                 <span className="truncate">
-                  {projects.find(p => p.id === selectedProjectId)?.title || 'Select Project'}
+                  {projects.find(p => p.id === selectedProjectId)?.title || 'Selectionner un projet'}
                 </span>
                 <ChevronDown size={14} className={`text-[#64748B] transition-transform duration-200 ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -447,16 +447,16 @@ const Tasks: React.FC = () => {
             type="button"
             onClick={() => { setIterForm({ projectId: projects[0]?.id || '', numero: 1, objectif: '', dateDebut: '', dateFin: '', statut: 'A_FAIRE' }); setIterError(null); setShowIterModal(true); }}
             disabled={projects.length === 0}
-            className="flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#172D49] disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#172D49] disabled:opacity-40 sm:w-auto"
           >
-            <Plus size={15} /> New Iteration
+            <Plus size={15} /> Nouvelle iteration
           </button>
         </div>
       </header>
 
-      {loading && <p className="text-sm text-[#64748B]">Loading tasks...</p>}
+      {loading && <p className="text-sm text-[#64748B]">Chargement des taches...</p>}
       {!loading && allIterations.length === 0 && (
-        <p className="text-sm text-[#64748B]">No iteration found. Create an iteration to start.</p>
+        <p className="text-sm text-[#64748B]">Aucune iteration trouvee. Creez une iteration pour commencer.</p>
       )}
 
       {/* Iterations strip */}
@@ -473,7 +473,7 @@ const Tasks: React.FC = () => {
                     onClick={handleValidateIteration}
                     className="rounded-xl bg-green-500 px-4 py-2 text-xs font-bold text-white"
                   >
-                    Validate Iteration
+                    Valider l'iteration
                   </button>
                 );
               }
@@ -485,11 +485,12 @@ const Tasks: React.FC = () => {
 
       {/* Kanban board — always shown when iterations exist */}
       {!loading && allIterations.length > 0 && (
-        <div className="flex min-h-0 gap-4 overflow-x-auto pb-1 justify-center">
+        <div className="flex min-h-0 justify-center overflow-x-auto pb-1">
+          <div className="flex w-max gap-5">
           {columns.map(col => {
             const colTasks = tasks.filter(t => t.status === col.key);
             return (
-              <div key={col.key} className="flex w-72 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+              <div key={col.key} className="flex w-[82vw] max-w-[28rem] shrink-0 flex-col rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:w-[26rem]">
                 {/* Column header */}
                 <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-[#EEF3F8] px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -502,14 +503,14 @@ const Tasks: React.FC = () => {
                 {/* Tasks */}
                 <div className="flex-1 space-y-3 overflow-y-auto p-3 max-h-[400px]">
                   {colTasks.length === 0 && (
-                    <p className="py-6 text-center text-xs text-[#C8D6E5]">No tasks</p>
+                    <p className="py-6 text-center text-xs text-[#C8D6E5]">Aucune tache</p>
                   )}
                   {colTasks.map(task => (
                     <button
                       key={task.id}
                       type="button"
                       onClick={() => openTask(task)}
-                      className="w-full rounded-xl border border-[#EEF3F8] bg-[#F8FAFC] p-3 text-left transition hover:border-[#C8D6E5] hover:shadow-sm"
+                      className="w-full rounded-xl border border-[#EEF3F8] bg-[#F8FAFC] p-4 text-left transition hover:border-[#C8D6E5] hover:shadow-sm"
                     >
                       {/* Priority badge */}
                       {task.priority === 'HIGH' && (
@@ -544,14 +545,15 @@ const Tasks: React.FC = () => {
               deliverables={deliverables}
             />
           )}
+          </div>
         </div>
       )}
       {/* end kanban */}
 
       {/* Create Iteration Modal */}
       {showIterModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={() => setShowIterModal(false)}>
-          <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.15)]" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center" onClick={() => setShowIterModal(false)}>
+          <div className="my-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-transparent bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.15)] sm:p-6" onClick={e => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#1a1c1a]">New Iteration</h2>
               <button onClick={() => setShowIterModal(false)} className="text-[#64748B] hover:text-[#1a1c1a]"><X size={18} /></button>
@@ -686,8 +688,8 @@ const Tasks: React.FC = () => {
 
       {/* Task detail panel */}
       {selectedTask && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={() => setSelectedTask(null)}>
-          <div className="relative flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)]" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center" onClick={() => setSelectedTask(null)}>
+          <div className="relative my-4 flex h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)] sm:h-[80vh]" onClick={e => e.stopPropagation()}>
 
             {/* Panel header */}
             <div className="flex shrink-0 items-start justify-between border-b border-[#EEF3F8] px-6 py-4">
@@ -710,7 +712,7 @@ const Tasks: React.FC = () => {
 
             {/* Details */}
             <div className="shrink-0 border-b border-[#EEF3F8] px-6 py-3">
-              <div className="flex items-center gap-6 text-xs text-[#64748B]">
+              <div className="flex flex-col gap-2 text-xs text-[#64748B] sm:flex-row sm:items-center sm:gap-6">
                 <span><span className="font-semibold text-[#334155]">Assigned to:</span> {selectedTask.assignee}</span>
                 <span><span className="font-semibold text-[#334155]">Date:</span> {selectedTask.dateLabel}</span>
               </div>

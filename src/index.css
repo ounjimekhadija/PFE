@@ -4,6 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cleaner global radius: keep buttons round, reduce cards and inputs. */
+:where(.rounded-xl, .rounded-\[1rem\], .rounded-\[20px\]):not(button):not([role="button"]) {
+  border-radius: 0.5rem !important;
+}
+
+:where(.rounded-2xl, .rounded-\[22px\], .rounded-\[24px\], .rounded-\[28px\], .rounded-\[2rem\]):not(button):not([role="button"]) {
+  border-radius: 0.625rem !important;
+}
+
+:where(.rounded-3xl):not(button):not([role="button"]) {
+  border-radius: 0.75rem !important;
+}
+
 /* Premium Global Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

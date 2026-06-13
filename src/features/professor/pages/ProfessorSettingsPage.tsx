@@ -180,30 +180,30 @@ const ProfessorSettingsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-[#F8FAFC] p-8 text-sm font-medium text-[#64748B]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-        Loading data...
+        Chargement des donnees...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-[#1a1c1a]">Settings</h1>
-        <p className="mt-2 text-sm text-[#64748B]">Manage your account profile and security preferences.</p>
+        <h1 className="text-2xl font-bold text-[#1a1c1a]">Parametres</h1>
+        <p className="mt-1 text-sm text-[#64748B]">Gerez votre profil encadrant et vos preferences de securite.</p>
       </header>
 
       {success && (
         <div className="mb-4 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm text-[#15803D]">
-          Changes saved successfully.
+          Modifications enregistrees.
         </div>
       )}
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-[260px,1fr]">
-        <aside className="mb-6 rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <aside className="mb-6 rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           <div className="space-y-2">
             {[
-              { id: 'profile', icon: User, label: 'Edit Profile' },
-              { id: 'security', icon: Shield, label: 'Security' },
+              { id: 'profile', icon: User, label: 'Profil' },
+              { id: 'security', icon: Shield, label: 'Securite' },
             ].map((item) => (
               <button
                 key={item.id}
@@ -221,7 +221,7 @@ const ProfessorSettingsPage: React.FC = () => {
           </div>
         </aside>
 
-        <article className="mb-6 rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <article className="mb-6 rounded-2xl border border-[#DCEBFA] bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-6">
           {activeTab === 'profile' && (
             <form onSubmit={handleSave} className="space-y-6">
               <div className="flex flex-col items-center gap-4 rounded-xl border border-[#C8D6E5] bg-[#EEF3F8] p-4 sm:flex-row sm:items-center">
@@ -244,7 +244,7 @@ const ProfessorSettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {[
-                  { label: 'Phone', key: 'phone', type: 'text' },
+                  { label: 'Telephone', key: 'phone', type: 'text' },
                   { label: 'Website', key: 'website', type: 'text' },
                   { label: 'GitHub', key: 'github', type: 'text' },
                   { label: 'LinkedIn', key: 'linkedin', type: 'text' },
@@ -267,7 +267,7 @@ const ProfessorSettingsPage: React.FC = () => {
                   className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(15,23,42,0.30)] transition hover:bg-[#172D49]"
                 >
                   <Save size={16} />
-                  Save Changes
+                  Enregistrer
                 </button>
               </div>
             </form>
@@ -275,12 +275,12 @@ const ProfessorSettingsPage: React.FC = () => {
 
           {activeTab === 'security' && (
             <form onSubmit={handlePasswordChange} className="space-y-4">
-              <h2 className="text-xl font-semibold text-[#1a1c1a]">Change Password</h2>
+              <h2 className="text-xl font-semibold text-[#1a1c1a]">Changer le mot de passe</h2>
 
               {[
-                { label: 'Current Password', key: 'current' },
-                { label: 'New Password', key: 'new' },
-                { label: 'Confirm New Password', key: 'confirm' },
+                { label: 'Mot de passe actuel', key: 'current' },
+                { label: 'Nouveau mot de passe', key: 'new' },
+                { label: 'Confirmer le mot de passe', key: 'confirm' },
               ].map(({ label, key }) => (
                 <div key={key}>
                   <label className="mb-1 block text-sm font-medium text-[#334155]">{label}</label>
@@ -299,7 +299,7 @@ const ProfessorSettingsPage: React.FC = () => {
                   className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(15,23,42,0.30)] transition hover:bg-[#172D49]"
                 >
                   <Save size={16} />
-                  Change Password
+                  Mettre a jour
                 </button>
               </div>
             </form>

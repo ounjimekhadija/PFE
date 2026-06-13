@@ -9,7 +9,7 @@ interface WarmSelectProps {
   className?: string;
 }
 
-const WarmSelect: React.FC<WarmSelectProps> = ({ value, onChange, options, placeholder = 'Choose...', className = '' }) => {
+const WarmSelect: React.FC<WarmSelectProps> = ({ value, onChange, options, placeholder = 'Choisir...', className = '' }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

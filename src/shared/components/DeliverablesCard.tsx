@@ -23,11 +23,11 @@ const DeliverablesCard: React.FC<DeliverablesCardProps> = ({ iterationNumber, de
   }
 
   return (
-    <div className="flex w-80 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+    <div className="flex w-[82vw] max-w-80 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:w-80">
       <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-[#EEF3F8] px-4 py-3">
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-[#1E3A5F]" />
-          <span className="text-sm font-bold text-[#1a1c1a]">Deliverables (Iteration {iterationNumber})</span>
+          <span className="text-sm font-bold text-[#1a1c1a]">Livrables (Itération {iterationNumber})</span>
         </div>
         <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-[11px] font-bold text-[#64748B]">{deliverables.length}</span>
       </div>
@@ -46,7 +46,7 @@ const DeliverablesCard: React.FC<DeliverablesCardProps> = ({ iterationNumber, de
             <div className="flex items-center justify-between text-[10px] text-[#64748B]">
               <div className="flex items-center gap-1">
                 <Paperclip size={11} />
-                <span>{livrable.file_url ? 'File' : 'Link'}</span>
+                <span>{livrable.file_url ? 'Fichier' : 'Lien'}</span>
               </div>
               <span className="text-[9px] text-[#C8D6E5]">{fmt(livrable.created_at)}</span>
             </div>

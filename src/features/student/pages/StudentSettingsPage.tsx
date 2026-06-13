@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Lock, Save, Shield, User } from 'lucide-react';
+import { Camera, Github, Globe, Linkedin, Lock, Mail, Phone, Save, Shield, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const StudentSettingsPage: React.FC = () => {
@@ -23,7 +23,10 @@ const StudentSettingsPage: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) { setLoading(false); return; }
+      if (!session?.user) {
+        setLoading(false);
+        return;
+      }
 
       const { data: user } = await supabase
         .from('utilisateurs')
@@ -62,18 +65,15 @@ const StudentSettingsPage: React.FC = () => {
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
       const userId = session.user.id;
       const fileName = `${userId}-${Math.random()}.${fileExt}`;
-
       const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName);
-
       const { error: updateError } = await supabase.from('utilisateurs').update({ avatar_url: publicUrl }).eq('id', userId);
       if (updateError) throw updateError;
 
@@ -85,8 +85,8 @@ const StudentSettingsPage: React.FC = () => {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (event: React.FormEvent) => {
+    event.preventDefault();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
@@ -110,8 +110,8 @@ const StudentSettingsPage: React.FC = () => {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePasswordChange = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (passwords.new !== passwords.confirm) {
       alert('Les mots de passe ne correspondent pas.');
       return;
@@ -132,137 +132,194 @@ const StudentSettingsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-[#F8FAFC] text-sm font-medium text-[#64748B]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-        Loading data...
+        Chargement du profil...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-[#1a1c1a]">Settings</h1>
-        <p className="mt-1 text-sm text-[#64748B]">Manage your account settings and profile information.</p>
+    <div
+      className="h-full min-h-0 overflow-y-auto bg-[#F8FAFC] px-4 py-3 text-[#1a1c1a] sm:px-6 lg:px-8"
+      style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
+    >
+      <header className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold text-[#1a1c1a]">Parametres</h1>
+            <span className="rounded-full bg-[#DCEBFA] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#1E3A5F]">
+              Espace etudiant
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-[#64748B]">Mettez a jour votre profil, vos liens et la securite du compte.</p>
+        </div>
       </header>
 
-      <div className="rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-        <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
-          <aside className="space-y-2">
+      <div className="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+        <aside className="space-y-4">
+          <section className="rounded-2xl border border-[#C8D6E5]/60 bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+            <div className="flex flex-col items-center text-center">
+              <button
+                type="button"
+                className="group relative"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+              >
+                <img
+                  src={profile.avatar}
+                  alt={profile.name}
+                  className={`h-24 w-24 rounded-2xl object-cover shadow-md ring-4 ring-[#DCEBFA] transition ${uploadingAvatar ? 'opacity-60' : ''}`}
+                />
+                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#1E3A5F]/55 text-white opacity-0 transition group-hover:opacity-100">
+                  <Camera size={20} />
+                </span>
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              <h2 className="mt-4 text-lg font-bold text-[#1a1c1a]">{profile.name}</h2>
+              <p className="mt-1 text-sm text-[#64748B]">{profile.email}</p>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <ProfileLink icon={<Github size={15} />} label="GitHub" value={profile.github} />
+              <ProfileLink icon={<Linkedin size={15} />} label="LinkedIn" value={profile.linkedin} />
+              <ProfileLink icon={<Globe size={15} />} label="Portfolio" value={profile.website} />
+              <ProfileLink icon={<Phone size={15} />} label="Telephone" value={profile.phone} />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-[#C8D6E5]/60 bg-white p-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             {[
-              { id: 'profile', icon: User, label: 'Edit Profile' },
-              { id: 'security', icon: Shield, label: 'Security' },
+              { id: 'profile', icon: User, label: 'Profil' },
+              { id: 'security', icon: Shield, label: 'Securite' },
             ].map((item) => {
               const active = activeTab === item.id;
+              const Icon = item.icon;
               return (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id as 'profile' | 'security')}
-                  className={`w-full rounded-xl px-4 py-3 text-left text-sm font-medium transition ${
-                    active
-                      ? 'bg-[#DCEBFA] text-[#172D49]'
-                      : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1a1c1a]'
+                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition ${
+                    active ? 'bg-[#1E3A5F] text-white shadow-sm' : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1a1c1a]'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-2">
-                    <item.icon size={16} />
-                    {item.label}
-                  </span>
+                  <Icon size={16} />
+                  {item.label}
                 </button>
               );
             })}
-          </aside>
+          </section>
+        </aside>
 
-          <section>
-            {success && (
-              <div className="mb-4 rounded-xl border border-transparent bg-[#F0FDF4] px-4 py-3 text-sm font-semibold text-[#166534]">
-                Changes saved successfully.
+        <section className="rounded-2xl border border-[#C8D6E5]/60 bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-6">
+          {success && (
+            <div className="mb-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-sm font-semibold text-[#166534]">
+              Modifications enregistrees.
+            </div>
+          )}
+
+          {activeTab === 'profile' && (
+            <form onSubmit={handleSave} className="space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#1a1c1a]">Informations du profil</h2>
+                <p className="mt-1 text-sm text-[#64748B]">Ces informations aident votre encadrant et votre equipe a vous contacter.</p>
               </div>
-            )}
 
-            {activeTab === 'profile' && (
-              <form onSubmit={handleSave} className="space-y-6">
-                <div className="flex flex-col items-center gap-5 rounded-2xl border border-transparent bg-[#EEF3F8] p-6 sm:flex-row">
-                  <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                    <img
-                      src={profile.avatar}
-                      alt="Profile"
-                      className={`h-24 w-24 rounded-full border-4 border-white object-cover shadow-md transition ${
-                        uploadingAvatar ? 'opacity-60' : 'hover:opacity-80'
-                      }`}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/35 text-white opacity-0 transition hover:opacity-100">
-                      <Camera size={18} />
-                    </div>
-                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                  </div>
-                  <div className="text-center sm:text-left">
-                    <p className="text-lg font-semibold text-[#1a1c1a]">{profile.name}</p>
-                    <p className="text-sm text-[#64748B]">{profile.email}</p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <SettingsInput icon={<Phone size={16} />} label="Telephone" value={profile.phone} onChange={(value) => setProfile({ ...profile, phone: value })} />
+                <SettingsInput icon={<Globe size={16} />} label="Portfolio" value={profile.website} onChange={(value) => setProfile({ ...profile, website: value })} />
+                <SettingsInput icon={<Github size={16} />} label="GitHub" value={profile.github} onChange={(value) => setProfile({ ...profile, github: value })} />
+                <SettingsInput icon={<Linkedin size={16} />} label="LinkedIn" value={profile.linkedin} onChange={(value) => setProfile({ ...profile, linkedin: value })} />
+              </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {[
-                    { label: 'Phone Number', key: 'phone', type: 'text' },
-                    { label: 'Website', key: 'website', type: 'text' },
-                    { label: 'GitHub', key: 'github', type: 'text' },
-                    { label: 'LinkedIn', key: 'linkedin', type: 'text' },
-                  ].map(({ label, key, type }) => (
-                    <label key={key} className="space-y-2 text-sm font-medium text-[#334155]">
-                      {label}
-                      <input
-                        type={type}
-                        value={profile[key as keyof typeof profile]}
-                        onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                        className="w-full rounded-xl border border-[#E5EDF5] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/15"
-                      />
-                    </label>
-                  ))}
-                </div>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1E3A5F] px-5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(30,58,95,0.18)] transition hover:bg-[#172D49]"
+              >
+                <Save size={16} />
+                Enregistrer
+              </button>
+            </form>
+          )}
 
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#172D49]"
-                >
-                  <Save size={16} />
-                  Save Changes
-                </button>
-              </form>
-            )}
+          {activeTab === 'security' && (
+            <form onSubmit={handlePasswordChange} className="max-w-2xl space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#1a1c1a]">Securite du compte</h2>
+                <p className="mt-1 text-sm text-[#64748B]">Choisissez un mot de passe solide pour proteger votre espace.</p>
+              </div>
 
-            {activeTab === 'security' && (
-              <form onSubmit={handlePasswordChange} className="max-w-xl space-y-4">
-                <h2 className="text-lg font-semibold text-[#1a1c1a]">Change Password</h2>
+              <div className="space-y-4">
                 {[
-                  { label: 'Current Password', key: 'current' },
-                  { label: 'New Password', key: 'new' },
-                  { label: 'Confirm New Password', key: 'confirm' },
+                  { label: 'Mot de passe actuel', key: 'current' },
+                  { label: 'Nouveau mot de passe', key: 'new' },
+                  { label: 'Confirmer le mot de passe', key: 'confirm' },
                 ].map(({ label, key }) => (
-                  <label key={key} className="space-y-2 text-sm font-medium text-[#334155]">
-                    {label}
-                    <input
-                      type="password"
-                      value={passwords[key as keyof typeof passwords]}
-                      onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
-                      className="w-full rounded-xl border border-[#E5EDF5] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/15"
-                    />
+                  <label key={key} className="block text-sm font-bold text-[#334155]">
+                    <span>{label}</span>
+                    <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#DCEBFA] bg-[#F8FAFC] px-4 py-3 transition focus-within:border-[#1E3A5F]/40 focus-within:ring-2 focus-within:ring-[#1E3A5F]/10">
+                      <Lock size={16} className="text-[#64748B]" />
+                      <input
+                        type="password"
+                        value={passwords[key as keyof typeof passwords]}
+                        onChange={(event) => setPasswords({ ...passwords, [key]: event.target.value })}
+                        className="w-full bg-transparent text-sm text-[#1a1c1a] outline-none"
+                      />
+                    </div>
                   </label>
                 ))}
+              </div>
 
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#1a1c1a] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#334155]"
-                >
-                  <Lock size={16} />
-                  Change Password
-                </button>
-              </form>
-            )}
-          </section>
-        </div>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1a1c1a] px-5 text-sm font-bold text-white transition hover:bg-[#334155]"
+              >
+                <Lock size={16} />
+                Changer le mot de passe
+              </button>
+            </form>
+          )}
+        </section>
       </div>
     </div>
   );
 };
+
+interface ProfileLinkProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}
+
+const ProfileLink: React.FC<ProfileLinkProps> = ({ icon, label, value }) => (
+  <div className="rounded-xl bg-[#F8FAFC] p-3">
+    <div className="mb-2 flex items-center gap-2 text-[#1E3A5F]">
+      {icon}
+      <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+    </div>
+    <p className="truncate text-xs font-semibold text-[#64748B]">{value || 'Non renseigne'}</p>
+  </div>
+);
+
+interface SettingsInputProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+const SettingsInput: React.FC<SettingsInputProps> = ({ icon, label, value, onChange }) => (
+  <label className="block text-sm font-bold text-[#334155]">
+    <span>{label}</span>
+    <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#DCEBFA] bg-[#F8FAFC] px-4 py-3 transition focus-within:border-[#1E3A5F]/40 focus-within:ring-2 focus-within:ring-[#1E3A5F]/10">
+      <span className="text-[#64748B]">{icon}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full bg-transparent text-sm text-[#1a1c1a] outline-none"
+      />
+    </div>
+  </label>
+);
 
 export default StudentSettingsPage;

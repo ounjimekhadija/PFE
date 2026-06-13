@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { FileText, FileArchive, Link as LinkIcon, File, Download, ExternalLink, Send, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { Download, ExternalLink, Send, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectStudents } from '../../../lib/notifications';
@@ -57,15 +57,6 @@ const Deliverables: React.FC = () => {
   const [showComments,   setShowComments]   = useState<Record<string, boolean>>({});
   const [openStatusId,   setOpenStatusId]   = useState<string | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'PDF':  return <FileText    className="text-red-500"    size={22} />;
-      case 'ZIP':  return <FileArchive className="text-amber-500"  size={22} />;
-      case 'LINK': return <LinkIcon    className="text-[#1E3A5F]"  size={22} />;
-      default:     return <File        className="text-[#64748B]"  size={22} />;
-    }
-  };
 
   const fetchProfessorProjectIds = async (authUserId: string): Promise<string[]> => {
     const ids = new Set<string>();
@@ -178,6 +169,18 @@ const Deliverables: React.FC = () => {
   }, []);
 
   const totalCount = useMemo(() => groups.reduce((acc, g) => acc + g.deliverables.length, 0), [groups]);
+
+  const getDepotName = (deliverable: DeliverableItem): string => {
+    if (deliverable.isExternal && deliverable.externalUrl) {
+      return deliverable.externalUrl.replace(/^https?:\/\//, '').replace(/^www\./, '');
+    }
+
+    if (deliverable.filePath) {
+      return deliverable.filePath.split('/').pop() || deliverable.title;
+    }
+
+    return deliverable.title;
+  };
 
   const handleStatusChange = async (deliverableId: string, newStatus: string) => {
     setUpdatingStatus(prev => ({ ...prev, [deliverableId]: true }));
@@ -330,41 +333,45 @@ const Deliverables: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]"
+      className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
       {/* Header — fixe, ne scroll pas */}
-      <header className="mb-6 flex items-center justify-between flex-shrink-0">
+      <header className="mb-4 flex shrink-0 items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Group Deliverables</h1>
-          <p className="mt-1.5 text-sm text-[#64748B]">View and manage all project deliverables by group</p>
-          <p className="mt-1 text-xs text-[#64748B]">{totalCount} deliverable(s)</p>
+          <h1 className="text-2xl font-bold">Livrables des groupes</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Consultez, commentez et validez les livrables par projet.</p>
         </div>
+        <span className="shrink-0 rounded-full bg-[#DCEBFA] px-4 py-2 text-sm font-bold text-[#1E3A5F]">
+          {totalCount} livrables
+        </span>
       </header>
 
-      {loading && <p className="mb-4 text-sm text-[#64748B] flex-shrink-0">Loading deliverables...</p>}
-      {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a] flex-shrink-0">Error: {error}</p>}
+      {loading && <p className="mb-4 shrink-0 text-sm text-[#64748B]">Chargement des livrables...</p>}
+      {!loading && error && <p className="mb-4 shrink-0 text-sm text-[#ba1a1a]">Erreur : {error}</p>}
       {!loading && !error && groups.length === 0 && (
-        <p className="mb-4 text-sm text-[#64748B] flex-shrink-0">No deliverables found for the assigned projects.</p>
+        <p className="mb-4 shrink-0 text-sm text-[#64748B]">Aucun livrable trouve pour les projets assignes.</p>
       )}
 
       {/* Liste scrollable */}
       <div
-        className="flex-1 overflow-y-auto"
+        className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-6"
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#C8D6E5 transparent' }}
       >
-        <div className="space-y-7 pb-6">
+        <div className="space-y-7 pb-2">
           {groups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#C8D6E5]" />
-                <h2 className="rounded-full border border-[#BFD7EF] bg-[#DCEBFA] px-3 py-1.5 text-lg font-bold text-[#172D49]">
+                <h2 className="truncate text-lg font-bold text-[#172D49]">
                   {group.groupName}
                 </h2>
-                <div className="h-px flex-1 bg-[#C8D6E5]" />
+                <div className="h-px flex-1 bg-[#DCEBFA]" />
+                <span className="rounded-full bg-[#EEF3F8] px-3 py-1 text-xs font-bold text-[#64748B]">
+                  {group.deliverables.length}
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+              <div className="grid grid-cols-1 justify-center gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {group.deliverables.map((deliverable) => {
                   const delivComments = comments[deliverable.id] ?? [];
                   const statusClass   = STATUS_SELECT_CLASS[deliverable.status] ?? STATUS_SELECT_CLASS.PENDING;
@@ -374,23 +381,23 @@ const Deliverables: React.FC = () => {
                     <motion.div
                       key={deliverable.id}
                       whileHover={{ scale: 1.01 }}
-                      className="group relative flex flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all hover:border-[#BFD7EF] overflow-hidden"
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E5EDF5] bg-[#F8FAFC] shadow-[0_4px_12px_rgba(15,23,42,0.05)] transition-all hover:border-[#BFD7EF]"
                     >
                       <div className="p-4 flex-1 flex flex-col">
 
-                        {/* Top row: icon + status select */}
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="rounded-2xl bg-[#EEF3F8] p-2.5">
-                            {getIcon(deliverable.type)}
-                          </div>
+                        {/* Top row: title + status select */}
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <h3 className="min-w-0 flex-1 truncate pt-0.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#1E3A5F]" title={deliverable.title}>
+                            {deliverable.title}
+                          </h3>
 
                           {/* Status dropdown */}
-                          <div className="relative" ref={openStatusId === deliverable.id ? statusDropdownRef : null}>
+                          <div className="relative flex-shrink-0" ref={openStatusId === deliverable.id ? statusDropdownRef : null}>
                             <button
                               type="button"
                               onClick={() => setOpenStatusId(openStatusId === deliverable.id ? null : deliverable.id)}
                               disabled={updatingStatus[deliverable.id]}
-                              className={`flex items-center gap-1.5 rounded-lg border pl-2.5 pr-1.5 py-1 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-50 ${statusClass}`}
+                              className={`flex items-center gap-1.5 rounded-lg border pl-2.5 pr-1.5 py-1 text-[11px] font-bold whitespace-nowrap transition-all active:scale-95 disabled:opacity-50 ${statusClass}`}
                             >
                               {STATUS_OPTIONS.find(o => o.value === deliverable.status)?.label || deliverable.status}
                               <ChevronDown size={11} className={`transition-transform duration-200 ${openStatusId === deliverable.id ? 'rotate-180' : ''}`} />
@@ -421,10 +428,6 @@ const Deliverables: React.FC = () => {
                           </div>
                         </div>
 
-                        <h3 className="mb-1.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#1E3A5F]">
-                          {deliverable.title}
-                        </h3>
-
                         <div className="mb-4 flex items-center gap-3 text-xs text-[#64748B]">
                           <span>{deliverable.date}</span>
                           {deliverable.size && (
@@ -435,19 +438,26 @@ const Deliverables: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Download */}
-                        <button
-                          onClick={() => openDeliverable(deliverable)}
-                          disabled={!deliverable.externalUrl && !deliverable.filePath}
-                          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all mb-4 ${
-                            deliverable.isExternal
-                              ? 'bg-[#1E3A5F] text-white shadow-md hover:bg-[#172D49] disabled:bg-[#BFD7EF]'
-                              : 'border border-[#C8D6E5] bg-[#EEF3F8] text-[#334155] hover:bg-white disabled:opacity-50'
-                          }`}
-                        >
-                          {deliverable.isExternal ? <ExternalLink size={15} /> : <Download size={15} />}
-                          {deliverable.isExternal ? 'Open Link' : 'Download'}
-                        </button>
+                        {/* Depot */}
+                        <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#C8D6E5] bg-[#EEF3F8] p-2">
+                          <span className="min-w-0 flex-1 truncate px-2 text-sm font-semibold text-[#334155]" title={getDepotName(deliverable)}>
+                            {getDepotName(deliverable)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => openDeliverable(deliverable)}
+                            disabled={!deliverable.externalUrl && !deliverable.filePath}
+                            title={deliverable.isExternal ? 'Open link' : 'Download'}
+                            aria-label={deliverable.isExternal ? `Open ${deliverable.title}` : `Download ${deliverable.title}`}
+                            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-all ${
+                              deliverable.isExternal
+                                ? 'bg-[#1E3A5F] text-white shadow-sm hover:bg-[#172D49] disabled:bg-[#BFD7EF]'
+                                : 'bg-white text-[#334155] shadow-sm hover:text-[#1E3A5F] disabled:opacity-50'
+                            }`}
+                          >
+                            {deliverable.isExternal ? <ExternalLink size={16} /> : <Download size={16} />}
+                          </button>
+                        </div>
 
                         {/* Comments toggle button */}
                         <button

@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronDown, Flag, User, AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronDown, Flag, User, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { taskSchema, Task as TaskType } from '../schemas';
-import { z } from 'zod';
+import { Task as TaskType, taskSchema } from '../schemas';
 
 interface AssigneeOption {
   id: string;
@@ -18,17 +17,27 @@ interface TaskCreateModalProps {
   onTaskCreated: (task: any, assigneeId: string | undefined) => void;
 }
 
-const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assigneeOptions, currentIterationId, onTaskCreated }) => {
-  const [newTask, setNewTask] = useState<Partial<TaskType>>({ 
-    title: '', 
-    description: '', 
-    priority: 'Medium', 
-    assignee: '' 
+const priorities = [
+  { value: 'Low', label: 'Basse', color: 'text-blue-500', bg: 'bg-blue-50' },
+  { value: 'Medium', label: 'Moyenne', color: 'text-amber-500', bg: 'bg-amber-50' },
+  { value: 'High', label: 'Haute', color: 'text-rose-500', bg: 'bg-rose-50' },
+];
+
+const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
+  isOpen,
+  onClose,
+  assigneeOptions,
+  currentIterationId,
+  onTaskCreated,
+}) => {
+  const [newTask, setNewTask] = useState<Partial<TaskType>>({
+    title: '',
+    description: '',
+    priority: 'Medium',
+    assignee: '',
   });
   const [errors, setErrors] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-
-  // Custom Dropdowns State
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const priorityRef = useRef<HTMLDivElement>(null);
@@ -43,34 +52,34 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
         setShowAssigneeDropdown(false);
       }
     };
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleCreateTask = async () => {
     setLoading(true);
-    // Add status to satisfy schema if needed, although safeParse might ignore extra fields or error if missing
-    const taskToValidate = { ...newTask, status: 'To Do' };
-    const validationResult = taskSchema.safeParse(taskToValidate);
-    
+    const validationResult = taskSchema.safeParse({ ...newTask, status: 'To Do' });
+
     if (!validationResult.success) {
       setErrors(validationResult.error.flatten().fieldErrors);
       setLoading(false);
       return;
     }
+
     setErrors(null);
 
     if (!currentIterationId) {
-      alert("Unable to create task: There is no active or 'to do' iteration (Sprint) for your project.");
+      alert("Impossible de creer la tache : aucune iteration active ou a faire n'est associee a votre projet.");
       setLoading(false);
       return;
     }
 
     try {
       const dbPriority = {
-        'Low': 'LOW',
-        'Medium': 'MEDIUM',
-        'High': 'HIGH'
+        Low: 'LOW',
+        Medium: 'MEDIUM',
+        High: 'HIGH',
       }[newTask.priority || 'Medium'];
 
       const { data: newDbTask, error } = await supabase
@@ -80,19 +89,18 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           titre: newTask.title,
           description: newTask.description || '',
           priorite: dbPriority,
-          etat: 'A_FAIRE'
+          etat: 'A_FAIRE',
         })
         .select('*')
         .single();
 
       if (error) {
-        console.error("Creation error", error);
-        alert("Error creating task: " + error.message);
+        console.error('Creation error', error);
+        alert('Erreur lors de la creation de la tache : ' + error.message);
         setLoading(false);
         return;
       }
 
-      // Automatically set iteration status to EN_COURS if it was A_FAIRE
       await supabase
         .from('iterations')
         .update({ statut: 'EN_COURS' })
@@ -102,20 +110,19 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
       if (newTask.assignee) {
         const { error: assignError } = await supabase
           .from('tache_assignations')
-          .insert({ 
-            tache_id: newDbTask.id, 
-            etudiant_id: newTask.assignee 
+          .insert({
+            tache_id: newDbTask.id,
+            etudiant_id: newTask.assignee,
           });
 
         if (assignError) {
-          console.error("Error assigning task", assignError);
+          console.error('Error assigning task', assignError);
         }
       }
-      
+
       onTaskCreated(newDbTask, newTask.assignee);
       onClose();
       setNewTask({ title: '', description: '', priority: 'Medium', assignee: '' });
-
     } catch (err) {
       console.error(err);
     } finally {
@@ -125,49 +132,49 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
 
   if (!isOpen) return null;
 
-  const priorities = [
-    { value: 'Low', color: 'text-blue-500', bg: 'bg-blue-50' },
-    { value: 'Medium', color: 'text-amber-500', bg: 'bg-amber-50' },
-    { value: 'High', color: 'text-rose-500', bg: 'bg-rose-50' },
-  ];
-
-  const selectedPriority = priorities.find(p => p.value === newTask.priority) || priorities[1];
-  const selectedAssignee = assigneeOptions.find(a => a.id === newTask.assignee);
+  const selectedPriority = priorities.find((priority) => priority.value === newTask.priority) || priorities[1];
+  const selectedAssignee = assigneeOptions.find((assignee) => assignee.id === newTask.assignee);
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
-      <div 
-        className="bg-[#F8FAFC] rounded-[24px] shadow-[0_20px_50px_rgba(15,23,42,0.15)] p-8 w-full max-w-lg flex flex-col border border-[#C8D6E5] relative overflow-visible" 
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#111827]/45 p-4 backdrop-blur-sm transition-all animate-in fade-in duration-300 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="relative my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-[520px] flex-col overflow-y-auto rounded-2xl border border-[#C8D6E5] bg-[#F8FAFC] px-5 py-5 shadow-[0_24px_56px_rgba(15,23,42,0.20)] sm:px-7 sm:py-6"
+        onClick={(event) => event.stopPropagation()}
         style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
       >
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-6 flex items-start justify-between gap-5">
           <div>
-            <h2 className="text-2xl font-bold text-[#1a1c1a]">Create a new task</h2>
-            <p className="text-sm text-[#64748B] mt-1">Add details for your team.</p>
+            <h2 className="text-2xl font-extrabold tracking-tight text-[#1a1c1a]">Creer une tache</h2>
+            <p className="mt-1 text-sm font-medium text-[#64748B]">Ajoutez les details pour votre equipe.</p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2 rounded-full hover:bg-[#1a1c1a]/5 text-[#64748B] transition-colors"
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#64748B] transition-colors hover:bg-[#EEF3F8] hover:text-[#172D49]"
+            type="button"
+            aria-label="Fermer"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="space-y-6">
-          {/* Title Input */}
+        <div className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#334155] ml-1">Task title</label>
+            <label className="ml-1 text-sm font-extrabold text-[#334155]">Titre de la tache</label>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Ex: Database design"
-                className={`w-full p-4 rounded-xl border ${errors?.title ? 'border-red-500' : 'border-[#C8D6E5]'} bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10 transition-all`}
+                placeholder="Ex : Conception de la base de donnees"
+                className={`h-14 w-full rounded-xl border px-4 text-base font-medium ${
+                  errors?.title ? 'border-red-500' : 'border-[#C8D6E5]'
+                } bg-white text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#9AA6B8] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10`}
                 value={newTask.title || ''}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                onChange={(event) => setNewTask({ ...newTask, title: event.target.value })}
               />
               {errors?.title && (
-                <div className="flex items-center gap-1 mt-1.5 ml-1 text-red-500 text-xs font-medium">
+                <div className="ml-1 mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
                   <AlertCircle size={14} />
                   <span>{errors.title[0]}</span>
                 </div>
@@ -175,49 +182,49 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
             </div>
           </div>
 
-          {/* Description Textarea */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#334155] ml-1">Description</label>
+            <label className="ml-1 text-sm font-extrabold text-[#334155]">Description</label>
             <textarea
-              placeholder="Describe what needs to be done..."
-              rows={3}
-              className="w-full p-4 rounded-xl border border-[#C8D6E5] bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10 transition-all resize-none"
+              placeholder="Decrivez ce qui doit etre fait..."
+              rows={4}
+              className="min-h-[96px] w-full resize-none rounded-xl border border-[#C8D6E5] bg-white px-4 py-4 text-base font-medium text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#9AA6B8] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
               value={newTask.description || ''}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              onChange={(event) => setNewTask({ ...newTask, description: event.target.value })}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Priority Dropdown */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2" ref={priorityRef}>
-              <label className="text-sm font-bold text-[#334155] ml-1">Priority</label>
+              <label className="ml-1 text-sm font-extrabold text-[#334155]">Priorite</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[#C8D6E5] bg-white text-[#1a1c1a] shadow-sm hover:border-[#1E3A5F]/50 transition-all outline-none"
+                  className="flex h-14 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-[#1a1c1a] shadow-sm outline-none transition-all hover:border-[#1E3A5F]/50 focus:ring-4 focus:ring-[#1E3A5F]/10"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <Flag size={16} className={selectedPriority.color} />
-                    <span className="text-sm font-medium">{selectedPriority.value}</span>
+                    <span className="text-base font-medium">{selectedPriority.label}</span>
                   </div>
                   <ChevronDown size={16} className={`text-[#64748B] transition-transform duration-300 ${showPriorityDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showPriorityDropdown && (
-                  <div className="absolute z-[60] mt-2 w-full bg-white border border-[#C8D6E5] rounded-xl shadow-[0_10px_25px_rgba(15,23,42,0.1)] overflow-hidden animate-in fade-in slide-in-from-top-2">
-                    {priorities.map((p) => (
+                  <div className="absolute z-[60] mt-2 w-full overflow-hidden rounded-xl border border-[#C8D6E5] bg-white p-1 shadow-[0_14px_32px_rgba(15,23,42,0.14)] animate-in fade-in slide-in-from-top-2">
+                    {priorities.map((priority) => (
                       <button
-                        key={p.value}
+                        key={priority.value}
                         type="button"
                         onClick={() => {
-                          setNewTask({ ...newTask, priority: p.value as any });
+                          setNewTask({ ...newTask, priority: priority.value as any });
                           setShowPriorityDropdown(false);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-[#1E3A5F]/5 transition-colors font-medium"
+                        className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition-colors hover:bg-[#EEF3F8] ${
+                          newTask.priority === priority.value ? `${priority.bg} ${priority.color}` : 'text-[#334155]'
+                        }`}
                       >
-                        <Flag size={14} className={p.color} />
-                        {p.value}
+                        <Flag size={14} className={priority.color} />
+                        {priority.label}
                       </button>
                     ))}
                   </div>
@@ -225,35 +232,34 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
               </div>
             </div>
 
-            {/* Assignee Dropdown */}
             <div className="space-y-2" ref={assigneeRef}>
-              <label className="text-sm font-bold text-[#334155] ml-1">Assign to</label>
+              <label className="ml-1 text-sm font-extrabold text-[#334155]">Assigner a</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[#C8D6E5] bg-white text-[#1a1c1a] shadow-sm hover:border-[#1E3A5F]/50 transition-all outline-none"
+                  className="flex h-14 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-[#1a1c1a] shadow-sm outline-none transition-all hover:border-[#1E3A5F]/50 focus:ring-4 focus:ring-[#1E3A5F]/10"
                 >
-                  <div className="flex items-center gap-2">
-                    <User size={16} className="text-[#64748B]" />
-                    <span className="text-sm font-medium truncate">
-                      {selectedAssignee ? selectedAssignee.name : 'Select a member'}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <User size={16} className="shrink-0 text-[#64748B]" />
+                    <span className="truncate text-base font-medium">
+                      {selectedAssignee ? selectedAssignee.name : 'Selectionner un membre'}
                     </span>
                   </div>
-                  <ChevronDown size={16} className={`text-[#64748B] transition-transform duration-300 ${showAssigneeDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={16} className={`shrink-0 text-[#64748B] transition-transform duration-300 ${showAssigneeDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showAssigneeDropdown && (
-                  <div className="absolute z-[60] mt-2 w-full bg-white border border-[#C8D6E5] rounded-xl shadow-[0_10px_25px_rgba(15,23,42,0.1)] overflow-hidden animate-in fade-in slide-in-from-top-2 max-h-48 overflow-y-auto">
+                  <div className="absolute z-[60] mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[#C8D6E5] bg-white p-1 shadow-[0_14px_32px_rgba(15,23,42,0.14)] animate-in fade-in slide-in-from-top-2">
                     <button
                       type="button"
                       onClick={() => {
                         setNewTask({ ...newTask, assignee: '' });
                         setShowAssigneeDropdown(false);
                       }}
-                      className="w-full px-4 py-3 text-sm text-left hover:bg-[#1E3A5F]/5 transition-colors font-medium text-[#64748B]"
+                      className="w-full rounded-lg px-4 py-3 text-left text-sm font-bold text-[#64748B] transition-colors hover:bg-[#EEF3F8]"
                     >
-                      Unassigned
+                      Non assignee
                     </button>
                     {assigneeOptions.map((option) => (
                       <button
@@ -263,12 +269,12 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
                           setNewTask({ ...newTask, assignee: option.id });
                           setShowAssigneeDropdown(false);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-[#1E3A5F]/5 transition-colors font-medium"
+                        className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold text-[#334155] transition-colors hover:bg-[#EEF3F8]"
                       >
-                        <img 
-                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(option.name)}&background=random`} 
-                          className="w-5 h-5 rounded-full" 
-                          alt="" 
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(option.name)}&background=random`}
+                          className="h-7 w-7 rounded-lg object-cover"
+                          alt=""
                         />
                         <span className="truncate">{option.name}</span>
                       </button>
@@ -280,22 +286,22 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 mt-10">
-          <button 
+        <div className="mt-7 flex items-center justify-end gap-3">
+          <button
             onClick={onClose}
-            className="px-6 py-3 rounded-xl font-bold text-[#334155] bg-[#EEF3F8] hover:bg-[#E5EDF5] transition-all"
+            type="button"
+            className="h-12 rounded-xl bg-[#EEF3F8] px-6 text-sm font-extrabold text-[#334155] transition-all hover:bg-[#E5EDF5]"
           >
-            Cancel
+            Annuler
           </button>
-          <button 
+          <button
             onClick={handleCreateTask}
             disabled={loading}
-            className="px-6 py-3 rounded-xl font-bold text-white bg-[#1a1c1a] hover:bg-[#334155] transition-all shadow-lg shadow-[#1a1c1a]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            type="button"
+            className="flex h-12 items-center gap-2 rounded-xl bg-[#1a1c1a] px-6 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(26,28,26,0.16)] transition-all hover:bg-[#334155] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            ) : null}
-            <span>Create task</span>
+            {loading && <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
+            <span>Creer la tache</span>
           </button>
         </div>
       </div>

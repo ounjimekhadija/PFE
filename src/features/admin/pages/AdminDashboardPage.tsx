@@ -420,21 +420,21 @@ const AdminDashboard: React.FC = () => {
   const maxBarCount = 100;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
-      <header className="mb-4 shrink-0 flex items-start justify-between">
+      <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1a]">Platform Overview</h1>
-          <p className="mt-0.5 text-sm text-[#64748B]">Real-time performance metrics and team activity</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Tableau de bord admin</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Vue globale des projets, utilisateurs et indicateurs de progression.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleExportReport}
-            className="flex items-center gap-2 rounded-xl bg-[#DCEBFA] px-4 py-2 text-sm font-semibold text-[#172D49] shadow-[0_4px_16px_rgba(15,23,42,0.2)] transition hover:bg-[#BFD7EF]"
+            className="flex h-11 items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(30,58,95,0.20)] transition hover:bg-[#172D49]"
           >
-            <Download size={14} /> Export Report
+            <Download size={16} /> Exporter
           </button>
         </div>
       </header>
@@ -452,14 +452,14 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Stat Cards */}
-      <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
+      <section className="mb-4 grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: 'Total Students', value: String(totalStudents), trend: `+${Math.max(1, Math.round(totalStudents * 0.08))}`, trendClass: 'text-[#10B981] bg-[#ECFDF5]', icon: Users },
           { label: 'Active Projects', value: String(projects.length), trend: projectStatus[1].value > 0 ? `${projectStatus[1].value} active` : 'Steady', trendClass: 'text-[#1E3A5F] bg-[#DCEBFA]/30', icon: Layers },
           { label: 'Completion Rate', value: `${completionRate}%`, trend: `+${completionRate}%`, trendClass: 'text-[#10B981] bg-[#ECFDF5]', icon: TrendingUp },
           { label: 'Avg. Delay', value: `${avgDelay} Days`, trend: avgDelay > 0 ? `+${avgDelay}d` : 'None', trendClass: avgDelay > 0 ? 'text-[#ba1a1a] bg-[#ffdad6]' : 'text-[#10B981] bg-[#ECFDF5]', icon: Clock3 },
         ].map((card) => (
-          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <article key={card.label} className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             <div className="mb-3 flex items-start justify-between">
               <div className="rounded-xl bg-[#EEF3F8] p-2.5 text-[#1E3A5F]">
                 <card.icon size={18} />
@@ -473,10 +473,10 @@ const AdminDashboard: React.FC = () => {
       </section>
 
       {/* Main Row */}
-      <section className="flex-1 min-h-0 mb-4 grid grid-cols-[2fr_1fr_1fr] gap-4">
+      <section className="mb-4 grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[2fr_1fr_1fr]">
 
         {/* Bar Chart — Project Distribution */}
-        <article className="flex min-h-0 flex-col rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <article className="flex min-h-0 flex-col rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           <div className="mb-4 flex items-center justify-between shrink-0">
             <div>
               <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Project Progress</h2>
@@ -519,7 +519,7 @@ const AdminDashboard: React.FC = () => {
         </article>
 
         {/* Overall Progress Ring */}
-        <article className="flex min-h-0 flex-col items-center justify-between rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <article className="flex min-h-0 flex-col items-center justify-between rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#64748B] self-start">Overall Progress</h2>
           <div
             className="relative h-36 w-36 rounded-full"
@@ -559,7 +559,7 @@ const AdminDashboard: React.FC = () => {
             </p>
           </div>
           <Link to="/users" className="mt-4 flex items-center justify-center rounded-2xl border border-white/20 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10">
-            View List
+            Voir la liste
           </Link>
         </article>
       </section>

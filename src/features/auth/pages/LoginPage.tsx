@@ -141,10 +141,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </section>
 
         <section className="flex min-h-[58vh] items-center justify-center border-t border-[#DADDE1] px-6 py-10 lg:min-h-screen lg:border-l lg:border-t-0 lg:px-16">
-          <div className="w-full max-w-[520px]">
-            <h2 className="mb-7 text-2xl font-bold text-[#050505]">Se connecter</h2>
+          <div className="w-full max-w-[460px]">
+            <h2 className="mb-6 text-xl font-bold text-[#050505]">Login</h2>
 
-            <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
               {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                   {error}
@@ -161,8 +161,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 id="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="h-20 w-full rounded-[22px] border border-[#CCD0D5] bg-white px-6 text-xl font-medium text-[#050505] outline-none transition focus:border-[#1877F2] focus:ring-4 focus:ring-[#1877F2]"
-                placeholder="E-mail ou numéro de mobile"
+                className="h-16 w-full rounded-[18px] border border-[#CCD0D5] bg-white px-5 text-lg font-medium text-[#050505] outline-none transition focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]"
+                placeholder="Email or phone number"
                 required
               />
 
@@ -171,25 +171,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-20 w-full rounded-[22px] border border-[#CCD0D5] bg-white px-6 text-xl font-medium text-[#050505] outline-none transition focus:border-[#1877F2] focus:ring-4 focus:ring-[#1877F2]"
-                placeholder="Mot de passe"
+                className="h-16 w-full rounded-[18px] border border-[#CCD0D5] bg-white px-5 text-lg font-medium text-[#050505] outline-none transition focus:border-[#1E3A5F] focus:ring-1 focus:ring-[#1E3A5F]"
+                placeholder="Password"
                 required
               />
 
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-3 h-14 w-full rounded-full bg-[#1877F2] px-6 text-xl font-bold text-white transition hover:bg-[#166FE5] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3 h-12 w-full rounded-full bg-[#1E3A5F] px-5 text-lg font-bold text-white transition hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? 'Connexion...' : 'Se connecter'}
+                {loading ? 'Loading...' : 'Login'}
               </button>
 
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="mx-auto mt-5 text-lg font-bold text-[#050505] transition hover:text-[#1877F2]"
+                className="mx-auto mt-4 text-base font-bold text-[#050505] transition hover:text-[#1877F2]"
               >
-                Mot de passe oublié ?
+                Forgot Password?
               </button>
             </form>
           </div>

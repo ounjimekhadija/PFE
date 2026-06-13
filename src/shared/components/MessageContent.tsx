@@ -18,7 +18,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ text }) => {
     const imageUrl = text.substring(IMAGE_TAG.length);
     return (
       <a href={imageUrl} target="_blank" rel="noopener noreferrer">
-        <img src={imageUrl} alt="Attachment" className="max-w-xs rounded-lg cursor-pointer" />
+        <img src={imageUrl} alt="Pièce jointe" className="max-h-72 w-full max-w-xs cursor-pointer rounded-lg object-contain" />
       </a>
     );
   }
@@ -36,8 +36,8 @@ const MessageContent: React.FC<MessageContentProps> = ({ text }) => {
     const ext = nameParts.length > 1 ? nameParts[nameParts.length - 1].toUpperCase() : 'FILE';
     
     return (
-      <div className="w-full max-w-xs">
-        <div className="flex items-center justify-between bg-[#DCEBFA] text-[#1E3A5F] rounded-xl shadow-sm px-4 py-3 border border-[#8FB4D9]/60">
+      <div className="w-full max-w-[min(20rem,70vw)]">
+        <div className="flex min-w-0 items-center justify-between rounded-xl border border-[#8FB4D9]/60 bg-[#DCEBFA] px-3 py-3 text-[#1E3A5F] shadow-sm sm:px-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 flex items-center justify-center bg-[#1E3A5F] text-white rounded-md shrink-0">
               <span className="text-sm font-bold">{ext}</span>
@@ -47,8 +47,8 @@ const MessageContent: React.FC<MessageContentProps> = ({ text }) => {
               <div className="text-xs text-[#64748B]">{ext}</div>
             </div>
           </div>
-          <a href={url} target="_blank" rel="noreferrer" download={name} className="ml-3 inline-flex items-center gap-2 rounded bg-[#1E3A5F] px-3 py-1 text-sm font-medium text-white hover:bg-[#172D49]">
-            Download
+          <a href={url} target="_blank" rel="noreferrer" download={name} className="ml-3 inline-flex shrink-0 items-center gap-2 rounded bg-[#1E3A5F] px-3 py-1 text-sm font-medium text-white hover:bg-[#172D49]">
+            Télécharger
           </a>
         </div>
       </div>

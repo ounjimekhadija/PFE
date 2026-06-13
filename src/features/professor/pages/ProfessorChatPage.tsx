@@ -480,13 +480,13 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-[#F8FAFC] antialiased text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F8FAFC] p-4 text-[#1a1c1a] antialiased sm:p-6 lg:p-8 md:flex-row" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Sidebar */}
-      <div className="z-10 flex w-80 flex-col border-r border-[#C8D6E5]/60 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-        <div className="p-6 pb-5">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-extrabold tracking-tight">Messages</h2>
+      <div className="z-10 flex max-h-[42dvh] w-full shrink-0 flex-col rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] md:max-h-none md:w-80">
+        <div className="p-4 pb-3 sm:p-6 sm:pb-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">Messages</h2>
           </div>
 
           <div className="relative">
@@ -501,7 +501,12 @@ const Chat: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 space-y-2">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">
+          {!loading && filteredContacts.length > 0 && (
+            <h3 className="mb-2 px-4 text-[10px] font-bold uppercase tracking-wider text-[#64748B]">
+              GROUPES ({filteredContacts.length})
+            </h3>
+          )}
           {loading && <div className="px-4 py-2 text-sm text-[#64748B]">Chargement des discussions...</div>}
           {!loading && filteredContacts.length === 0 && <div className="px-4 py-2 text-sm text-[#64748B]">Aucune discussion trouvée.</div>}
           {filteredContacts.map((c) => (
@@ -545,14 +550,14 @@ const Chat: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative bg-white" style={{ height: '100vh', overflow: 'hidden' }}>
+      <div className="relative ml-0 mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] md:ml-4 md:mt-0">
 
         {/* Header */}
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#C8D6E5]/60 bg-white/85 px-8 py-5 shadow-sm backdrop-blur-md">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-[#1E3A5F] flex items-center justify-center text-white font-bold text-lg shadow-sm">G</div>
-            <div>
-              <h3 className="font-bold text-lg leading-none mb-1.5">{selectedProjectTitle}</h3>
+        <header className="hidden">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E3A5F] text-base font-bold text-white shadow-sm sm:h-11 sm:w-11 sm:text-lg">G</div>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-bold leading-none text-[#1a1c1a] sm:text-lg">{selectedProjectTitle}</h3>
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E3A5F]"></span>
@@ -562,13 +567,13 @@ const Chat: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             <button
               onClick={handleCreateMeeting}
               disabled={!selectedProjectId || creatingMeeting}
               aria-label="Créer un appel vidéo"
               title="Créer un appel vidéo"
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white shadow-sm ring-1 ring-[#DCEBFA]/40 transition-all hover:bg-[#172D49] active:scale-95 disabled:opacity-40"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white shadow-sm ring-1 ring-[#DCEBFA]/40 transition-all hover:bg-[#172D49] active:scale-95 disabled:opacity-40 sm:h-12 sm:w-12"
             >
               <Video size={22} strokeWidth={2.4} className="shrink-0" />
             </button>
@@ -576,13 +581,13 @@ const Chat: React.FC = () => {
         </header>
 
         {/* Message Container */}
-        <div className="flex-1 overflow-y-auto px-10 py-10 flex flex-col gap-8 bg-[#F8FAFC]/50">
+        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-4 py-5 sm:px-8 sm:py-8">
           {error && <div className="text-sm text-[#ba1a1a]">Erreur : {error}</div>}
           {!loading && !selectedProjectId && <div className="text-sm text-[#64748B]">Aucun projet assigné à cet encadrant.</div>}
           {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#64748B]">Aucun message pour ce projet.</div>}
           {filteredMessages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} group`}>
-              <div className={`max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
+              <div className={`flex max-w-[86%] flex-col sm:max-w-[65%] ${msg.isMe ? 'items-end' : 'items-start'}`}>
                 <div className="flex items-center gap-2 mb-2 px-1">
                   <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">{msg.name}</span>
                   <span className="text-[11px] font-medium text-[#C8D6E5]">{msg.time}</span>
@@ -594,10 +599,10 @@ const Chat: React.FC = () => {
                     alt={msg.name}
                     className="h-8 w-8 rounded-full object-cover shrink-0"
                   />
-                  <div className={`shadow-sm text-[15px] leading-relaxed font-medium overflow-hidden ${
+                  <div className={`overflow-hidden text-[15px] font-medium leading-relaxed shadow-sm ${
                     msg.isMe
-                      ? 'bg-[#1E3A5F] text-white rounded-2xl rounded-tr-sm'
-                      : 'bg-white border border-[#C8D6E5] text-[#334155] rounded-2xl rounded-tl-sm'
+                      ? 'rounded-3xl rounded-tr-none bg-[#1E3A5F] text-white'
+                      : 'rounded-3xl rounded-tl-none border border-[#C8D6E5] bg-white text-[#334155]'
                   }`}>
                     <div className="px-6 py-4">
                       <MessageContent text={msg.text} />
@@ -618,8 +623,8 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="bg-white px-6 py-3">
-          <div className="max-w-4xl mx-auto relative flex items-center gap-3">
+        <div className="bg-white px-3 py-3 sm:px-6">
+          <div className="relative mx-auto flex max-w-4xl items-center gap-2 sm:gap-3">
 
 
             <div className="relative" ref={emojiRef}>
@@ -635,7 +640,7 @@ const Chat: React.FC = () => {
                 <Smile size={22} />
               </button>
               {showEmoji && (
-                <div className="absolute bottom-14 left-0 z-30 w-72 rounded-2xl border border-[#EEF3F8] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.15)]">
+                <div className="absolute bottom-14 left-0 z-30 w-[calc(100vw-2rem)] max-w-72 rounded-2xl border border-[#EEF3F8] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.15)]">
                   <div className="grid grid-cols-8 gap-1">
                     {EMOJIS.map((em) => (
                       <button

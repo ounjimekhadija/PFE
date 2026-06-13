@@ -459,29 +459,29 @@ const Dashboard: React.FC = () => {
   const dashOffset = circ - (completionRate / 100) * circ;
 
   const stats = [
-    { label: 'TOTAL STUDENTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: <GraduationCap size={20} /> },
-    { label: 'ACTIVE PROJECTS', value: activeProjects, badge: 'Steady', badgeGreen: false, icon: <Rocket size={20} /> },
-    { label: 'COMPLETION RATE', value: `${completionRate}%`, badge: `${completionRate}%`, badgeGreen: true, icon: <CheckCircle size={20} /> },
-    { label: 'AVG. DELAY', value: `${avgDelay} Days`, badge: avgDelay > 0 ? `+${avgDelay}d` : 'On time', badgeGreen: avgDelay === 0, icon: <Clock size={20} /> },
+    { label: 'ETUDIANTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: <GraduationCap size={20} /> },
+    { label: 'PROJETS ACTIFS', value: activeProjects, badge: 'Stable', badgeGreen: false, icon: <Rocket size={20} /> },
+    { label: 'TAUX COMPLETE', value: `${completionRate}%`, badge: `${completionRate}%`, badgeGreen: true, icon: <CheckCircle size={20} /> },
+    { label: 'RETARD MOYEN', value: `${avgDelay} j`, badge: avgDelay > 0 ? `+${avgDelay}j` : 'A temps', badgeGreen: avgDelay === 0, icon: <Clock size={20} /> },
   ];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-5 py-4" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <header className="mb-3 flex shrink-0 items-center justify-between">
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+      <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1c1a]">Platform Overview</h1>
-          <p className="text-xs text-[#64748B]">Real-time performance metrics and team activity</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Tableau de bord professeur</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Suivez les projets, les taches et l'activite de vos groupes.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={exportReport} className="flex items-center gap-1.5 rounded-xl bg-[#DCEBFA] px-3 py-1.5 text-xs font-semibold text-[#172D49] transition hover:bg-[#BFD7EF]">
-            <Download size={13} /> Export Report
+          <button onClick={exportReport} className="flex h-11 items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(30,58,95,0.20)] transition hover:bg-[#172D49]">
+            <Download size={16} /> Exporter
           </button>
         </div>
       </header>
 
-      <div className="mb-3 grid shrink-0 grid-cols-4 gap-3">
+      <div className="mb-4 grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-2xl border border-transparent bg-white px-4 py-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <div key={s.label} className="rounded-2xl border border-[#DCEBFA] bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             <div className="mb-2 flex items-center justify-between">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
                 {s.icon}
@@ -494,10 +494,10 @@ const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      <div className="mb-3 grid min-h-0 flex-1 grid-cols-3 gap-3">
-        <div className="col-span-2 flex min-h-0 flex-col rounded-2xl border border-transparent bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+      <div className="mb-4 grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="flex min-h-0 flex-col rounded-2xl border border-[#DCEBFA] bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)] xl:col-span-2">
           <div className="mb-2 flex shrink-0 items-center gap-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#334155]">Project Distribution</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#334155]">Progression des projets</p>
             <div className="ml-auto flex items-center gap-3 flex-wrap">
               <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#1E3A5F]" />≥75% done</span>
               <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#DCEBFA]" />40–74%</span>
@@ -510,7 +510,7 @@ const Dashboard: React.FC = () => {
             ) : projectBars.length === 0 ? (
               <p className="text-sm text-[#64748B]">No project.</p>
             ) : (
-              <div className="flex h-full min-h-0 flex-1 gap-8">
+              <div className="flex h-full min-h-0 flex-1 gap-8 overflow-x-auto">
                 <div className="flex flex-1 flex-col justify-end min-w-0">
                   <div className="flex h-full items-end justify-center gap-10 border-r border-[#EEF3F8] pb-2 pr-8">
                     {projectBars.map((p, i) => {
@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                         <div key={i} className="group relative flex h-full w-full max-w-[220px] flex-col items-center justify-end">
                           <div className="mb-2 opacity-0 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 group-hover:opacity-100">
                             <div className="rounded-lg bg-[#1E3A5F] px-3 py-1.5 shadow-lg">
-                              <span className="text-xs font-bold text-white whitespace-nowrap">{taskPct}% Complete</span>
+                              <span className="text-xs font-bold text-white whitespace-nowrap">{taskPct}% termine</span>
                             </div>
                           </div>
                           <div className="relative w-full flex-1 overflow-hidden rounded-3xl border border-[#E5EDF5] bg-[#EEF3F8] shadow-inner">
@@ -565,12 +565,12 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="flex w-72 flex-col min-w-0">
-                  <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Latest Achievements</p>
+                  <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Dernieres taches terminees</p>
                   <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                     {allRecentCompleted.length === 0 ? (
                       <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                         <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF3F8]"><span className="text-lg">🎉</span></div>
-                        <p className="text-xs font-medium text-[#64748B]">No tasks completed yet.</p>
+                        <p className="text-xs font-medium text-[#64748B]">Aucune tache terminee.</p>
                       </div>
                     ) : (
                       allRecentCompleted.map((task, idx) => (
@@ -583,7 +583,7 @@ const Dashboard: React.FC = () => {
                           </div>
                           <div className="mt-auto flex items-center justify-between">
                             <span className="max-w-[120px] truncate rounded-md bg-[#DCEBFA]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#1E3A5F]">{task.projectName}</span>
-                            <span className="text-[9px] font-medium text-[#64748B]">Done</span>
+                            <span className="text-[9px] font-medium text-[#64748B]">Terminee</span>
                           </div>
                         </div>
                       ))
@@ -596,8 +596,8 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="flex min-h-0 flex-col gap-3">
-          <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-transparent bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-            <p className="mb-4 self-start text-[10px] font-bold uppercase tracking-widest text-[#334155]">Iterations History</p>
+          <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#DCEBFA] bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+            <p className="mb-4 self-start text-[10px] font-bold uppercase tracking-widest text-[#334155]">Historique des iterations</p>
             <div className="flex-1 overflow-y-auto max-h-[240px] pr-2 custom-scrollbar space-y-3">
               {loading ? (
                 <p className="text-xs text-[#64748B]">Loading...</p>
@@ -614,7 +614,7 @@ const Dashboard: React.FC = () => {
                         it.statut === 'EN_COURS' ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {it.statut === 'VALIDE' ? 'Done' : it.statut === 'EN_COURS' ? 'In Progress' : 'To Do'}
+                        {it.statut === 'VALIDE' ? 'Terminee' : it.statut === 'EN_COURS' ? 'En cours' : 'A faire'}
                       </span>
                     </div>
                   </div>
@@ -630,15 +630,15 @@ const Dashboard: React.FC = () => {
                 <img key={m.id} src={m.avatar} alt={m.name} title={m.name} className="h-7 w-7 rounded-full border-2 border-[#1E3A5F] object-cover" />
               ))}
             </div>
-            <p className="mb-3 text-xs font-bold">{unreadMsgs > 0 ? `${unreadMsgs} new messages` : 'No new messages'}</p>
+            <p className="mb-3 text-xs font-bold">{unreadMsgs > 0 ? `${unreadMsgs} nouveaux messages` : 'Aucun nouveau message'}</p>
             <Link to="/chat" className="block w-full rounded-xl bg-white py-1.5 text-center text-xs font-bold text-[#1E3A5F] transition hover:bg-[#DCEBFA]">
-              View
+              Voir
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="shrink-0 rounded-2xl border border-transparent bg-white px-5 py-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+      <div className="shrink-0 rounded-2xl border border-[#DCEBFA] bg-white px-5 py-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
         {loading ? (
           <p className="text-xs text-[#64748B]">Loading...</p>
         ) : (

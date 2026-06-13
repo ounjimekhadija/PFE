@@ -186,53 +186,62 @@ const Members: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]"
+      className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
       {/* Header — fixe, ne scroll pas */}
-      <header className="mb-6 flex items-center justify-between flex-shrink-0">
+      <header className="mb-4 flex shrink-0 items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Team Members</h1>
-          <p className="mt-2 text-sm text-[#64748B]">Manage and view all students in your supervised groups</p>
+          <h1 className="text-2xl font-bold">Membres des groupes</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Consultez les profils des etudiants rattaches a vos projets.</p>
         </div>
       </header>
 
-      {loading && <p className="mb-6 text-sm text-[#64748B] flex-shrink-0">Loading members...</p>}
-      {!loading && loadError && <p className="mb-6 text-sm text-[#ba1a1a] flex-shrink-0">Loading error: {loadError}</p>}
+      {loading && <p className="mb-6 shrink-0 text-sm text-[#64748B]">Chargement des membres...</p>}
+      {!loading && loadError && <p className="mb-6 shrink-0 text-sm text-[#ba1a1a]">Erreur de chargement : {loadError}</p>}
       {!loading && members.length === 0 && (
-        <p className="mb-6 text-sm text-[#64748B] flex-shrink-0">No members found for your groups.</p>
+        <p className="mb-6 shrink-0 text-sm text-[#64748B]">Aucun membre trouve pour vos groupes.</p>
       )}
 
       {/* Liste scrollable */}
       <div
-        className="flex-1 overflow-y-auto"
+        className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-6"
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#C8D6E5 transparent' }}
       >
-        <div className="space-y-8 pb-6">
+        <div className="space-y-8 pb-2">
           {projects.map(project => (
             <div key={project.id}>
-              <h2 className="mb-4 text-xl font-semibold">{project.titre}</h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="truncate text-lg font-bold">{project.titre}</h2>
+                <span className="rounded-full bg-[#DCEBFA] px-3 py-1 text-xs font-bold text-[#1E3A5F]">
+                  {members.filter(member => member.projectName === project.titre).length} profils
+                </span>
+              </div>
+              <div className="grid grid-cols-1 justify-center gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {members
                   .filter(member => member.projectName === project.titre)
                   .map((member) => (
                     <motion.div
                       key={member.id}
-                      whileHover={{ y: -8 }}
-                      className="group relative overflow-hidden rounded-2xl border border-transparent bg-white dark:bg-[#1e1f1e] p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)]"
+                      whileHover={{ y: -4 }}
+                      className="group relative overflow-hidden rounded-2xl border border-[#E5EDF5] bg-[#F8FAFC] p-5 shadow-[0_4px_12px_rgba(15,23,42,0.05)] transition hover:border-[#BFD7EF]"
                     >
-                      <div className="relative flex flex-col items-center">
-                        <div className="relative mb-4">
-                          <img
-                            src={member.avatar}
-                            alt={member.name}
-                            className="h-24 w-24 rounded-3xl object-cover shadow-lg ring-1 ring-[#C8D6E5]"
-                          />
-                          <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#22C55E] shadow-sm ring-2 ring-[#EEF3F8]"></div>
-                        </div>
+                      <div className="relative flex flex-col">
+                        <div className="mb-6 flex items-center gap-4 pr-8">
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={member.avatar}
+                              alt={member.name}
+                              className="h-20 w-20 rounded-3xl object-cover shadow-lg ring-1 ring-[#C8D6E5]"
+                            />
+                            <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[#22C55E] shadow-sm ring-2 ring-[#EEF3F8]"></div>
+                          </div>
 
-                        <h3 className="mb-1 text-xl font-bold text-[#1a1c1a]">{member.name}</h3>
-                        <p className="mb-6 text-xs font-medium uppercase tracking-wider text-[#1E3A5F]">Student Member</p>
+                          <div className="min-w-0">
+                            <h3 className="mb-1 truncate text-lg font-bold text-[#1a1c1a]">{member.name}</h3>
+                            <p className="text-xs font-medium uppercase tracking-wider text-[#1E3A5F]">Etudiant</p>
+                          </div>
+                        </div>
 
                         <div className="w-full space-y-3 mb-8">
                           <div className="flex items-center gap-3 rounded-2xl border border-transparent bg-[#EEF3F8] dark:bg-[#2a2927] p-3 transition-colors group-hover:border-[#BFD7EF] shadow-sm">
@@ -273,24 +282,26 @@ const Members: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="w-full flex gap-3">
+                        <div className="w-full flex justify-center gap-4">
                           <a
                             href={normalizeExternalUrl(member.linkedin)}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent dark:border-[#3a3836] bg-[#EEF3F8] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231] shadow-sm"
+                            title="LinkedIn"
+                            aria-label={`${member.name} LinkedIn`}
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent dark:border-[#3a3836] bg-[#EEF3F8] dark:bg-[#2a2927] transition-all hover:bg-white dark:hover:bg-[#333231] shadow-sm"
                           >
-                            <Linkedin size={16} className="text-[#0A66C2]" />
-                            <span className="text-xs font-medium text-[#334155]">LinkedIn</span>
+                            <Linkedin size={18} className="text-[#0A66C2]" />
                           </a>
                           <a
                             href={normalizeExternalUrl(member.github)}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-transparent dark:border-[#3a3836] bg-[#EEF3F8] dark:bg-[#2a2927] py-3 transition-all hover:bg-white dark:hover:bg-[#333231] shadow-sm"
+                            title="GitHub"
+                            aria-label={`${member.name} GitHub`}
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent dark:border-[#3a3836] bg-[#EEF3F8] dark:bg-[#2a2927] transition-all hover:bg-white dark:hover:bg-[#333231] shadow-sm"
                           >
-                            <Github size={16} className="text-[#334155]" />
-                            <span className="text-xs font-medium text-[#334155]">GitHub</span>
+                            <Github size={18} className="text-[#334155]" />
                           </a>
                         </div>
                       </div>

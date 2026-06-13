@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, FileText, History, Download, Trash2, Eye, PlusCircle, FileCode, FileImage, MessageSquare, X, ChevronDown } from 'lucide-react';
+import { Upload, History, Download, Trash2, Eye, PlusCircle, MessageSquare, X, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectProfessor } from '../../../lib/notifications';
@@ -11,6 +11,7 @@ interface DeliverableVersion {
   date: string;
   author: string;
   comment: string;
+  size?: string;
   url?: string;
 }
 
@@ -79,7 +80,7 @@ const StudentDeliverables: React.FC = () => {
         .select(`
           id, titre, type_document, statut, created_at,
           livrable_versions (
-            id, version, created_at, url_externe, chemin_fichier,
+            id, version, created_at, url_externe, chemin_fichier, taille_fichier,
             etudiants:depose_par (utilisateurs (nom, prenom))
           )
         `)
@@ -100,6 +101,7 @@ const StudentDeliverables: React.FC = () => {
             date: new Date(v.created_at).toISOString().split('T')[0],
             author: v.etudiants?.utilisateurs ? `${v.etudiants.utilisateurs.prenom} ${v.etudiants.utilisateurs.nom}` : 'Unknown',
             comment: `Version soumise`,
+            size: v.taille_fichier,
             url: v.chemin_fichier || v.url_externe
           })) || []
         }));
@@ -248,12 +250,31 @@ const StudentDeliverables: React.FC = () => {
     return 'bg-[#DCEBFA] text-[#172D49]';
   };
 
-  const getDocIcon = (type: string) => {
-    const t = (type || '').toUpperCase();
-    if (t.includes('PDF')) return <FileText className="text-[#ba1a1a]" size={24} />;
-    if (t.includes('DIAGRAM') || t.includes('SCHEMA')) return <FileImage className="text-[#1E3A5F]" size={24} />;
-    if (t.includes('PROGRAM') || t.includes('CODE')) return <FileCode className="text-[#1a1c1a]" size={24} />;
-    return <FileText className="text-[#1E3A5F]" size={24} />;
+  const downloadLatestVersion = (doc: StudentDeliverable) => {
+    if (doc.versions && doc.versions.length > 0 && doc.versions[0].url) {
+      let fileUrl = doc.versions[0].url;
+      if (fileUrl.includes('/storage/v1/object/public/documents/')) {
+        fileUrl = fileUrl.split('/storage/v1/object/public/documents/')[1];
+      }
+      if (fileUrl.startsWith('http')) {
+        window.open(fileUrl, '_blank');
+      } else {
+        supabase.storage.from('documents').createSignedUrl(fileUrl, 3600, { download: true }).then(({ data, error }) => {
+          if (error) { alert("Error accessing file: " + error.message); return; }
+          if (data?.signedUrl) {
+            const link = document.createElement('a');
+            link.href = data.signedUrl;
+            link.setAttribute('download', '');
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        });
+      }
+    } else {
+      alert("The file is not available in Storage.");
+    }
   };
 
   const getInitials = (prenom: string, nom: string) =>
@@ -262,19 +283,19 @@ const StudentDeliverables: React.FC = () => {
   return (
     // Conteneur racine : hauteur pleine et scroll
     <div
-      className="bg-[#F8FAFC] text-[#1a1c1a] h-screen overflow-y-auto"
+      className="h-full min-h-0 overflow-y-auto bg-[#F8FAFC] text-[#1a1c1a]"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
       {/* Conteneur interne avec un grand padding-bottom pour voir le bas des cartes */}
-      <div className="p-6 md:p-8 pb-32">
+      <div className="p-4 pb-24 sm:p-6 md:p-8 md:pb-32">
         {/* Header */}
-        <header className="mb-6 flex items-center justify-between">
+        <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-[#1a1c1a]">Deliverables</h1>
             <p className="mt-1 text-sm text-[#64748B]">Upload and manage your project documents and versions.</p>
           </div>
           <button
-            className="bg-[#1E3A5F] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-[#172D49] transition-all shadow-sm"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1E3A5F] px-6 py-3 font-bold text-white shadow-sm transition-all hover:bg-[#172D49] sm:w-auto sm:px-8 sm:py-4"
             onClick={() => setShowUploadModal(true)}
           >
             <Upload size={20} />
@@ -282,27 +303,57 @@ const StudentDeliverables: React.FC = () => {
         </header>
 
         {/* Deliverables grid with extra bottom margin */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-          {deliverables.map((doc) => (
-            <motion.div
+        <div className="grid grid-cols-1 gap-5 mb-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {deliverables.map((doc) => {
+            const latestVersion = doc.versions[0];
+
+            return (
+              <motion.div
               key={doc.id}
               onClick={() => setSelectedDoc(doc)}
-              className={`cursor-pointer rounded-2xl border-2 p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all ${
+              className={`cursor-pointer rounded-2xl border-2 p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all ${
                 selectedDoc?.id === doc.id
                   ? 'border-transparent bg-[#DCEBFA]/10'
                   : 'border-transparent bg-white hover:border-transparent'
               }`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getStatusClass(doc.status)}`}>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-base font-bold text-[#1a1c1a]">{doc.title}</h3>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[#64748B]">
+                    <span>{doc.lastModified}</span>
+                    {latestVersion?.size && (
+                      <>
+                        <span className="text-[#C8D6E5]">-</span>
+                        <span>{latestVersion.size}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <span className={`flex-shrink-0 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getStatusClass(doc.status)}`}>
                   {doc.status}
                 </span>
               </div>
 
-              <h3 className="mb-1 text-base font-bold text-[#1a1c1a]">{doc.title}</h3>
-              <p className="mb-4 text-sm text-[#64748B]">{doc.type} • Last updated {doc.lastModified}</p>
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-[#EEF3F8] px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase text-[#64748B]">Depose par</p>
+                  <p className="truncate text-sm font-semibold text-[#334155]">{latestVersion?.author || 'N/A'}</p>
+                </div>
+                <button
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49]"
+                  title="Download latest version"
+                  aria-label="Download latest version"
+                  onClick={e => {
+                    e.stopPropagation();
+                    downloadLatestVersion(doc);
+                  }}
+                >
+                  <Download size={18} />
+                </button>
+              </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3 border-t border-[#EEF3F8] pt-3">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#64748B]">
                   <History size={14} />
                   {doc.versions.length} Versions
@@ -328,39 +379,6 @@ const StudentDeliverables: React.FC = () => {
                     onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
                   >
                     <PlusCircle size={18} />
-                  </button>
-                  <button
-                    className="rounded-xl border border-transparent bg-[#DCEBFA] p-2 text-white transition-all hover:bg-[#BFD7EF]"
-                    title="Download latest version"
-                    onClick={e => {
-                      e.stopPropagation();
-                      if (doc.versions && doc.versions.length > 0 && doc.versions[0].url) {
-                        let fileUrl = doc.versions[0].url;
-                        if (fileUrl.includes('/storage/v1/object/public/documents/')) {
-                          fileUrl = fileUrl.split('/storage/v1/object/public/documents/')[1];
-                        }
-                        if (fileUrl.startsWith('http')) {
-                          window.open(fileUrl, '_blank');
-                        } else {
-                          supabase.storage.from('documents').createSignedUrl(fileUrl, 3600, { download: true }).then(({ data, error }) => {
-                            if (error) { alert("Error accessing file: " + error.message); return; }
-                            if (data?.signedUrl) {
-                              const link = document.createElement('a');
-                              link.href = data.signedUrl;
-                              link.setAttribute('download', '');
-                              link.target = '_blank';
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }
-                          });
-                        }
-                      } else {
-                        alert("The file is not available in Storage.");
-                      }
-                    }}
-                  >
-                    <Download size={18} />
                   </button>
                   <button
                     className="rounded-xl border border-transparent bg-[#ba1a1a] p-2 text-white transition-all hover:bg-[#8c1d18]"
@@ -393,15 +411,16 @@ const StudentDeliverables: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
       {/* Modaux - inchangés */}
       {showUploadModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
+          <div className="my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col items-center overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-8">
             <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Nouveau document</h2>
             <input
               type="text"
@@ -484,9 +503,9 @@ const StudentDeliverables: React.FC = () => {
       )}
 
       {showCommentModal && selectedDoc && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
           <div
-            className="bg-white flex flex-col w-full max-w-lg relative overflow-hidden"
+            className="relative my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden bg-white"
             style={{ borderRadius: '24px', boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}
           >
             <div className="flex items-center gap-3 px-6 pt-6 pb-4" style={{ borderBottom: '1px solid #f0ede6' }}>
@@ -550,8 +569,8 @@ const StudentDeliverables: React.FC = () => {
       )}
 
       {showModal && selectedDoc && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
-          <div className="bg-white rounded-[32px] p-8 flex flex-col w-full max-w-lg relative" style={{ maxHeight: '80vh' }}>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
+          <div className="relative my-4 flex w-full max-w-lg flex-col bg-white p-5 sm:p-8" style={{ maxHeight: 'calc(100dvh - 2rem)', borderRadius: '32px' }}>
             <div className="flex justify-between items-center mb-8 flex-shrink-0">
               <h3 className="text-xl font-bold text-[#1a1c1a]">Version History</h3>
               <button onClick={() => setShowModal(false)} className="flex items-center justify-center text-[#64748B] hover:text-[#1a1c1a] transition-colors" style={{ width: 32, height: 32, borderRadius: 10, background: '#EEF3F8' }}>
@@ -586,8 +605,8 @@ const StudentDeliverables: React.FC = () => {
       )}
 
       {showAddVersionModal && selectedDoc && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
+          <div className="my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col items-center overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-8">
             <h2 className="text-xl font-bold mb-2 text-[#1a1c1a]">Nouvelle version</h2>
             <p className="text-sm text-[#64748B] mb-6 text-center">{selectedDoc.title}</p>
             <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#EEF3F8] transition-colors">

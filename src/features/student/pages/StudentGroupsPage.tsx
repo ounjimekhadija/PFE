@@ -1,6 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, UserPlus, Mail, Github, Linkedin, MoreVertical, Filter, CheckCircle2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  FolderKanban,
+  Github,
+  Linkedin,
+  Mail,
+  MoreVertical,
+  Search,
+  Sparkles,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 import EmailModal from '../../../shared/components/EmailModal';
@@ -26,11 +43,11 @@ const StudentGroups: React.FC = () => {
   const [selected, setSelected] = useState<Student[]>([]);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
-  const [groupName, setGroupName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [projects, setProjects] = useState<{ id: string; titre: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState<Student | null>(null);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
@@ -38,17 +55,19 @@ const StudentGroups: React.FC = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userData } = await supabase
-          .from('utilisateurs')
-          .select('nom, prenom')
-          .eq('id', user.id)
-          .single();
-        if (userData) {
-          setCurrentUser({ id: user.id, name: `${userData.prenom} ${userData.nom}` });
-        }
+      if (!user) return;
+
+      const { data: userData } = await supabase
+        .from('utilisateurs')
+        .select('nom, prenom')
+        .eq('id', user.id)
+        .single();
+
+      if (userData) {
+        setCurrentUser({ id: user.id, name: `${userData.prenom} ${userData.nom}` });
       }
     };
+
     fetchCurrentUser();
   }, []);
 
@@ -58,9 +77,10 @@ const StudentGroups: React.FC = () => {
       if (error) {
         console.error('Error fetching projects:', error);
       } else {
-        setProjects(data);
+        setProjects(data || []);
       }
     };
+
     fetchProjects();
   }, []);
 
@@ -68,38 +88,62 @@ const StudentGroups: React.FC = () => {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('etudiants')
-          .select(`id, projet_id, filiere, github_url, linkedin_url, utilisateurs (nom, prenom, email, avatar_url)`);
+        const [
+          { data: userRows, error: usersError },
+          { data: studentRows, error: studentsError },
+          { data: projectRows },
+        ] = await Promise.all([
+          supabase
+            .from('utilisateurs')
+            .select('id, nom, prenom, email, avatar_url, role')
+            .eq('role', 'ETUDIANT'),
+          supabase
+            .from('etudiants')
+            .select('id, projet_id, filiere, github_url, linkedin_url'),
+          supabase
+            .from('projets')
+            .select('id, titre'),
+        ]);
 
-        if (error) throw error;
+        if (usersError) throw usersError;
+        if (studentsError) throw studentsError;
 
-        const { data: projects } = await supabase.from('projets').select('id, titre');
         const projectMap: Record<string, string> = {};
-        projects?.forEach(p => projectMap[p.id] = p.titre);
+        projectRows?.forEach((project) => {
+          projectMap[project.id] = project.titre;
+        });
 
-        if (data) {
-          const formattedStudents: Student[] = data.map((student: any) => {
-            const avatarUrl = student.utilisateurs?.avatar_url
-              ? student.utilisateurs.avatar_url
-              : `https://ui-avatars.com/api/?name=${student.utilisateurs?.prenom}+${student.utilisateurs?.nom}&background=random`;
+        const studentMap = new Map<string, any>();
+        (studentRows || []).forEach((student: any) => {
+          studentMap.set(String(student.id), student);
+        });
 
-            return {
-              id: student.id,
-              name: student.utilisateurs ? `${student.utilisateurs.prenom} ${student.utilisateurs.nom}` : student.id,
-              role: student.filiere || 'Student',
-              email: student.utilisateurs?.email || '',
-              avatar: avatarUrl,
-              status: student.projet_id ? 'In Group' : 'Available',
-              skills: ['React', 'Node.js', 'SQL'],
-              groupName: student.projet_id ? projectMap[student.projet_id] || `Projet #${student.projet_id}` : undefined,
-              projet_id: student.projet_id,
-              githubUrl: student.github_url,
-              linkedinUrl: student.linkedin_url
-            };
-          });
-          setStudents(formattedStudents);
-        }
+        const formattedStudents: Student[] = (userRows || []).map((user: any) => {
+          const student = studentMap.get(String(user.id));
+          const firstName = user.prenom || '';
+          const lastName = user.nom || '';
+          const displayName = `${firstName} ${lastName}`.trim() || user.email || user.id;
+          const avatarName = encodeURIComponent(displayName);
+          const avatarUrl = user.avatar_url
+            ? user.avatar_url
+            : `https://ui-avatars.com/api/?name=${avatarName}&background=random`;
+
+          return {
+            id: user.id,
+            name: displayName,
+            role: student?.filiere || 'Etudiant',
+            email: user.email || '',
+            avatar: avatarUrl,
+            status: student?.projet_id ? 'In Group' : 'Available',
+            skills: ['React', 'Node.js', 'SQL'],
+            groupName: student?.projet_id ? projectMap[student.projet_id] || `Projet #${student.projet_id}` : undefined,
+            projet_id: student?.projet_id || null,
+            githubUrl: student?.github_url || null,
+            linkedinUrl: student?.linkedin_url || null,
+          };
+        });
+
+        setStudents(formattedStudents);
       } catch (err) {
         console.error('Error loading students:', err);
       } finally {
@@ -115,13 +159,33 @@ const StudentGroups: React.FC = () => {
     setIsEmailModalOpen(true);
   };
 
-  let filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students
+    .filter((student) =>
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.groupName || '').toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOrder === 'asc') return a.name.localeCompare(b.name);
+      if (sortOrder === 'desc') return b.name.localeCompare(a.name);
+      return 0;
+    });
 
-  if (sortOrder === 'asc') filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
-  else if (sortOrder === 'desc') filteredStudents.sort((a, b) => b.name.localeCompare(a.name));
+  const availableCount = students.filter((student) => student.status === 'Available').length;
+  const inGroupCount = students.filter((student) => student.status === 'In Group').length;
+  const selectedProjectTitle = projects.find((project) => project.id === projectName)?.titre;
+  const selectionReady = selected.length > 0;
+  const cardsPerPage = 6;
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / cardsPerPage));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * cardsPerPage, currentPage * cardsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortOrder]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   const handleFilterClick = () => {
     if (sortOrder === 'none') setSortOrder('asc');
@@ -131,15 +195,15 @@ const StudentGroups: React.FC = () => {
 
   const toggleSelect = (student: Student) => {
     if (student.status === 'In Group') return;
-    if (selected.find(s => s.id === student.id)) {
-      setSelected(selected.filter(s => s.id !== student.id));
+    if (selected.find((item) => item.id === student.id)) {
+      setSelected(selected.filter((item) => item.id !== student.id));
     } else {
       setSelected([...selected, student]);
     }
   };
 
   const removeSelected = (id: string) => {
-    setSelected(selected.filter(s => s.id !== id));
+    setSelected(selected.filter((student) => student.id !== id));
   };
 
   const handleCreateGroup = async () => {
@@ -150,13 +214,13 @@ const StudentGroups: React.FC = () => {
       const currentUserId = user?.id;
 
       if (selected.length === 0 && !currentUserId) {
-        alert('Select at least one available student or be logged in.');
+        alert('Selectionnez au moins un etudiant disponible ou reconnectez-vous.');
         return;
       }
 
-      const selectedUnavailable = selected.filter((s) => s.projet_id);
+      const selectedUnavailable = selected.filter((student) => student.projet_id);
       if (selectedUnavailable.length > 0) {
-        alert('One or more selected students are already in a group.');
+        alert('Un ou plusieurs etudiants selectionnes sont deja dans un groupe.');
         return;
       }
 
@@ -168,15 +232,15 @@ const StudentGroups: React.FC = () => {
           .single();
 
         if (meRow?.projet_id) {
-          alert("You are already assigned to a project. A student can only belong to one project.");
+          alert('Vous etes deja affecte a un projet. Un etudiant ne peut appartenir qu a un seul projet.');
           return;
         }
       }
 
       const projectId = projectName;
-      const selectedProject = projects.find(p => p.id === projectId);
+      const selectedProject = projects.find((project) => project.id === projectId);
+      const studentIdsToUpdate = selected.map((student) => student.id);
 
-      const studentIdsToUpdate = selected.map(s => s.id);
       if (currentUserId && !studentIdsToUpdate.includes(currentUserId)) {
         studentIdsToUpdate.push(currentUserId);
       }
@@ -193,107 +257,114 @@ const StudentGroups: React.FC = () => {
         console.warn('Not all students could be updated. Some might have been assigned to a project just now.');
       }
 
-      setStudents(prev => prev.map(s =>
-        studentIdsToUpdate.includes(s.id)
-          ? { ...s, status: 'In Group', groupName: selectedProject?.titre, projet_id: projectId }
-          : s
+      setStudents((previous) => previous.map((student) =>
+        studentIdsToUpdate.includes(student.id)
+          ? { ...student, status: 'In Group', groupName: selectedProject?.titre, projet_id: projectId }
+          : student
       ));
 
       if (currentUserId) {
         await notifyAdmins({
           senderId: currentUserId,
-          projectId: projectId,
+          projectId,
           title: 'New Group Formed',
           message: `A group of students has formed for the project "${selectedProject?.titre || 'Unknown'}".`,
-          type: 'GROUP_CREATED'
+          type: 'GROUP_CREATED',
         });
       }
 
       setShowGroupModal(false);
       setProjectName('');
       setSelected([]);
-      alert("Groupe créé avec succès !");
+      alert('Groupe cree avec succes !');
     } catch (error: any) {
-      console.error('Erreur lors de la création du groupe:', error);
+      console.error('Erreur lors de la creation du groupe:', error);
       alert(`Une erreur s'est produite: ${error?.message || error?.details || JSON.stringify(error)}`);
     }
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-
-      {selected.length > 0 && (
-        <div className="mb-6 flex items-center gap-4 bg-[#DCEBFA]/20 border border-transparent rounded-2xl px-6 py-3 shadow-sm flex-shrink-0">
-          <span className="font-bold text-[#172D49] text-sm">Selected:</span>
-          <div className="flex gap-2 flex-wrap">
-            {selected.map(s => (
-              <div key={s.id} className="flex items-center gap-1 bg-white border border-transparent rounded-xl px-3 py-1 text-xs font-semibold text-[#172D49]">
-                <img src={s.avatar} alt={s.name} className="w-6 h-6 rounded-full mr-1" />
-                {s.name}
-                <button onClick={() => removeSelected(s.id)} className="ml-1 text-[#64748B] hover:text-[#ba1a1a] font-bold">×</button>
-              </div>
-            ))}
-          </div>
-          <button
-            className="ml-auto bg-[#1E3A5F] hover:bg-[#172D49] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition-all"
-            onClick={() => setShowGroupModal(true)}
-          >
-            Create Group
-          </button>
-        </div>
-      )}
-
+    <div
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F8FAFC] px-4 py-3 text-[#1a1c1a] sm:px-6 lg:px-8"
+      style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
+    >
       {showGroupModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md flex flex-col items-center border border-transparent">
-            <h2 className="text-xl font-bold mb-4 text-[#1a1c1a]">Choose a Project</h2>
-            <div className="relative w-full mb-6 text-left">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
+          <div className="my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-y-auto rounded-2xl border border-[#C8D6E5]/60 bg-white p-5 shadow-xl sm:p-7">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Creation du groupe</p>
+                <h2 className="mt-1 text-xl font-bold text-[#1a1c1a]">Choisir un projet</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGroupModal(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition hover:text-[#1a1c1a]"
+                aria-label="Fermer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mb-5 rounded-2xl bg-[#EEF3F8] p-3">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Membres selectionnes</p>
+              <div className="flex flex-wrap gap-2">
+                {selected.map((student) => (
+                  <span key={student.id} className="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-[#172D49] shadow-sm">
+                    {student.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative mb-6 text-left">
               <button
                 type="button"
                 onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/50 transition-all"
+                className="flex w-full items-center justify-between rounded-xl border border-[#C8D6E5]/70 bg-white px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
               >
                 <span className={!projectName ? 'text-gray-400' : 'text-[#1a1c1a]'}>
-                  {projectName
-                    ? projects.find(p => p.id === projectName)?.titre
-                    : 'Select a project'}
+                  {projectName ? selectedProjectTitle : 'Selectionner un projet'}
                 </span>
-                <svg className={`h-4 w-4 text-[#64748B] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown className={`h-4 w-4 text-[#64748B] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} />
               </button>
 
               {showProjectDropdown && (
-                <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-xl transition-all animate-in fade-in slide-in-from-top-1">
-                  {projects.map((p) => (
+                <div className="absolute z-50 mt-2 max-h-48 w-full overflow-y-auto rounded-xl border border-[#C8D6E5]/60 bg-white p-1 shadow-xl transition-all animate-in fade-in slide-in-from-top-1">
+                  {projects.map((project) => (
                     <button
-                      key={p.id}
+                      key={project.id}
                       type="button"
                       onClick={() => {
-                        setProjectName(p.id);
+                        setProjectName(project.id);
                         setShowProjectDropdown(false);
                       }}
-                      className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${projectName === p.id ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#1E3A5F]/5'}`}
+                      className={`flex w-full items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                        projectName === project.id ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#EEF3F8]'
+                      }`}
                     >
-                      {p.titre}
+                      {project.titre}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            <div className="flex gap-3 w-full">
+
+            <div className="flex gap-3">
               <button
-                className="flex-1 bg-[#1E3A5F] hover:bg-[#172D49] text-white font-bold py-2 rounded-xl transition-all"
+                className="flex-1 rounded-xl bg-[#1E3A5F] py-2.5 text-sm font-bold text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:bg-[#BFD7EF]"
                 onClick={handleCreateGroup}
                 disabled={!projectName}
+                type="button"
               >
-                Create Group
+                Creer le groupe
               </button>
               <button
-                className="flex-1 bg-[#E5EDF5] hover:bg-[#D5E1ED] text-[#334155] font-bold py-2 rounded-xl transition-all"
+                className="flex-1 rounded-xl bg-[#E5EDF5] py-2.5 text-sm font-bold text-[#334155] transition-all hover:bg-[#D5E1ED]"
                 onClick={() => setShowGroupModal(false)}
+                type="button"
               >
-                Cancel
+                Annuler
               </button>
             </div>
           </div>
@@ -301,128 +372,167 @@ const StudentGroups: React.FC = () => {
         document.body
       )}
 
-      {/* Header — fixed, ne scroll pas */}
-      <header className="mb-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#1a1c1a]">Student Directory</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Connect with fellow students and form your project groups.</p>
+      <header className="mb-4 flex flex-shrink-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold text-[#1a1c1a]">Groupes etudiants</h1>
+            <span className="rounded-full bg-[#DCEBFA] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#1E3A5F]">
+              {filteredStudents.length} profils
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-[#64748B]">Trouvez des partenaires, consultez leurs profils et composez votre equipe projet.</p>
         </div>
-        <div className="flex gap-3">
-          <div className="relative">
+
+        <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
+          <div className="relative flex-1 xl:w-80 xl:flex-none">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]" size={18} strokeWidth={2} />
             <input
               type="text"
-              placeholder="Search students..."
+              placeholder="Rechercher un etudiant..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 rounded-2xl border border-transparent bg-white py-3 pl-11 pr-4 text-sm text-[#334155] transition-all focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="h-12 w-full rounded-xl border border-[#C8D6E5]/70 bg-white py-3 pl-11 pr-4 text-sm text-[#334155] shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
             />
           </div>
           <button
             onClick={handleFilterClick}
-            className={`p-3 rounded-2xl transition-all flex items-center justify-center ${sortOrder !== 'none'
-              ? 'bg-[#DCEBFA]/30 text-[#1E3A5F] hover:bg-[#DCEBFA]/50'
-              : 'bg-[#EEF3F8] text-[#64748B] hover:bg-[#E5EDF5] hover:text-[#334155]'
-              }`}
-            title="Trier par nom (A-Z / Z-A)"
+            className={`flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold shadow-sm transition-all ${
+              sortOrder !== 'none'
+                ? 'bg-[#DCEBFA] text-[#1E3A5F] hover:bg-[#C8D6E5]'
+                : 'bg-white text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#334155]'
+            }`}
+            title="Trier par nom"
+            type="button"
           >
             <Filter size={18} strokeWidth={2} />
-            {sortOrder === 'asc' && <span className="ml-1 text-[10px] font-bold">A-Z</span>}
-            {sortOrder === 'desc' && <span className="ml-1 text-[10px] font-bold">Z-A</span>}
+            {sortOrder === 'asc' && <span className="text-[10px] font-bold">A-Z</span>}
+            {sortOrder === 'desc' && <span className="text-[10px] font-bold">Z-A</span>}
           </button>
         </div>
       </header>
 
-      {/* Liste scrollable */}
-      <div
-        className="flex-1 overflow-y-auto pr-2"
-        style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#C8D6E5 transparent',
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
-          {filteredStudents.map((student) => (
-            <motion.div
-              key={student.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="group flex flex-col rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all hover:border-transparent"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="relative">
-                  <img
-                    src={student.avatar}
-                    alt={student.name}
-                    className="h-20 w-20 rounded-2xl object-cover shadow-md ring-1 ring-[#C8D6E5]"
-                  />
-                  <div className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full shadow-sm ring-2 ring-[#EEF3F8] ${student.status === 'Available' ? 'bg-green-500' : 'bg-[#1E3A5F]'
-                    }`}>
-                    {student.status === 'In Group' && <CheckCircle2 size={10} className="text-white" />}
-                  </div>
-                </div>
-                <button className="text-[#C8D6E5] hover:text-[#64748B]">
-                  <MoreVertical size={20} />
+      <div className="mb-4 grid flex-shrink-0 grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard title="Etudiants disponibles" value={availableCount} icon={<UserCheck size={22} />} tone="green" />
+        <StatCard title="Deja en groupe" value={inGroupCount} icon={<Users size={22} />} tone="blue" />
+        <StatCard title="Selection actuelle" value={selected.length} icon={<FolderKanban size={22} />} tone="amber" />
+      </div>
+
+      {selectionReady && (
+        <div className="mb-4 flex shrink-0 flex-col gap-3 rounded-2xl border border-[#C8D6E5]/60 bg-white px-4 py-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <span className="rounded-full bg-[#DCEBFA] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#1E3A5F]">
+              {selected.length} selectionne{selected.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
+            {selected.map((student) => (
+              <div key={student.id} className="flex shrink-0 items-center gap-2 rounded-xl bg-[#F8FAFC] px-2.5 py-2">
+                <img src={student.avatar} alt={student.name} className="h-8 w-8 rounded-lg object-cover" />
+                <span className="max-w-40 truncate text-xs font-bold text-[#1a1c1a]">{student.name}</span>
+                <button
+                  onClick={() => removeSelected(student.id)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#64748B] transition hover:bg-[#FFE4E0] hover:text-[#ba1a1a]"
+                  type="button"
+                  aria-label={`Retirer ${student.name}`}
+                >
+                  <X size={14} />
                 </button>
               </div>
+            ))}
+          </div>
+          <button
+            className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1E3A5F] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#172D49]"
+            onClick={() => setShowGroupModal(true)}
+            type="button"
+          >
+            <FolderKanban size={16} />
+            Creer un groupe
+          </button>
+        </div>
+      )}
 
-              <h3 className="mb-1 truncate text-xl font-bold text-[#1a1c1a]">{student.name}</h3>
-              {student.groupName && (
-                <p className="mb-1 truncate text-sm font-medium text-[#64748B]">Group: {student.groupName}</p>
-              )}
-              <p className="mb-4 truncate text-sm font-bold text-[#1E3A5F]">{student.role}</p>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-5">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[#C8D6E5]/60 bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:p-5">
+          <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
+            {sortOrder !== 'none' && (
+              <span className="hidden rounded-full bg-[#EEF3F8] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B] sm:inline-flex">
+                Tri {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
+              </span>
+            )}
+          </div>
 
-              <div className="flex flex-wrap gap-2 mb-8">
-                {student.skills.map((skill, i) => (
-                  <span key={i} className="rounded-lg border border-transparent bg-[#EEF3F8] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
-                    {skill}
-                  </span>
+          <div className="flex min-h-0 flex-1 flex-col pr-1">
+            {loading ? (
+              <div className="flex flex-1 items-center justify-center text-sm font-medium text-[#64748B]">
+                Chargement des etudiants...
+              </div>
+            ) : filteredStudents.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-[#F8FAFC] text-center">
+                <Search className="mb-3 text-[#C8D6E5]" size={28} />
+                <p className="text-sm font-bold text-[#334155]">Aucun etudiant trouve</p>
+                <p className="mt-1 text-xs text-[#64748B]">Essayez un autre nom ou une autre filiere.</p>
+              </div>
+            ) : (
+              <>
+              <div
+                className="min-h-0 flex-1 overflow-y-auto pr-2"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: '#C8D6E5 transparent' }}
+              >
+              <div className="grid grid-cols-1 gap-4 pb-3 md:grid-cols-2 xl:grid-cols-3">
+                {paginatedStudents.map((student) => (
+                  <StudentCard
+                    key={student.id}
+                    student={student}
+                    selected={Boolean(selected.find((item) => item.id === student.id))}
+                    onToggle={() => toggleSelect(student)}
+                    onEmail={() => handleOpenEmailModal(student)}
+                  />
                 ))}
               </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-transparent mt-auto">
-                <div className="flex gap-4">
-                  <button onClick={() => handleOpenEmailModal(student)} className="text-[#64748B] hover:text-[#1E3A5F] transition-colors">
-                    <Mail size={20} strokeWidth={2} />
-                  </button>
-                  {student.githubUrl ? (
-                    <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-[#64748B] hover:text-[#1a1c1a] transition-colors">
-                      <Github size={20} strokeWidth={2} />
-                    </a>
-                  ) : (
-                    <button disabled className="text-[#C8D6E5] cursor-not-allowed" title="Pas de lien GitHub">
-                      <Github size={20} strokeWidth={2} />
-                    </button>
-                  )}
-                  {student.linkedinUrl ? (
-                    <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[#64748B] hover:text-blue-600 transition-colors">
-                      <Linkedin size={20} strokeWidth={2} />
-                    </a>
-                  ) : (
-                    <button disabled className="text-[#C8D6E5] cursor-not-allowed" title="Pas de lien LinkedIn">
-                      <Linkedin size={20} strokeWidth={2} />
-                    </button>
-                  )}
-                </div>
-                <button
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${student.status === 'Available'
-                    ? selected.find(s => s.id === student.id)
-                      ? 'bg-[#16A34A] text-white shadow-sm hover:bg-[#15803D]'
-                      : 'bg-[#1E3A5F] text-white shadow-sm hover:bg-[#172D49]'
-                    : 'cursor-not-allowed bg-[#E5EDF5] text-[#64748B]'
-                    }`}
-                  disabled={student.status !== 'Available'}
-                  onClick={() => toggleSelect(student)}
-                >
-                  <UserPlus size={14} />
-                  {student.status === 'In Group'
-                    ? 'In Group'
-                    : selected.find(s => s.id === student.id) ? 'Selected' : 'Invite'}
-                </button>
               </div>
-            </motion.div>
-          ))}
-        </div>
+              <div className="mt-4 flex shrink-0 flex-col gap-3 border-t border-[#EEF3F8] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold text-[#64748B]">
+                  Affichage {(currentPage - 1) * cardsPerPage + 1}-{Math.min(currentPage * cardsPerPage, filteredStudents.length)} sur {filteredStudents.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#DCEBFA] bg-white text-[#64748B] transition hover:bg-[#EEF3F8] disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Page precedente"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setCurrentPage(page)}
+                      className={`flex h-9 min-w-9 items-center justify-center rounded-xl px-3 text-xs font-bold transition ${
+                        currentPage === page
+                          ? 'bg-[#1E3A5F] text-white shadow-sm'
+                          : 'border border-[#DCEBFA] bg-white text-[#64748B] hover:bg-[#EEF3F8]'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={currentPage === totalPages}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#DCEBFA] bg-white text-[#64748B] transition hover:bg-[#EEF3F8] disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Page suivante"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+              </>
+            )}
+          </div>
+        </section>
       </div>
 
       {isEmailModalOpen && emailRecipient && currentUser && (
@@ -442,6 +552,146 @@ const StudentGroups: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  tone: 'green' | 'blue' | 'amber';
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, tone }) => {
+  const toneClass = {
+    green: 'bg-[#DCFCE7] text-[#16A34A]',
+    blue: 'bg-[#DCEBFA] text-[#1E3A5F]',
+    amber: 'bg-[#FFF4CC] text-[#B45309]',
+  }[tone];
+
+  return (
+    <div className="rounded-2xl border border-[#C8D6E5]/60 bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold text-[#64748B]">{title}</p>
+          <p className="mt-3 text-3xl font-bold text-[#1a1c1a]">{value}</p>
+        </div>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${toneClass}`}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface StudentCardProps {
+  student: Student;
+  selected: boolean;
+  onToggle: () => void;
+  onEmail: () => void;
+}
+
+const StudentCard: React.FC<StudentCardProps> = ({ student, selected, onToggle, onEmail }) => {
+  const isAvailable = student.status === 'Available';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`group flex min-h-[260px] flex-col rounded-2xl border bg-[#F8FAFC] p-4 transition-all ${
+        selected
+          ? 'border-[#16A34A]/40 shadow-[0_8px_24px_rgba(22,163,74,0.12)]'
+          : 'border-[#EEF3F8] shadow-sm hover:border-[#BFD7EF]'
+      }`}
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="relative shrink-0">
+            <img src={student.avatar} alt={student.name} className="h-14 w-14 rounded-2xl object-cover shadow-sm ring-1 ring-[#C8D6E5]" />
+            <div className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full shadow-sm ring-2 ring-white ${
+              isAvailable ? 'bg-[#16A34A]' : 'bg-[#1E3A5F]'
+            }`}>
+              {isAvailable ? <Sparkles size={10} className="text-white" /> : <CheckCircle2 size={10} className="text-white" />}
+            </div>
+          </div>
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-bold text-[#1a1c1a]">{student.name}</h3>
+            <p className="mt-0.5 truncate text-xs font-bold text-[#1E3A5F]">{student.role}</p>
+          </div>
+        </div>
+        <button className="flex h-8 w-8 items-center justify-center rounded-xl text-[#C8D6E5] transition hover:bg-white hover:text-[#64748B]" type="button">
+          <MoreVertical size={18} />
+        </button>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${
+          isAvailable ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#DCEBFA] text-[#1E3A5F]'
+        }`}>
+          {isAvailable ? 'Disponible' : 'En groupe'}
+        </span>
+        {student.groupName && (
+          <span className="max-w-full truncate rounded-lg bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
+            {student.groupName}
+          </span>
+        )}
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-2">
+        {student.skills.map((skill) => (
+          <span key={skill} className="rounded-lg border border-[#E5EDF5] bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
+            {skill}
+          </span>
+        ))}
+      </div>
+
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-[#E5EDF5] pt-4">
+        <div className="flex gap-2">
+          <button
+            onClick={onEmail}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#64748B] transition-colors hover:text-[#1E3A5F]"
+            type="button"
+            title="Envoyer un email"
+          >
+            <Mail size={17} strokeWidth={2} />
+          </button>
+          {student.githubUrl ? (
+            <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#64748B] transition-colors hover:text-[#1a1c1a]" title="GitHub">
+              <Github size={17} strokeWidth={2} />
+            </a>
+          ) : (
+            <button disabled className="flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-xl bg-white text-[#C8D6E5]" title="Pas de lien GitHub">
+              <Github size={17} strokeWidth={2} />
+            </button>
+          )}
+          {student.linkedinUrl ? (
+            <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#64748B] transition-colors hover:text-blue-600" title="LinkedIn">
+              <Linkedin size={17} strokeWidth={2} />
+            </a>
+          ) : (
+            <button disabled className="flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-xl bg-white text-[#C8D6E5]" title="Pas de lien LinkedIn">
+              <Linkedin size={17} strokeWidth={2} />
+            </button>
+          )}
+        </div>
+
+        <button
+          className={`flex h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold transition-all ${
+            isAvailable
+              ? selected
+                ? 'bg-[#16A34A] text-white shadow-sm hover:bg-[#15803D]'
+                : 'bg-[#1E3A5F] text-white shadow-sm hover:bg-[#172D49]'
+              : 'cursor-not-allowed bg-[#E5EDF5] text-[#64748B]'
+          }`}
+          disabled={!isAvailable}
+          onClick={onToggle}
+          type="button"
+        >
+          <UserPlus size={14} />
+          {isAvailable ? (selected ? 'Selectionne' : 'Inviter') : 'Occupe'}
+        </button>
+      </div>
+    </motion.div>
   );
 };
 

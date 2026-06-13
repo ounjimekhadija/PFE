@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar, CheckCircle, Clock3, MoreVertical, Plus, Search, Trash2, TrendingUp, Users } from 'lucide-react';
+import { Calendar, CheckCircle, Clock3, FolderPlus, MoreVertical, Plus, Search, Trash2, TrendingUp, Users, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
 
@@ -186,7 +186,7 @@ const AdminProjects: React.FC = () => {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Error loading projects.';
+          : 'Erreur lors du chargement des projets.';
       setError(message);
     } finally {
       setLoading(false);
@@ -211,7 +211,7 @@ const AdminProjects: React.FC = () => {
     e.preventDefault();
     setFormError(null);
     setFormSuccess(null);
-    if (!form.title.trim()) { setFormError('Project title is required.'); return; }
+    if (!form.title.trim()) { setFormError('Le titre du projet est obligatoire.'); return; }
     try {
       setCreateLoading(true);
       const token = await getAccessToken();
@@ -227,8 +227,8 @@ const AdminProjects: React.FC = () => {
         }),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Creation failed.');
-      setFormSuccess('Project successfully created.');
+      if (!response.ok) throw new Error(body?.error || 'La création a échoué.');
+      setFormSuccess('Projet créé avec succès.');
       setShowModal(false);
       setForm({ title: '', domaine: '', encadrantId: '', deadline: '' });
       await fetchData();
@@ -236,7 +236,7 @@ const AdminProjects: React.FC = () => {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Error creating project.';
+          : 'Erreur lors de la création du projet.';
       setFormError(message);
     } finally {
       setCreateLoading(false);
@@ -253,15 +253,15 @@ const AdminProjects: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Deletion failed.');
-      setFormSuccess('Project successfully deleted.');
+      if (!response.ok) throw new Error(body?.error || 'La suppression a échoué.');
+      setFormSuccess('Projet supprimé avec succès.');
       setDeleteConfirmId(null);
       await fetchData();
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Error deleting project.';
+          : 'Erreur lors de la suppression du projet.';
       setFormError(message);
       setDeleteConfirmId(null);
     } finally {
@@ -290,7 +290,7 @@ const AdminProjects: React.FC = () => {
     return { completed, nearDeadline, avgProgress };
   }, [projects]);
 
-   const inputClass = 'w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2.5 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white';
+   const inputClass = 'w-full rounded-xl border border-[#D8E2EC] bg-[#F8FAFC] px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#94A3B8] hover:border-[#BFD7EF] focus:border-[#1E3A5F] focus:bg-white focus:ring-4 focus:ring-[#DCEBFA] [&>option]:bg-white [&>option]:text-[#1a1c1a]';
 
   const openCreateModal = () => {
     setFormError(null);
@@ -300,81 +300,89 @@ const AdminProjects: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
-      <header className="mb-4 shrink-0 flex items-start justify-between">
+      <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1a]">Projects</h1>
-          <p className="mt-0.5 text-sm text-[#64748B]">Manage and track your organization's active initiatives.</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Projets</h1>
+          <p className="mt-0.5 text-sm text-[#64748B]">Gérez et suivez les projets actifs de votre organisation.</p>
         </div>
         <button
           type="button"
           onClick={openCreateModal}
-          className="flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#172D49] shadow-md"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#172D49] sm:w-auto"
         >
-          <Plus size={15} /> Create Project
+          <Plus size={15} /> Créer un projet
         </button>
       </header>
 
       {/* Banners */}
       {formError && !showModal && <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">{formError}</div>}
       {formSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-green-700">{formSuccess}</div>}
-      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">Loading projects...</div>}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">Chargement des projets...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">{error}</div>}
 
       {/* Stat Cards */}
-      <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
-        <article className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-          <div className="mb-3 flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
-              <Users size={18} />
+      <section className="mb-4 grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
+                <Users size={18} />
+              </div>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Actifs</p>
             </div>
             <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-xs font-semibold text-[#10B981]">+{Math.max(1, Math.round(projects.length * 0.12))}</span>
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Total Active</p>
           <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{projects.length}</p>
         </article>
-        <article className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-          <div className="mb-3 flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
-              <CheckCircle size={18} />
+        <article className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
+                <CheckCircle size={18} />
+              </div>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Terminés</p>
             </div>
             <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-xs font-semibold text-[#1E3A5F]">80%</span>
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Completed</p>
           <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{stats.completed}</p>
           <p className="mt-1 text-xs text-[#64748B]">≥ 80% progress</p>
         </article>
-        <article className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-          <div className="mb-3 flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
-              <Clock3 size={18} />
+        <article className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
+                <Clock3 size={18} />
+              </div>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Échéance proche</p>
             </div>
             <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-xs font-semibold text-[#1E3A5F]">30d</span>
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Near Deadline</p>
           <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{stats.nearDeadline}</p>
-          <p className="mt-1 text-xs text-[#64748B]">Within 30 days</p>
+          <p className="mt-1 text-xs text-[#64748B]">Dans 30 jours</p>
         </article>
-        <article className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-          <div className="mb-3 flex items-start justify-between">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
-              <TrendingUp size={18} />
+        <article className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]">
+                <TrendingUp size={18} />
+              </div>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Progression moy.</p>
             </div>
             <span className="rounded-full bg-[#DCEBFA] px-2 py-0.5 text-xs font-semibold text-[#1E3A5F]">{stats.avgProgress}%</span>
           </div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Avg Progress</p>
           <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{stats.avgProgress}%</p>
         </article>
       </section>
 
       {/* Search */}
-      <div className="mb-4 shrink-0 flex items-center gap-2 rounded-xl border border-transparent bg-white px-3 py-2 w-64 shadow-sm focus-within:border-[#1E3A5F]">
+      <div className="mb-4 flex w-full shrink-0 items-center gap-2 rounded-xl border border-transparent bg-white px-3 py-2 shadow-sm focus-within:border-[#1E3A5F] sm:w-64">
         <Search size={14} className="text-[#64748B] shrink-0" />
         <input
           type="text"
-          placeholder="Search projects..."
+          placeholder="Rechercher des projets..."
           className="flex-1 bg-transparent text-sm text-[#1a1c1a] outline-none placeholder:text-[#64748B]"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -382,13 +390,13 @@ const AdminProjects: React.FC = () => {
       </div>
 
       {/* Project Grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <div className="grid grid-cols-1 gap-4 pb-2 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => (
             <motion.div
               key={project.id}
               whileHover={{ y: -3 }}
-              className="flex flex-col rounded-2xl border border-transparent bg-white p-4 shadow-sm"
+              className="flex flex-col rounded-2xl border border-[#E5EDF5] bg-[#F8FAFC] p-4 shadow-sm transition hover:border-[#BFD7EF]"
             >
               {/* Top row: category + 3-dot menu */}
               <div className="mb-3 flex items-start justify-between">
@@ -410,7 +418,7 @@ const AdminProjects: React.FC = () => {
                         onClick={() => { setDeleteConfirmId(project.id); setOpenMenuId(null); }}
                         className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]"
                       >
-                        Delete
+                        Supprimer
                       </button>
                     </div>
                   )}
@@ -422,7 +430,7 @@ const AdminProjects: React.FC = () => {
 
               {/* Supervisor */}
               <div className="mb-2">
-                <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-[#64748B]">Supervisor</p>
+                <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-[#64748B]">Encadrant</p>
                 <div className="flex items-center gap-2">
                   <div
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
@@ -436,7 +444,7 @@ const AdminProjects: React.FC = () => {
 
               {/* Group */}
               <div className="mb-3 flex-1">
-                <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-[#64748B]">Group</p>
+                <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-[#64748B]">Groupe</p>
                 <div className="flex items-center gap-2">
                   <Users size={14} className="shrink-0 text-[#64748B]" />
                   <span className="truncate text-sm font-semibold text-[#1a1c1a]">{project.group}</span>
@@ -465,7 +473,7 @@ const AdminProjects: React.FC = () => {
                 <div className="flex items-center gap-1.5 border-t border-[#e8e3da] pt-2.5">
                   <Calendar size={12} className="shrink-0 text-[#ba1a1a]" />
                   <span className="text-xs font-medium text-[#ba1a1a]">
-                    Due {formatDeadlineDate(project.deadline)}
+                    Échéance {formatDeadlineDate(project.deadline)}
                   </span>
                 </div>
               )}
@@ -482,8 +490,8 @@ const AdminProjects: React.FC = () => {
               <Plus size={18} className="text-[#64748B]" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-[#334155]">New Project</p>
-              <p className="mt-0.5 text-xs text-[#64748B]">Click here to start a new collaborative workspace</p>
+              <p className="text-sm font-semibold text-[#334155]">Nouveau projet</p>
+              <p className="mt-0.5 text-xs text-[#64748B]">Cliquez ici pour créer un nouvel espace collaboratif</p>
             </div>
           </button>
         </div>
@@ -491,24 +499,30 @@ const AdminProjects: React.FC = () => {
 
       {/* Create Modal */}
       {showModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
-          <div className="relative my-8 w-full max-w-md overflow-hidden rounded-[2rem] border border-[#dcd6c1] bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)] animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#0F172A]/35 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300">
+          <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[#EEF3F8] bg-white px-8 py-6">
-              <div>
-                <h2 className="text-xl font-bold text-[#1a1c1a]">Create Project</h2>
-                <p className="text-xs text-[#64748B] mt-0.5">Define the scope and supervisor for the new initiative.</p>
+            <div className="flex items-start justify-between gap-4 border-b border-[#EEF3F8] bg-white px-6 py-5">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[#DCEBFA] text-[#1E3A5F]">
+                  <FolderPlus size={22} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-[#1a1c1a]">Créer un projet</h2>
+                  <p className="mt-1 text-sm text-[#64748B]">Définissez le périmètre et l'encadrant du nouveau projet.</p>
+                </div>
               </div>
               <button
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1a1c1a] transition-all"
+                type="button"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition-colors hover:text-[#1a1c1a]"
                 onClick={() => setShowModal(false)}
                 aria-label="Close"
               >
-                <Plus className="rotate-45" size={20} />
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateProject} className="space-y-5 px-8 py-8">
+            <form onSubmit={handleCreateProject} className="space-y-5 px-6 py-6">
               {formError && (
                 <div className="rounded-xl border border-[#fecaca] bg-[#ffdad6] px-4 py-3 text-sm text-[#ba1a1a] flex items-center gap-2 animate-in slide-in-from-top-1">
                   <div className="h-1.5 w-1.5 rounded-full bg-[#ba1a1a]" />
@@ -518,12 +532,12 @@ const AdminProjects: React.FC = () => {
 
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-[#334155]">
-                  Project Name <span className="text-[#ba1a1a]">*</span>
+                  Nom du projet <span className="text-[#ba1a1a]">*</span>
                 </label>
                 <input
                   type="text"
                   className={inputClass}
-                  placeholder="Enter project title"
+                  placeholder="Entrer le titre du projet"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   required
@@ -531,7 +545,7 @@ const AdminProjects: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-[#334155]">Category / Domain</label>
+                <label className="block text-sm font-semibold text-[#334155]">Catégorie / Domaine</label>
                 <input
                   type="text"
                   className={inputClass}
@@ -542,7 +556,7 @@ const AdminProjects: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-[#334155]">Encadrant (Supervisor)</label>
+                <label className="block text-sm font-semibold text-[#334155]">Encadrant</label>
                 <div className="relative">
                   <button
                     type="button"
@@ -558,7 +572,7 @@ const AdminProjects: React.FC = () => {
                   </button>
 
                   {showSupervisorDropdown && (
-                    <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(15,23,42,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-[#D8E2EC] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-all animate-in fade-in slide-in-from-top-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -588,7 +602,7 @@ const AdminProjects: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-[#334155]">Deadline</label>
+                <label className="block text-sm font-semibold text-[#334155]">Date limite</label>
                 <div className="relative">
                   <input
                     type="date"
@@ -599,20 +613,20 @@ const AdminProjects: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-[#EEF3F8]">
+              <div className="mt-6 flex justify-end gap-3 border-t border-[#EEF3F8] pt-5">
                 <button
                   type="button"
-                  className="rounded-xl border border-[#dcd6c1] bg-white px-6 py-2.5 text-sm font-semibold text-[#334155] transition-all hover:bg-[#EEF3F8] hover:border-[#c4b99a]"
+                  className="rounded-xl bg-[#EEF3F8] px-5 py-3 text-sm font-bold text-[#334155] transition-colors hover:bg-[#E2E8F0]"
                   onClick={() => setShowModal(false)}
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#1E3A5F] px-6 py-2.5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(15,23,42,0.2)] transition-all hover:bg-[#172D49] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+                  className="rounded-xl bg-[#1E3A5F] px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#172D49] disabled:bg-[#BFD7EF]"
                   disabled={createLoading}
                 >
-                  {createLoading ? 'Creating...' : 'Create'}
+                  {createLoading ? 'Création...' : 'Créer'}
                 </button>
               </div>
             </form>
@@ -623,15 +637,15 @@ const AdminProjects: React.FC = () => {
 
       {/* Delete Confirm Modal */}
       {deleteConfirmId && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
-          <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-transparent bg-white p-8 shadow-xl">
-            <h2 className="text-xl font-bold text-[#1a1c1a]">Confirm Deletion</h2>
-            <p className="text-sm text-[#64748B]">This action will delete the project, its iterations, tasks, and detach its students. Irreversible.</p>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
+          <div className="my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col gap-4 overflow-y-auto rounded-2xl border border-transparent bg-white p-6 shadow-xl sm:p-8">
+            <h2 className="text-xl font-bold text-[#1a1c1a]">Confirmer la suppression</h2>
+            <p className="text-sm text-[#64748B]">Cette action supprimera le projet, ses itérations, ses tâches et détachera ses étudiants. Elle est irréversible.</p>
             {formError && <div className="rounded-xl border border-[#fecaca] bg-[#ffdad6] px-3 py-2 text-sm text-[#ba1a1a]">{formError}</div>}
             <div className="mt-2 flex justify-end gap-3">
-              <button type="button" className="rounded-xl bg-[#E5EDF5] px-5 py-2 text-sm font-semibold text-[#334155] hover:bg-[#D5E1ED]" onClick={() => setDeleteConfirmId(null)} disabled={deleteLoading}>Cancel</button>
+              <button type="button" className="rounded-xl bg-[#E5EDF5] px-5 py-2 text-sm font-semibold text-[#334155] hover:bg-[#D5E1ED]" onClick={() => setDeleteConfirmId(null)} disabled={deleteLoading}>Annuler</button>
               <button type="button" className="rounded-xl bg-[#ba1a1a] px-5 py-2 text-sm font-bold text-white shadow hover:bg-[#93000a] disabled:opacity-50" onClick={() => handleDeleteProject(deleteConfirmId)} disabled={deleteLoading}>
-                {deleteLoading ? 'Deleting...' : 'Delete'}
+                {deleteLoading ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>

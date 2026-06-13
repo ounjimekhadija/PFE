@@ -1,5 +1,24 @@
-﻿import React from 'react';
-import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, Users, Mail, MessageSquare, CheckCircle, FileCheck, ExternalLink, Video } from 'lucide-react';
+import React from 'react';
+import {
+  Bell,
+  CheckCircle,
+  CheckSquare,
+  ExternalLink,
+  FileCheck,
+  FileText,
+  Home,
+  LogOut,
+  Mail,
+  MessageCircle,
+  MessageSquare,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Sun,
+  Users,
+  Video,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { supabase } from '../../lib/supabase';
@@ -18,49 +37,80 @@ interface StudentTopNavProps {
   onLogout?: () => void;
 }
 
+interface StudentProfile {
+  name: string;
+  email: string;
+  avatar: string;
+}
+
 const navItems = [
   { id: 'dashboard', label: 'Tableau de bord', to: '/dashboard', icon: Home },
   { id: 'groups', label: 'Groupes', to: '/groups', icon: Users },
-  { id: 'tasks', label: 'TÃ¢ches', to: '/tasks', icon: CheckSquare },
+  { id: 'tasks', label: 'Taches', to: '/tasks', icon: CheckSquare },
   { id: 'deliverables', label: 'Livrables', to: '/deliverables', icon: FileText },
-  { id: 'chat', label: 'Messagerie', to: '/chat', icon: MessageCircle },
+  { id: 'chat', label: 'Messages', to: '/chat', icon: MessageCircle },
 ];
 
 const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
   const location = useLocation();
+  const [collapsed, setCollapsed] = React.useState(false);
+  const [hoverOpen, setHoverOpen] = React.useState(false);
   const [showNotif, setShowNotif] = React.useState(false);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [profile, setProfile] = React.useState<StudentProfile>({
+    name: 'Etudiant',
+    email: '',
+    avatar: 'https://ui-avatars.com/api/?name=Etudiant&background=DCEBFA&color=1E3A5F',
+  });
   const { isDark, toggle } = useDarkMode();
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter((notification) => !notification.is_read).length;
+  const compact = collapsed && !hoverOpen;
 
   React.useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    const initNotifications = async () => {
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      const { data: userData } = await supabase
+        .from('utilisateurs')
+        .select('nom, prenom, email, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (userData) {
+        const name = `${userData.prenom || ''} ${userData.nom || ''}`.trim() || 'Etudiant';
+        setProfile({
+          name,
+          email: userData.email || '',
+          avatar: userData.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=DCEBFA&color=1E3A5F`,
+        });
+      }
 
       const { data } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
+
       if (data) setNotifications(data);
 
       channel = supabase
         .channel(`student_notifications_${user.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev]);
+          setNotifications((prev) => [payload.new as Notification, ...prev]);
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-          setNotifications(prev => prev.map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n));
+          setNotifications((prev) => prev.map((notification) => (
+            notification.id === payload.new.id ? { ...notification, ...payload.new } : notification
+          )));
         })
         .subscribe();
     };
 
-    initNotifications();
+    init();
 
     return () => {
       if (channel) supabase.removeChannel(channel);
@@ -72,38 +122,34 @@ const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
       .from('notifications')
       .update({ is_read: true })
       .eq('id', id);
-    
+
     if (!error) {
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setNotifications((prev) => prev.map((notification) => (
+        notification.id === id ? { ...notification, is_read: true } : notification
+      )));
     }
   };
 
   const handleMarkAllRead = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false);
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false);
 
-      if (error) throw error;
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    } catch (err) {
-      console.error('Error marking all as read:', err);
+    if (!error) {
+      setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })));
     }
   };
 
-  const handleNotificationClick = async (n: Notification) => {
-    if (!n.is_read) {
-      await markAsRead(n.id);
-    }
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.is_read) await markAsRead(notification.id);
 
-    if (n.type === 'MEETING_REQUEST' && n.projet_id) {
-      const meetUrl = `https://meet.jit.si/Encadrant_Project_${n.projet_id}`;
-      window.open(meetUrl, '_blank');
+    if (notification.type === 'MEETING_REQUEST' && notification.projet_id) {
+      window.open(`https://meet.jit.si/Encadrant_Project_${notification.projet_id}`, '_blank');
     }
   };
 
@@ -121,135 +167,181 @@ const StudentTopNav: React.FC<StudentTopNavProps> = ({ onLogout }) => {
   };
 
   return (
-    <header className="bg-[#F8FAFC] px-4 py-3 md:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-2xl border border-[#C8D6E5]/60 bg-white px-4 py-2 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.id}
-                to={item.to}
-                title={item.label}
-                className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
-                  isActive
-                    ? 'bg-[#1E3A5F] text-white shadow-[0_2px_8px_rgba(30,58,95,0.25)]'
-                    : 'text-[#64748B] hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white'
-                }`}
-              >
-                <Icon size={18} />
-              </Link>
-            );
-          })}
-        </nav>
+    <aside
+      className={`flex h-dvh shrink-0 flex-col border-r border-[#DCEBFA] bg-white py-4 shadow-[2px_0_18px_rgba(15,23,42,0.04)] transition-[width,padding] duration-300 ${
+        compact ? 'w-20 px-3' : 'w-64 px-4'
+      }`}
+      onMouseEnter={() => collapsed && setHoverOpen(true)}
+      onMouseLeave={() => {
+        setHoverOpen(false);
+        setShowNotif(false);
+      }}
+      style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
+    >
+      <div className={`mb-6 flex items-center gap-3 ${compact ? 'justify-center' : 'justify-between'}`}>
+        <Link to="/dashboard" className={`flex min-w-0 items-center gap-3 rounded-xl text-[#0F2442] ${compact ? 'justify-center' : ''}`}>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#1E3A5F] shadow-[0_8px_18px_rgba(30,58,95,0.22)]">
+            <img src="/logo.png" alt="PFEspace" className="h-9 w-9 object-contain" />
+          </div>
+          {!compact && <span className="truncate text-xl font-extrabold tracking-tight">PFEspace</span>}
+        </Link>
 
-        <div className="flex items-center gap-2">
-          <Link
-            to="/settings"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
-            aria-label="Settings"
+        {!compact && (
+          <button
+            type="button"
+            onClick={() => {
+              setCollapsed((value) => !value);
+              setHoverOpen(false);
+            }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#64748B] transition hover:bg-[#EEF3F8] hover:text-[#172D49]"
+            aria-label={collapsed ? 'Garder la barre laterale ouverte' : 'Replier la barre laterale'}
+            title={collapsed ? 'Garder ouverte' : 'Replier'}
           >
-            <Settings size={16} />
-          </Link>
+            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+        )}
+      </div>
 
-          <div className="relative">
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
-              aria-label="Notifications"
-              onClick={() => setShowNotif((v) => !v)}
+      <nav className="flex min-h-0 flex-1 flex-col gap-2">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.id}
+              to={item.to}
+              title={item.label}
+              className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
+                compact ? 'justify-center' : 'justify-start'
+              } ${
+                isActive
+                  ? 'bg-[#1E3A5F] text-white shadow-[0_6px_16px_rgba(30,58,95,0.22)]'
+                  : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#172D49]'
+              }`}
             >
-              <Bell size={16} />
-              {unreadCount > 0 && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#ba1a1a] ring-2 ring-white dark:ring-[#1c1b19]" />
-              )}
-            </button>
-             {showNotif && (
-              <div className="absolute right-0 z-50 mt-2 w-80 rounded-[24px] border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_8px_32px_rgba(15,23,42,0.15)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#1a1c1a] dark:text-[#e8e3da]">Notifications</h3>
-                    {unreadCount > 0 && (
-                      <span className="text-[10px] font-bold bg-[#DCEBFA] text-[#1E3A5F] px-2 py-0.5 rounded-full">
-                        {unreadCount} nouv.
-                      </span>
-                    )}
-                  </div>
-                  {unreadCount > 0 && (
-                    <button 
-                      onClick={handleMarkAllRead}
-                      className="text-[11px] font-bold text-[#1E3A5F] hover:underline cursor-pointer"
-                    >
-                      Tout marquer comme lu
-                    </button>
-                  )}
-                </div>
-                
-                <div className="max-h-[320px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                  {notifications.length === 0 ? (
-                    <p className="py-8 text-center text-xs text-[#64748B]">Aucune notification.</p>
-                  ) : (
-                    notifications.map((n) => (
-                      <button
-                        key={n.id}
-                        onClick={() => handleNotificationClick(n)}
-                        className={`w-full flex items-start gap-3 p-3 rounded-2xl transition-all text-left group ${
-                          !n.is_read ? 'bg-[#EEF3F8] dark:bg-[#2a2927]' : 'hover:bg-[#F8FAFC] dark:hover:bg-[#232220]'
-                        }`}
-                      >
-                        <div className={`mt-0.5 h-8 w-8 shrink-0 flex items-center justify-center rounded-xl ${
-                          !n.is_read ? 'bg-white dark:bg-[#1c1b19] shadow-sm' : 'bg-[#EEF3F8] dark:bg-[#2a2927]'
-                        }`}>
-                          {getNotifIcon(n.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-xs font-bold leading-tight ${!n.is_read ? 'text-[#1a1c1a] dark:text-white' : 'text-[#64748B]'}`}>
-                            {n.title}
-                          </p>
-                          <p className="mt-1 text-[11px] text-[#64748B] leading-snug line-clamp-2">
-                            {n.message}
-                          </p>
-                          <p className="mt-1.5 text-[9px] font-medium text-[#C8D6E5]">
-                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {new Date(n.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        {!n.is_read && (
-                          <div className="mt-2 h-1.5 w-1.5 rounded-full bg-[#1E3A5F]" />
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
+              <Icon size={18} />
+              {!compact && <span className="truncate">{item.label}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-4 space-y-3">
+        <div className="relative">
+          <button
+            type="button"
+            className={`relative flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[#172D49] transition hover:bg-[#EEF3F8] ${
+              compact ? 'justify-center' : 'justify-start'
+            }`}
+            aria-label="Notifications"
+            onClick={() => setShowNotif((value) => !value)}
+          >
+            <Bell size={18} />
+            {!compact && <span className="truncate text-sm font-bold">Notifications</span>}
+            {unreadCount > 0 && (
+              <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1D71F2] px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {showNotif && (
+            <div className="absolute bottom-0 left-[calc(100%+0.75rem)] z-50 w-[calc(100vw-6rem)] max-w-96 rounded-2xl border border-[#DCEBFA] bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.16)]">
+              <div className="mb-3 flex items-center justify-between px-1">
+                <h3 className="text-sm font-bold text-[#1a1c1a]">Notifications</h3>
+                {unreadCount > 0 && (
+                  <button type="button" onClick={handleMarkAllRead} className="text-xs font-bold text-[#1D71F2] hover:underline">
+                    Tout lire
+                  </button>
+                )}
               </div>
+
+              <div className="max-h-[340px] space-y-1.5 overflow-y-auto pr-1">
+                {notifications.length === 0 ? (
+                  <p className="py-8 text-center text-xs text-[#64748B]">Aucune notification.</p>
+                ) : (
+                  notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`flex w-full items-start gap-3 rounded-xl p-3 text-left transition ${
+                        !notification.is_read ? 'bg-[#EEF3F8]' : 'hover:bg-[#F8FAFC]'
+                      }`}
+                      type="button"
+                    >
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+                        {getNotifIcon(notification.type)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-bold text-[#1a1c1a]">{notification.title}</p>
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-[#64748B]">{notification.message}</p>
+                        <p className="mt-1.5 text-[10px] font-medium text-[#94A3B8]">
+                          {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      {!notification.is_read && <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#1D71F2]" />}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <Link
+          to="/settings"
+          className={`flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
+            compact ? 'justify-center' : 'justify-start'
+          } ${
+            location.pathname === '/settings'
+              ? 'bg-[#1E3A5F] text-white shadow-[0_6px_16px_rgba(30,58,95,0.22)]'
+              : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#172D49]'
+          }`}
+          aria-label="Parametres"
+        >
+          <Settings size={18} />
+          {!compact && <span className="truncate">Parametres</span>}
+        </Link>
+
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Mode sombre"
+          className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
+            compact ? 'justify-center' : 'justify-start'
+          } ${
+            isDark ? 'bg-[#172D49] text-white' : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#172D49]'
+          }`}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          {!compact && <span className="truncate">{isDark ? 'Mode clair' : 'Mode sombre'}</span>}
+        </button>
+
+        <div className="rounded-2xl border border-[#DCEBFA] bg-[#F8FAFC] p-2">
+          <div className={`flex items-center gap-3 ${compact ? 'justify-center' : 'justify-start'}`}>
+            <img src={profile.avatar} alt={profile.name} className="h-10 w-10 rounded-xl object-cover" />
+            {!compact && (
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-[#0F2442]">{profile.name}</p>
+              <p className="truncate text-[10px] font-medium text-[#64748B]">Etudiant</p>
+            </div>
             )}
           </div>
-
-          {/* Dark mode toggle */}
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label="Toggle dark mode"
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
-              isDark
-                ? 'bg-[#222222] text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-                : 'border border-transparent text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1a1c1a]'
-            }`}
-          >
-            {isDark ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#DCEBFA] bg-[#EEF3F8] px-3 py-2 text-xs font-semibold text-[#1E3A5F] transition hover:border-[#C8D6E5] hover:bg-[#DCEBFA] dark:border-[#274563] dark:bg-[#102033] dark:text-[#DCEBFA] dark:hover:bg-[#173150]"
-            onClick={onLogout}
-          >
-            <LogOut size={14} />
-            Déconnexion
-          </button>
         </div>
+
+        <button
+          type="button"
+          className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-[#64748B] transition hover:bg-[#FFE4E0] hover:text-[#ba1a1a] ${
+            compact ? 'justify-center' : 'justify-start'
+          }`}
+          onClick={onLogout}
+          aria-label="Deconnexion"
+        >
+          <LogOut size={18} />
+          {!compact && <span className="truncate">Deconnexion</span>}
+        </button>
       </div>
-    </header>
+    </aside>
   );
 };
 

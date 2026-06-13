@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, Filter, GraduationCap, MoreVertical, ShieldCheck, User, UserPlus, Users } from 'lucide-react';
+import { Download, Filter, GraduationCap, MoreVertical, ShieldCheck, User, UserPlus, Users, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import * as XLSX from 'xlsx';
 import { registerSchema } from '../../../shared/schemas';
@@ -153,6 +153,8 @@ const AdminUsers: React.FC = () => {
     { value: 'ENCADRANT', label: 'Encadrant' },
     { value: 'ETUDIANT', label: 'Etudiant' },
   ];
+
+  const modalInputClass = 'w-full rounded-xl border border-[#D8E2EC] bg-[#F8FAFC] px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#94A3B8] hover:border-[#BFD7EF] focus:border-[#1E3A5F] focus:bg-white focus:ring-4 focus:ring-[#DCEBFA]';
 
   // access level removed
 
@@ -488,19 +490,19 @@ const AdminUsers: React.FC = () => {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
-      <header className="mb-4 shrink-0 flex items-start justify-between">
+      <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#1a1c1a]">User Management</h1>
-          <p className="mt-0.5 text-sm text-[#64748B]">Oversee your organization's members and their specific roles.</p>
+          <h1 className="text-2xl font-bold text-[#1a1c1a]">Gestion des utilisateurs</h1>
+          <p className="mt-1 text-sm text-[#64748B]">Supervisez les comptes administrateurs, encadrants et etudiants.</p>
         </div>
         <div className="flex items-center gap-2">
           <button type="button"
             className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(15,23,42,0.2)] transition hover:bg-[#172D49]"
             onClick={() => { setCreateError(null); setCreateSuccess(null); resetForm(); setShowAddModal(true); }}>
-            <UserPlus size={14} />Add User
+            <UserPlus size={14} /> Ajouter
           </button>
         </div>
       </header>
@@ -512,14 +514,14 @@ const AdminUsers: React.FC = () => {
       {!showAddModal && createSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
 
       {/* Stat Cards */}
-      <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
+      <section className="mb-4 grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: 'TOTAL USERS', value: stats.total, icon: Users, trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
           { label: 'ADMINS', value: stats.admins, icon: ShieldCheck, trend: null },
           { label: 'ENCADRANTS', value: stats.encadrants, icon: GraduationCap, trend: null },
           { label: 'ETUDIANTS', value: stats.etudiants, icon: User, trend: null },
         ].map((card) => (
-          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <article key={card.label} className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]"><card.icon size={18} /></div>
               {card.trend && <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-xs font-semibold text-[#10B981]">{card.trend}</span>}
@@ -531,18 +533,18 @@ const AdminUsers: React.FC = () => {
       </section>
 
       {/* Directory */}
-      <section className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-        <div className="shrink-0 flex items-center justify-between border-b border-transparent px-5 py-3">
-          <h2 className="font-semibold text-[#1a1c1a]">Directory</h2>
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#EEF3F8] px-5 py-3">
+          <h2 className="font-semibold text-[#1a1c1a]">Annuaire</h2>
           <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8]">
             <Filter size={15} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-auto">
           {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#64748B]">No users found.</p>}
           {rows.length > 0 && (
-            <table className="w-full border-collapse table-fixed">
+            <table className="w-full min-w-[760px] border-collapse table-fixed">
               <colgroup>
                 <col style={{ width: '22%' }} />
                 <col style={{ width: '11%' }} />
@@ -612,33 +614,46 @@ const AdminUsers: React.FC = () => {
         </div>
 
         {/* Pagination */}
-        <div className="shrink-0 flex items-center justify-between border-t border-transparent px-5 py-3">
-          <p className="text-sm text-[#64748B]">Showing {paginatedRows.length} of {rows.length} results</p>
+        <div className="flex shrink-0 flex-col gap-3 border-t border-transparent px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-[#64748B]">Affichage {paginatedRows.length} sur {rows.length}</p>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
               className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#334155] transition hover:border-[#c4b99a] disabled:opacity-40">
-              Previous
+              Precedent
             </button>
             <span className="text-sm text-[#64748B]">{currentPage} / {totalPages}</span>
             <button type="button" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}
               className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#334155] transition hover:border-[#c4b99a] disabled:opacity-40">
-              Next
+              Suivant
             </button>
           </div>
         </div>
       </section>
 
       {showAddModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
-          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)]">
-            <div className="flex items-center justify-between border-b border-transparent px-6 py-4">
-              <h2 className="text-xl font-semibold text-[#1a1c1a]">Create a user</h2>
-              <button className="text-[#64748B]" onClick={() => setShowAddModal(false)} aria-label="Close">
-                &times;
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#0F172A]/35 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300">
+          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
+            <div className="flex items-start justify-between gap-4 border-b border-[#EEF3F8] px-6 py-5">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[#DCEBFA] text-[#1E3A5F]">
+                  <UserPlus size={22} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-[#1a1c1a]">Create a user</h2>
+                  <p className="mt-1 text-sm text-[#64748B]">Add a new account and assign its role.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition-colors hover:text-[#1a1c1a]"
+                onClick={() => setShowAddModal(false)}
+                aria-label="Close"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <form className="max-h-[80vh] overflow-y-auto px-6 py-5" onSubmit={handleCreateUser}>
+            <form className="max-h-[80vh] overflow-y-auto px-6 py-6" onSubmit={handleCreateUser}>
               <div className="space-y-4">
                 {createError && <div className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm text-[#B91C1C]">{createError}</div>}
                 {createSuccess && <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
@@ -648,7 +663,7 @@ const AdminUsers: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                    className="flex w-full items-center justify-between rounded-xl border border-[#dcd6c1] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20"
+                    className={`${modalInputClass} flex items-center justify-between text-left`}
                   >
                     <span>{roles.find(r => r.value === form.role)?.label}</span>
                     <svg className={`h-4 w-4 text-[#64748B] transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -657,7 +672,7 @@ const AdminUsers: React.FC = () => {
                   </button>
 
                   {showRoleDropdown && (
-                    <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(15,23,42,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#D8E2EC] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-all animate-in fade-in slide-in-from-top-1">
                       {roles.map((role) => (
                         <button
                           key={role.value}
@@ -683,7 +698,7 @@ const AdminUsers: React.FC = () => {
                     <label className="mb-1 block text-sm font-medium text-[#334155]">Last name</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                      className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                       value={form.nom}
                       onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
                       required
@@ -694,7 +709,7 @@ const AdminUsers: React.FC = () => {
                     <label className="mb-1 block text-sm font-medium text-[#334155]">First name</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                      className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                       value={form.prenom}
                       onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
                       required
@@ -709,7 +724,7 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#334155]">Phone number</label>
                       <input
                         type="tel"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                        className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                         value={form.phone}
                         onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                       />
@@ -718,7 +733,7 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#334155]">Email</label>
                       <input
                         type="email"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                        className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                         value={form.email}
                         onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                         required
@@ -733,7 +748,7 @@ const AdminUsers: React.FC = () => {
                     <label className="mb-1 block text-sm font-medium text-[#334155]">Email</label>
                     <input
                       type="email"
-                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                      className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -746,7 +761,7 @@ const AdminUsers: React.FC = () => {
                   <label className="mb-1 block text-sm font-medium text-[#334155]">Password</label>
                   <input
                     type="password"
-                    className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                    className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                     value={form.password}
                     onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                     required
@@ -760,7 +775,7 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#334155]">Organization name</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
+                        className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
                         value={form.nomOrganisation}
                         onChange={(e) => setForm((f) => ({ ...f, nomOrganisation: e.target.value }))}
                         required
@@ -778,7 +793,7 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#334155]">Student number</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20"
+                        className={modalInputClass}
                         value={form.numeroEtudiant}
                         onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
                         required
@@ -789,7 +804,7 @@ const AdminUsers: React.FC = () => {
                       <label className="mb-1 block text-sm font-medium text-[#334155]">CIN</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20"
+                        className={modalInputClass}
                         value={form.cin}
                         onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
                       />
@@ -799,17 +814,17 @@ const AdminUsers: React.FC = () => {
                 )}
               </div>
 
-              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white pt-4">
+              <div className="sticky bottom-0 mt-6 flex justify-end gap-3 border-t border-[#EEF3F8] bg-white pt-5">
                 <button
                   type="button"
-                  className="rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-5 py-2 text-sm font-semibold text-[#334155]"
+                  className="rounded-xl bg-[#EEF3F8] px-5 py-3 text-sm font-bold text-[#334155] transition-colors hover:bg-[#E2E8F0]"
                   onClick={() => setShowAddModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(15,23,42,0.2)] disabled:opacity-50"
+                  className="rounded-xl bg-[#1E3A5F] px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#172D49] disabled:bg-[#BFD7EF]"
                   disabled={createLoading}
                 >
                   {createLoading ? 'Creating...' : 'Create'}
@@ -822,8 +837,8 @@ const AdminUsers: React.FC = () => {
       )}
 
       {deleteConfirmId && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
-          <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
+          <div className="my-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
             <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirm Deletion</h2>
             <p className="mt-2 text-sm text-[#64748B]">This action is irreversible. The user will be permanently deleted.</p>
             <div className="mt-5 flex justify-end gap-2">

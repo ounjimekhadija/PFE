@@ -53,7 +53,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not logged in');
+      if (!user) throw new Error('Utilisateur non connecté');
 
       const { error } = await supabase
         .from('tache_commentaires')
@@ -68,7 +68,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
       fetchComments();
     } catch (err: any) {
       console.error(err);
-      alert("Error adding comment: " + err.message);
+      alert("Erreur lors de l'ajout du commentaire : " + err.message);
     } finally {
       setLoading(false);
     }
@@ -77,10 +77,10 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center" onClick={onClose}>
       
       <div 
-        className="relative z-10 w-full max-w-2xl bg-[#F8FAFC] rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.2)] border border-[#C8D6E5] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300"
+        className="relative z-10 my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[32px] border border-[#C8D6E5] bg-[#F8FAFC] shadow-[0_20px_60px_rgba(15,23,42,0.2)] animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
         style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
       >
@@ -99,7 +99,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
           {fetchLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-3 border-[#1E3A5F]/20 border-t-[#1E3A5F] rounded-full animate-spin"></div>
-              <p className="text-sm text-[#64748B] font-medium">Loading messages...</p>
+              <p className="text-sm text-[#64748B] font-medium">Chargement des messages...</p>
             </div>
           ) : comments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
@@ -107,8 +107,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
                 <MessageSquare size={32} strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-[#1a1c1a] font-bold">No messages yet</p>
-                <p className="text-sm text-[#64748B]">Be the first to start the discussion!</p>
+                <p className="text-[#1a1c1a] font-bold">Aucun message pour le moment</p>
+                <p className="text-sm text-[#64748B]">Soyez le premier à lancer la discussion.</p>
               </div>
             </div>
           ) : (
@@ -144,7 +144,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
               <input 
                 type="text"
                 className="flex-1 bg-[#EEF3F8] border border-transparent rounded-2xl px-5 py-4 text-sm focus:bg-white focus:border-[#1E3A5F] outline-none transition-all pr-12 text-[#1a1c1a]"
-                placeholder="Write a comment..."
+                placeholder="Écrire un commentaire..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 disabled={loading}
