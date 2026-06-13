@@ -62,8 +62,8 @@ const Deliverables: React.FC = () => {
     switch (type) {
       case 'PDF':  return <FileText    className="text-red-500"    size={22} />;
       case 'ZIP':  return <FileArchive className="text-amber-500"  size={22} />;
-      case 'LINK': return <LinkIcon    className="text-[#765b00]"  size={22} />;
-      default:     return <File        className="text-[#7f7664]"  size={22} />;
+      case 'LINK': return <LinkIcon    className="text-[#1E3A5F]"  size={22} />;
+      default:     return <File        className="text-[#64748B]"  size={22} />;
     }
   };
 
@@ -330,38 +330,38 @@ const Deliverables: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col h-full overflow-hidden bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]"
+      className="flex flex-col h-full overflow-hidden bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
       {/* Header — fixe, ne scroll pas */}
       <header className="mb-6 flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-2xl font-semibold">Group Deliverables</h1>
-          <p className="mt-1.5 text-sm text-[#7f7664]">View and manage all project deliverables by group</p>
-          <p className="mt-1 text-xs text-[#7f7664]">{totalCount} deliverable(s)</p>
+          <p className="mt-1.5 text-sm text-[#64748B]">View and manage all project deliverables by group</p>
+          <p className="mt-1 text-xs text-[#64748B]">{totalCount} deliverable(s)</p>
         </div>
       </header>
 
-      {loading && <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">Loading deliverables...</p>}
+      {loading && <p className="mb-4 text-sm text-[#64748B] flex-shrink-0">Loading deliverables...</p>}
       {!loading && error && <p className="mb-4 text-sm text-[#ba1a1a] flex-shrink-0">Error: {error}</p>}
       {!loading && !error && groups.length === 0 && (
-        <p className="mb-4 text-sm text-[#7f7664] flex-shrink-0">No deliverables found for the assigned projects.</p>
+        <p className="mb-4 text-sm text-[#64748B] flex-shrink-0">No deliverables found for the assigned projects.</p>
       )}
 
       {/* Liste scrollable */}
       <div
         className="flex-1 overflow-y-auto"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1c5b0 transparent' }}
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#C8D6E5 transparent' }}
       >
         <div className="space-y-7 pb-6">
           {groups.map((group, groupIdx) => (
             <div key={groupIdx} className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-[#d1c5b0]" />
-                <h2 className="rounded-full border border-[#ebc254] bg-[#ffd464] px-3 py-1.5 text-lg font-bold text-[#594400]">
+                <div className="h-px flex-1 bg-[#C8D6E5]" />
+                <h2 className="rounded-full border border-[#BFD7EF] bg-[#DCEBFA] px-3 py-1.5 text-lg font-bold text-[#172D49]">
                   {group.groupName}
                 </h2>
-                <div className="h-px flex-1 bg-[#d1c5b0]" />
+                <div className="h-px flex-1 bg-[#C8D6E5]" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
@@ -374,13 +374,13 @@ const Deliverables: React.FC = () => {
                     <motion.div
                       key={deliverable.id}
                       whileHover={{ scale: 1.01 }}
-                      className="group relative flex flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-[#ebc254] overflow-hidden"
+                      className="group relative flex flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all hover:border-[#BFD7EF] overflow-hidden"
                     >
                       <div className="p-4 flex-1 flex flex-col">
 
                         {/* Top row: icon + status select */}
                         <div className="flex justify-between items-start mb-4">
-                          <div className="rounded-2xl bg-[#f4f3f1] p-2.5">
+                          <div className="rounded-2xl bg-[#EEF3F8] p-2.5">
                             {getIcon(deliverable.type)}
                           </div>
 
@@ -410,7 +410,7 @@ const Deliverables: React.FC = () => {
                                       key={o.value}
                                       type="button"
                                       onClick={() => { handleStatusChange(deliverable.id, o.value); setOpenStatusId(null); }}
-                                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11px] font-bold transition-colors ${optColors[o.value] || 'hover:bg-[#f4f3f1]'}`}
+                                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11px] font-bold transition-colors ${optColors[o.value] || 'hover:bg-[#EEF3F8]'}`}
                                     >
                                       {o.label}
                                     </button>
@@ -421,15 +421,15 @@ const Deliverables: React.FC = () => {
                           </div>
                         </div>
 
-                        <h3 className="mb-1.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#765b00]">
+                        <h3 className="mb-1.5 text-base font-bold text-[#1a1c1a] transition-colors group-hover:text-[#1E3A5F]">
                           {deliverable.title}
                         </h3>
 
-                        <div className="mb-4 flex items-center gap-3 text-xs text-[#7f7664]">
+                        <div className="mb-4 flex items-center gap-3 text-xs text-[#64748B]">
                           <span>{deliverable.date}</span>
                           {deliverable.size && (
                             <>
-                              <span className="h-1 w-1 rounded-full bg-[#d1c5b0]" />
+                              <span className="h-1 w-1 rounded-full bg-[#C8D6E5]" />
                               <span>{deliverable.size}</span>
                             </>
                           )}
@@ -441,8 +441,8 @@ const Deliverables: React.FC = () => {
                           disabled={!deliverable.externalUrl && !deliverable.filePath}
                           className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold transition-all mb-4 ${
                             deliverable.isExternal
-                              ? 'bg-[#765b00] text-white shadow-md hover:bg-[#594400] disabled:bg-[#ebc254]'
-                              : 'border border-[#d1c5b0] bg-[#f4f3f1] text-[#4d4636] hover:bg-white disabled:opacity-50'
+                              ? 'bg-[#1E3A5F] text-white shadow-md hover:bg-[#172D49] disabled:bg-[#BFD7EF]'
+                              : 'border border-[#C8D6E5] bg-[#EEF3F8] text-[#334155] hover:bg-white disabled:opacity-50'
                           }`}
                         >
                           {deliverable.isExternal ? <ExternalLink size={15} /> : <Download size={15} />}
@@ -456,7 +456,7 @@ const Deliverables: React.FC = () => {
                             const reset: Record<string, boolean> = {};
                             return alreadyOpen ? reset : { ...reset, [deliverable.id]: true };
                           })}
-                          className="mt-2 w-full flex items-center justify-between border-t border-[#f4f3f1] pt-3 text-[10px] font-bold uppercase tracking-widest text-[#7f7664] hover:text-[#4d4636] transition"
+                          className="mt-2 w-full flex items-center justify-between border-t border-[#EEF3F8] pt-3 text-[10px] font-bold uppercase tracking-widest text-[#64748B] hover:text-[#334155] transition"
                         >
                           <span className="flex items-center gap-1.5">
                             <MessageSquare size={12} />
@@ -478,10 +478,10 @@ const Deliverables: React.FC = () => {
                             >
                               <div className="space-y-2 max-h-40 overflow-y-auto pt-2">
                                 {loadingCmts[deliverable.id] && (
-                                  <p className="text-[11px] text-[#7f7664]">Loading...</p>
+                                  <p className="text-[11px] text-[#64748B]">Loading...</p>
                                 )}
                                 {!loadingCmts[deliverable.id] && delivComments.length === 0 && (
-                                  <p className="text-[11px] text-[#d1c5b0] text-center py-1">No comments.</p>
+                                  <p className="text-[11px] text-[#C8D6E5] text-center py-1">No comments.</p>
                                 )}
                                 {delivComments.map(c => (
                                   <div key={c.id} className="flex gap-2">
@@ -490,31 +490,31 @@ const Deliverables: React.FC = () => {
                                       className="h-5 w-5 shrink-0 rounded-full mt-0.5"
                                       alt=""
                                     />
-                                    <div className="flex-1 rounded-xl bg-[#faf9f6] px-2.5 py-1.5">
+                                    <div className="flex-1 rounded-xl bg-[#F8FAFC] px-2.5 py-1.5">
                                       <div className="flex items-center justify-between mb-0.5">
                                         <span className="text-[11px] font-bold text-[#1a1c1a]">{c.author}</span>
-                                        <span className="text-[10px] text-[#7f7664]">{c.time}</span>
+                                        <span className="text-[10px] text-[#64748B]">{c.time}</span>
                                       </div>
-                                      <p className="text-[11px] text-[#4d4636]">{c.content}</p>
+                                      <p className="text-[11px] text-[#334155]">{c.content}</p>
                                     </div>
                                   </div>
                                 ))}
                               </div>
 
-                              <div className="flex items-center gap-2 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-3 py-2 focus-within:border-[#765b00] transition mt-2">
+                              <div className="flex items-center gap-2 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 py-2 focus-within:border-[#1E3A5F] transition mt-2">
                                 <input
                                   type="text"
                                   placeholder="Laisser un commentaire..."
                                   value={commentInputs[deliverable.id] || ''}
                                   onChange={e => setCommentInputs(prev => ({ ...prev, [deliverable.id]: e.target.value }))}
                                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(deliverable.id); } }}
-                                  className="flex-1 bg-transparent text-xs text-[#4d4636] outline-none placeholder:text-[#d1c5b0]"
+                                  className="flex-1 bg-transparent text-xs text-[#334155] outline-none placeholder:text-[#C8D6E5]"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => sendComment(deliverable.id)}
                                   disabled={!commentInputs[deliverable.id]?.trim() || sendingComment[deliverable.id]}
-                                  className="text-[#765b00] hover:text-[#594400] disabled:opacity-30 transition"
+                                  className="text-[#1E3A5F] hover:text-[#172D49] disabled:opacity-30 transition"
                                 >
                                   <Send size={13} />
                                 </button>

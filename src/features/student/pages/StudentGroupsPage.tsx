@@ -220,22 +220,22 @@ const StudentGroups: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {selected.length > 0 && (
-        <div className="mb-6 flex items-center gap-4 bg-[#ffd464]/20 border border-transparent rounded-2xl px-6 py-3 shadow-sm flex-shrink-0">
-          <span className="font-bold text-[#594400] text-sm">Selected:</span>
+        <div className="mb-6 flex items-center gap-4 bg-[#DCEBFA]/20 border border-transparent rounded-2xl px-6 py-3 shadow-sm flex-shrink-0">
+          <span className="font-bold text-[#172D49] text-sm">Selected:</span>
           <div className="flex gap-2 flex-wrap">
             {selected.map(s => (
-              <div key={s.id} className="flex items-center gap-1 bg-white border border-transparent rounded-xl px-3 py-1 text-xs font-semibold text-[#594400]">
+              <div key={s.id} className="flex items-center gap-1 bg-white border border-transparent rounded-xl px-3 py-1 text-xs font-semibold text-[#172D49]">
                 <img src={s.avatar} alt={s.name} className="w-6 h-6 rounded-full mr-1" />
                 {s.name}
-                <button onClick={() => removeSelected(s.id)} className="ml-1 text-[#7f7664] hover:text-[#ba1a1a] font-bold">×</button>
+                <button onClick={() => removeSelected(s.id)} className="ml-1 text-[#64748B] hover:text-[#ba1a1a] font-bold">×</button>
               </div>
             ))}
           </div>
           <button
-            className="ml-auto bg-[#765b00] hover:bg-[#594400] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition-all"
+            className="ml-auto bg-[#1E3A5F] hover:bg-[#172D49] text-white px-5 py-2 rounded-xl font-bold shadow-sm transition-all"
             onClick={() => setShowGroupModal(true)}
           >
             Create Group
@@ -251,14 +251,14 @@ const StudentGroups: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#765b00]/50 transition-all"
+                className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/50 transition-all"
               >
                 <span className={!projectName ? 'text-gray-400' : 'text-[#1a1c1a]'}>
                   {projectName
                     ? projects.find(p => p.id === projectName)?.titre
                     : 'Select a project'}
                 </span>
-                <svg className={`h-4 w-4 text-[#7f7664] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`h-4 w-4 text-[#64748B] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -273,7 +273,7 @@ const StudentGroups: React.FC = () => {
                         setProjectName(p.id);
                         setShowProjectDropdown(false);
                       }}
-                      className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${projectName === p.id ? 'bg-[#765b00] text-white' : 'text-[#1a1c1a] hover:bg-[#765b00]/5'}`}
+                      className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${projectName === p.id ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#1E3A5F]/5'}`}
                     >
                       {p.titre}
                     </button>
@@ -283,14 +283,14 @@ const StudentGroups: React.FC = () => {
             </div>
             <div className="flex gap-3 w-full">
               <button
-                className="flex-1 bg-[#765b00] hover:bg-[#594400] text-white font-bold py-2 rounded-xl transition-all"
+                className="flex-1 bg-[#1E3A5F] hover:bg-[#172D49] text-white font-bold py-2 rounded-xl transition-all"
                 onClick={handleCreateGroup}
                 disabled={!projectName}
               >
                 Create Group
               </button>
               <button
-                className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
+                className="flex-1 bg-[#E5EDF5] hover:bg-[#D5E1ED] text-[#334155] font-bold py-2 rounded-xl transition-all"
                 onClick={() => setShowGroupModal(false)}
               >
                 Cancel
@@ -305,24 +305,24 @@ const StudentGroups: React.FC = () => {
       <header className="mb-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between flex-shrink-0">
         <div>
           <h1 className="text-2xl font-semibold text-[#1a1c1a]">Student Directory</h1>
-          <p className="mt-1 text-sm text-[#7f7664]">Connect with fellow students and form your project groups.</p>
+          <p className="mt-1 text-sm text-[#64748B]">Connect with fellow students and form your project groups.</p>
         </div>
         <div className="flex gap-3">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7f7664]" size={18} strokeWidth={2} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]" size={18} strokeWidth={2} />
             <input
               type="text"
               placeholder="Search students..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 rounded-2xl border border-transparent bg-white py-3 pl-11 pr-4 text-sm text-[#4d4636] transition-all focus:outline-none focus:ring-2 focus:ring-[#765b00]/20"
+              className="w-64 rounded-2xl border border-transparent bg-white py-3 pl-11 pr-4 text-sm text-[#334155] transition-all focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
             />
           </div>
           <button
             onClick={handleFilterClick}
             className={`p-3 rounded-2xl transition-all flex items-center justify-center ${sortOrder !== 'none'
-              ? 'bg-[#ffd464]/30 text-[#765b00] hover:bg-[#ffd464]/50'
-              : 'bg-[#f4f3f1] text-[#7f7664] hover:bg-[#efeeeb] hover:text-[#4d4636]'
+              ? 'bg-[#DCEBFA]/30 text-[#1E3A5F] hover:bg-[#DCEBFA]/50'
+              : 'bg-[#EEF3F8] text-[#64748B] hover:bg-[#E5EDF5] hover:text-[#334155]'
               }`}
             title="Trier par nom (A-Z / Z-A)"
           >
@@ -338,7 +338,7 @@ const StudentGroups: React.FC = () => {
         className="flex-1 overflow-y-auto pr-2"
         style={{
           scrollbarWidth: 'thin',
-          scrollbarColor: '#d1c5b0 transparent',
+          scrollbarColor: '#C8D6E5 transparent',
         }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 pb-6">
@@ -347,34 +347,34 @@ const StudentGroups: React.FC = () => {
               key={student.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="group flex flex-col rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all hover:border-transparent"
+              className="group flex flex-col rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all hover:border-transparent"
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="relative">
                   <img
                     src={student.avatar}
                     alt={student.name}
-                    className="h-20 w-20 rounded-[28px] border-4 border-white object-cover shadow-md"
+                    className="h-20 w-20 rounded-2xl object-cover shadow-md ring-1 ring-[#C8D6E5]"
                   />
-                  <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white flex items-center justify-center ${student.status === 'Available' ? 'bg-green-500' : 'bg-[#765b00]'
+                  <div className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full shadow-sm ring-2 ring-[#EEF3F8] ${student.status === 'Available' ? 'bg-green-500' : 'bg-[#1E3A5F]'
                     }`}>
                     {student.status === 'In Group' && <CheckCircle2 size={10} className="text-white" />}
                   </div>
                 </div>
-                <button className="text-[#d1c5b0] hover:text-[#7f7664]">
+                <button className="text-[#C8D6E5] hover:text-[#64748B]">
                   <MoreVertical size={20} />
                 </button>
               </div>
 
               <h3 className="mb-1 truncate text-xl font-bold text-[#1a1c1a]">{student.name}</h3>
               {student.groupName && (
-                <p className="mb-1 truncate text-sm font-medium text-[#7f7664]">Group: {student.groupName}</p>
+                <p className="mb-1 truncate text-sm font-medium text-[#64748B]">Group: {student.groupName}</p>
               )}
-              <p className="mb-4 truncate text-sm font-bold text-[#765b00]">{student.role}</p>
+              <p className="mb-4 truncate text-sm font-bold text-[#1E3A5F]">{student.role}</p>
 
               <div className="flex flex-wrap gap-2 mb-8">
                 {student.skills.map((skill, i) => (
-                  <span key={i} className="rounded-lg border border-transparent bg-[#f4f3f1] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">
+                  <span key={i} className="rounded-lg border border-transparent bg-[#EEF3F8] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
                     {skill}
                   </span>
                 ))}
@@ -382,24 +382,24 @@ const StudentGroups: React.FC = () => {
 
               <div className="flex items-center justify-between pt-4 border-t border-transparent mt-auto">
                 <div className="flex gap-4">
-                  <button onClick={() => handleOpenEmailModal(student)} className="text-[#7f7664] hover:text-[#765b00] transition-colors">
+                  <button onClick={() => handleOpenEmailModal(student)} className="text-[#64748B] hover:text-[#1E3A5F] transition-colors">
                     <Mail size={20} strokeWidth={2} />
                   </button>
                   {student.githubUrl ? (
-                    <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-[#7f7664] hover:text-[#1a1c1a] transition-colors">
+                    <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-[#64748B] hover:text-[#1a1c1a] transition-colors">
                       <Github size={20} strokeWidth={2} />
                     </a>
                   ) : (
-                    <button disabled className="text-[#d1c5b0] cursor-not-allowed" title="Pas de lien GitHub">
+                    <button disabled className="text-[#C8D6E5] cursor-not-allowed" title="Pas de lien GitHub">
                       <Github size={20} strokeWidth={2} />
                     </button>
                   )}
                   {student.linkedinUrl ? (
-                    <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[#7f7664] hover:text-blue-600 transition-colors">
+                    <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[#64748B] hover:text-blue-600 transition-colors">
                       <Linkedin size={20} strokeWidth={2} />
                     </a>
                   ) : (
-                    <button disabled className="text-[#d1c5b0] cursor-not-allowed" title="Pas de lien LinkedIn">
+                    <button disabled className="text-[#C8D6E5] cursor-not-allowed" title="Pas de lien LinkedIn">
                       <Linkedin size={20} strokeWidth={2} />
                     </button>
                   )}
@@ -408,8 +408,8 @@ const StudentGroups: React.FC = () => {
                   className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${student.status === 'Available'
                     ? selected.find(s => s.id === student.id)
                       ? 'bg-[#16A34A] text-white shadow-sm hover:bg-[#15803D]'
-                      : 'bg-[#765b00] text-white shadow-sm hover:bg-[#594400]'
-                    : 'cursor-not-allowed bg-[#efeeeb] text-[#7f7664]'
+                      : 'bg-[#1E3A5F] text-white shadow-sm hover:bg-[#172D49]'
+                    : 'cursor-not-allowed bg-[#E5EDF5] text-[#64748B]'
                     }`}
                   disabled={student.status !== 'Available'}
                   onClick={() => toggleSelect(student)}

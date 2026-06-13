@@ -52,8 +52,8 @@ interface Iteration {
 }
 
 const statusConfig = {
-  PENDING:     { label: 'Pending',     color: 'bg-[#f4f3f1] text-[#7f7664]',       dot: '#d1c5b0' },
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-[#ffd464]/20 text-[#765b00]',    dot: '#ffd464' },
+  PENDING:     { label: 'Pending',     color: 'bg-[#EEF3F8] text-[#64748B]',       dot: '#C8D6E5' },
+  IN_PROGRESS: { label: 'In Progress', color: 'bg-[#DCEBFA]/20 text-[#1E3A5F]',    dot: '#DCEBFA' },
   DONE:        { label: 'Done',        color: 'bg-[#dcfce7] text-[#166534]',        dot: '#22c55e' },
 };
 
@@ -333,8 +333,8 @@ const Tasks: React.FC = () => {
   };
 
   const statutColor: Record<string, string> = {
-    EN_COURS: 'bg-[#ffd464]/20 text-[#765b00] border-[#ffd464]',
-    A_FAIRE:  'bg-[#f4f3f1] text-[#7f7664] border-[#d1c5b0]',
+    EN_COURS: 'bg-[#DCEBFA]/20 text-[#1E3A5F] border-[#DCEBFA]',
+    A_FAIRE:  'bg-[#EEF3F8] text-[#64748B] border-[#C8D6E5]',
     VALIDE:   'bg-[#dcfce7] text-[#166534] border-[#bbf7d0]',
   };
 
@@ -397,19 +397,19 @@ const Tasks: React.FC = () => {
   };
 
   const columns: { key: TaskCard['status']; label: string; color: string }[] = [
-    { key: 'PENDING',     label: 'Pending',     color: '#d1c5b0' },
-    { key: 'IN_PROGRESS', label: 'In Progress', color: '#ffd464' },
+    { key: 'PENDING',     label: 'Pending',     color: '#C8D6E5' },
+    { key: 'IN_PROGRESS', label: 'In Progress', color: '#DCEBFA' },
     { key: 'DONE',        label: 'Done',        color: '#22c55e' },
   ];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
       <header className="mb-4 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1c1a]">Task Board</h1>
-          <p className="text-sm text-[#7f7664]">Group tasks — view only, leave comments</p>
+          <p className="text-sm text-[#64748B]">Group tasks — view only, leave comments</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -418,24 +418,24 @@ const Tasks: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                className="flex items-center justify-between gap-3 min-w-[160px] rounded-xl border border-[#d1c5b0] bg-white py-2 px-4 text-sm font-semibold text-[#4d4636] shadow-sm transition hover:border-[#765b00] hover:shadow-md active:scale-95"
+                className="flex items-center justify-between gap-3 min-w-[160px] rounded-xl border border-[#C8D6E5] bg-white py-2 px-4 text-sm font-semibold text-[#334155] shadow-sm transition hover:border-[#1E3A5F] hover:shadow-md active:scale-95"
               >
                 <span className="truncate">
                   {projects.find(p => p.id === selectedProjectId)?.title || 'Select Project'}
                 </span>
-                <ChevronDown size={14} className={`text-[#7f7664] transition-transform duration-200 ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`text-[#64748B] transition-transform duration-200 ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isProjectDropdownOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right rounded-2xl border border-transparent bg-white/95 p-1.5 shadow-[0_8px_32px_rgba(118,91,0,0.12)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right rounded-2xl border border-transparent bg-white/95 p-1.5 shadow-[0_8px_32px_rgba(15,23,42,0.12)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
                   {projects.map(p => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => { handleProjectFilter(p.id); setIsProjectDropdownOpen(false); }}
-                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${selectedProjectId === p.id ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                      className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${selectedProjectId === p.id ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
                     >
-                      <div className={`h-1.5 w-1.5 rounded-full ${selectedProjectId === p.id ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                      <div className={`h-1.5 w-1.5 rounded-full ${selectedProjectId === p.id ? 'bg-[#1E3A5F]' : 'bg-transparent'}`} />
                       <span className="truncate">{p.title}</span>
                     </button>
                   ))}
@@ -447,16 +447,16 @@ const Tasks: React.FC = () => {
             type="button"
             onClick={() => { setIterForm({ projectId: projects[0]?.id || '', numero: 1, objectif: '', dateDebut: '', dateFin: '', statut: 'A_FAIRE' }); setIterError(null); setShowIterModal(true); }}
             disabled={projects.length === 0}
-            className="flex items-center gap-2 rounded-xl bg-[#765b00] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#594400] disabled:opacity-40"
+            className="flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#172D49] disabled:opacity-40"
           >
             <Plus size={15} /> New Iteration
           </button>
         </div>
       </header>
 
-      {loading && <p className="text-sm text-[#7f7664]">Loading tasks...</p>}
+      {loading && <p className="text-sm text-[#64748B]">Loading tasks...</p>}
       {!loading && allIterations.length === 0 && (
-        <p className="text-sm text-[#7f7664]">No iteration found. Create an iteration to start.</p>
+        <p className="text-sm text-[#64748B]">No iteration found. Create an iteration to start.</p>
       )}
 
       {/* Iterations strip */}
@@ -489,36 +489,36 @@ const Tasks: React.FC = () => {
           {columns.map(col => {
             const colTasks = tasks.filter(t => t.status === col.key);
             return (
-              <div key={col.key} className="flex w-72 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+              <div key={col.key} className="flex w-72 shrink-0 flex-col rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
                 {/* Column header */}
-                <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-[#f4f3f1] px-4 py-3">
+                <div className="flex shrink-0 items-center justify-between rounded-t-2xl border-b border-[#EEF3F8] px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
                     <span className="text-sm font-bold text-[#1a1c1a]">{col.label}</span>
                   </div>
-                  <span className="rounded-full bg-[#f4f3f1] px-2 py-0.5 text-[11px] font-bold text-[#7f7664]">{colTasks.length}</span>
+                  <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-[11px] font-bold text-[#64748B]">{colTasks.length}</span>
                 </div>
 
                 {/* Tasks */}
                 <div className="flex-1 space-y-3 overflow-y-auto p-3 max-h-[400px]">
                   {colTasks.length === 0 && (
-                    <p className="py-6 text-center text-xs text-[#d1c5b0]">No tasks</p>
+                    <p className="py-6 text-center text-xs text-[#C8D6E5]">No tasks</p>
                   )}
                   {colTasks.map(task => (
                     <button
                       key={task.id}
                       type="button"
                       onClick={() => openTask(task)}
-                      className="w-full rounded-xl border border-[#f4f3f1] bg-[#faf9f6] p-3 text-left transition hover:border-[#d1c5b0] hover:shadow-sm"
+                      className="w-full rounded-xl border border-[#EEF3F8] bg-[#F8FAFC] p-3 text-left transition hover:border-[#C8D6E5] hover:shadow-sm"
                     >
                       {/* Priority badge */}
                       {task.priority === 'HIGH' && (
                         <span className="mb-2 inline-block rounded-md bg-[#ffdad6] px-2 py-0.5 text-[9px] font-bold uppercase text-[#ba1a1a]">Urgent</span>
                       )}
                       <p className="mb-1 text-sm font-semibold text-[#1a1c1a] leading-snug">{task.title}</p>
-                      <p className="mb-2 text-[10px] text-[#765b00] font-medium">{task.projectTitle}</p>
+                      <p className="mb-2 text-[10px] text-[#1E3A5F] font-medium">{task.projectTitle}</p>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[10px] text-[#7f7664]">
+                        <div className="flex items-center gap-1 text-[10px] text-[#64748B]">
                           <img
                             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(task.assignee)}&size=20&background=random`}
                             alt=""
@@ -526,12 +526,12 @@ const Tasks: React.FC = () => {
                           />
                           <span className="truncate max-w-[90px]">{task.assignee}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-[#7f7664]">
+                        <div className="flex items-center gap-1 text-[10px] text-[#64748B]">
                           <MessageSquare size={11} />
                           {task.commentCount}
                         </div>
                       </div>
-                      <p className="mt-2 text-[9px] text-[#d1c5b0]">{task.dateLabel}</p>
+                      <p className="mt-2 text-[9px] text-[#C8D6E5]">{task.dateLabel}</p>
                     </button>
                   ))}
                 </div>
@@ -551,36 +551,36 @@ const Tasks: React.FC = () => {
       {/* Create Iteration Modal */}
       {showIterModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={() => setShowIterModal(false)}>
-          <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(118,91,0,0.15)]" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.15)]" onClick={e => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-lg font-bold text-[#1a1c1a]">New Iteration</h2>
-              <button onClick={() => setShowIterModal(false)} className="text-[#7f7664] hover:text-[#1a1c1a]"><X size={18} /></button>
+              <button onClick={() => setShowIterModal(false)} className="text-[#64748B] hover:text-[#1a1c1a]"><X size={18} /></button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Group / Project</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Group / Project</label>
                 <div className="relative" ref={iterProjectDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setOpenIterProjectDropdown(!openIterProjectDropdown)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#4d4636] outline-none transition hover:border-[#765b00]"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#334155] outline-none transition hover:border-[#1E3A5F]"
                   >
                     <span className="truncate">
                       {projects.find(p => p.id === iterForm.projectId)?.title || 'Select Project'}
                     </span>
-                    <ChevronDown size={14} className={`text-[#7f7664] transition-transform ${openIterProjectDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={14} className={`text-[#64748B] transition-transform ${openIterProjectDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {openIterProjectDropdown && (
-                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#f4f3f1] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#EEF3F8] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
                       {projects.map(p => (
                         <button
                           key={p.id}
                           type="button"
                           onClick={() => { setIterForm(f => ({ ...f, projectId: p.id })); setOpenIterProjectDropdown(false); }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.projectId === p.id ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.projectId === p.id ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
                         >
-                          <div className={`h-1.5 w-1.5 rounded-full ${iterForm.projectId === p.id ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                          <div className={`h-1.5 w-1.5 rounded-full ${iterForm.projectId === p.id ? 'bg-[#1E3A5F]' : 'bg-transparent'}`} />
                           <span className="truncate">{p.title}</span>
                         </button>
                       ))}
@@ -590,64 +590,64 @@ const Tasks: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Number</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Number</label>
                 <input
                   type="number"
                   min={1}
                   placeholder="Ex: 1"
                   value={iterForm.numero}
                   onChange={e => setIterForm(f => ({ ...f, numero: parseInt(e.target.value) || 1 }))}
-                  className="w-full rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-4 py-2.5 text-sm text-[#4d4636] outline-none focus:border-[#765b00] placeholder:text-[#d1c5b0]"
+                  className="w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-4 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F] placeholder:text-[#C8D6E5]"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Objectif</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Objectif</label>
                 <textarea
                   placeholder="Describe the sprint objective..."
                   value={iterForm.objectif}
                   onChange={e => setIterForm(f => ({ ...f, objectif: e.target.value }))}
                   rows={2}
-                  className="w-full resize-none rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-4 py-2.5 text-sm text-[#4d4636] outline-none focus:border-[#765b00] placeholder:text-[#d1c5b0]"
+                  className="w-full resize-none rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-4 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F] placeholder:text-[#C8D6E5]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Start Date</label>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Start Date</label>
                   <input
                     type="date"
                     value={iterForm.dateDebut}
                     onChange={e => setIterForm(f => ({ ...f, dateDebut: e.target.value }))}
-                    className="w-full rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-3 py-2.5 text-sm text-[#4d4636] outline-none focus:border-[#765b00]"
+                    className="w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">End Date</label>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">End Date</label>
                   <input
                     type="date"
                     value={iterForm.dateFin}
                     onChange={e => setIterForm(f => ({ ...f, dateFin: e.target.value }))}
-                    className="w-full rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-3 py-2.5 text-sm text-[#4d4636] outline-none focus:border-[#765b00]"
+                    className="w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#7f7664]">Status</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Status</label>
                 <div className="relative" ref={iterStatusDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setOpenIterStatusDropdown(!openIterStatusDropdown)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#4d4636] outline-none transition hover:border-[#765b00]"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#334155] outline-none transition hover:border-[#1E3A5F]"
                   >
                     <span className="truncate">
                       {iterForm.statut === 'A_FAIRE' ? 'To Do' : iterForm.statut === 'EN_COURS' ? 'In Progress' : 'Validated'}
                     </span>
-                    <ChevronDown size={14} className={`text-[#7f7664] transition-transform ${openIterStatusDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={14} className={`text-[#64748B] transition-transform ${openIterStatusDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {openIterStatusDropdown && (
-                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#f4f3f1] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#EEF3F8] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
                       {[
                         { v: 'A_FAIRE', l: 'To Do' },
                         { v: 'EN_COURS', l: 'In Progress' },
@@ -657,9 +657,9 @@ const Tasks: React.FC = () => {
                           key={o.v}
                           type="button"
                           onClick={() => { setIterForm(f => ({ ...f, statut: o.v })); setOpenIterStatusDropdown(false); }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.statut === o.v ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'}`}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.statut === o.v ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
                         >
-                          <div className={`h-1.5 w-1.5 rounded-full ${iterForm.statut === o.v ? 'bg-[#765b00]' : 'bg-transparent'}`} />
+                          <div className={`h-1.5 w-1.5 rounded-full ${iterForm.statut === o.v ? 'bg-[#1E3A5F]' : 'bg-transparent'}`} />
                           {o.l}
                         </button>
                       ))}
@@ -674,7 +674,7 @@ const Tasks: React.FC = () => {
                 type="button"
                 onClick={handleCreateIteration}
                 disabled={iterSaving}
-                className="w-full rounded-xl bg-[#765b00] py-2.5 text-sm font-bold text-white transition hover:bg-[#594400] disabled:opacity-50"
+                className="w-full rounded-xl bg-[#1E3A5F] py-2.5 text-sm font-bold text-white transition hover:bg-[#172D49] disabled:opacity-50"
               >
                 {iterSaving ? 'Creating...' : 'Create Iteration'}
               </button>
@@ -687,10 +687,10 @@ const Tasks: React.FC = () => {
       {/* Task detail panel */}
       {selectedTask && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={() => setSelectedTask(null)}>
-          <div className="relative flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]" onClick={e => e.stopPropagation()}>
+          <div className="relative flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)]" onClick={e => e.stopPropagation()}>
 
             {/* Panel header */}
-            <div className="flex shrink-0 items-start justify-between border-b border-[#f4f3f1] px-6 py-4">
+            <div className="flex shrink-0 items-start justify-between border-b border-[#EEF3F8] px-6 py-4">
               <div className="flex-1 pr-4">
                 <div className="mb-1 flex items-center gap-2">
                   <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase ${statusConfig[selectedTask.status].color}`}>
@@ -701,30 +701,30 @@ const Tasks: React.FC = () => {
                   )}
                 </div>
                 <h2 className="text-lg font-bold text-[#1a1c1a]">{selectedTask.title}</h2>
-                <p className="text-xs text-[#765b00] font-medium">{selectedTask.projectTitle}</p>
+                <p className="text-xs text-[#1E3A5F] font-medium">{selectedTask.projectTitle}</p>
               </div>
-              <button onClick={() => setSelectedTask(null)} className="text-[#7f7664] hover:text-[#1a1c1a] transition">
+              <button onClick={() => setSelectedTask(null)} className="text-[#64748B] hover:text-[#1a1c1a] transition">
                 <X size={20} />
               </button>
             </div>
 
             {/* Details */}
-            <div className="shrink-0 border-b border-[#f4f3f1] px-6 py-3">
-              <div className="flex items-center gap-6 text-xs text-[#7f7664]">
-                <span><span className="font-semibold text-[#4d4636]">Assigned to:</span> {selectedTask.assignee}</span>
-                <span><span className="font-semibold text-[#4d4636]">Date:</span> {selectedTask.dateLabel}</span>
+            <div className="shrink-0 border-b border-[#EEF3F8] px-6 py-3">
+              <div className="flex items-center gap-6 text-xs text-[#64748B]">
+                <span><span className="font-semibold text-[#334155]">Assigned to:</span> {selectedTask.assignee}</span>
+                <span><span className="font-semibold text-[#334155]">Date:</span> {selectedTask.dateLabel}</span>
               </div>
-              <p className="mt-2 text-sm text-[#4d4636] leading-relaxed">{selectedTask.description}</p>
+              <p className="mt-2 text-sm text-[#334155] leading-relaxed">{selectedTask.description}</p>
             </div>
 
             {/* Comments */}
             <div className="flex-1 overflow-y-auto px-6 py-3 space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">
                 Comments ({selectedTask.commentCount})
               </p>
-              {loadingComments && <p className="text-xs text-[#7f7664]">Loading...</p>}
+              {loadingComments && <p className="text-xs text-[#64748B]">Loading...</p>}
               {!loadingComments && comments.length === 0 && (
-                <p className="text-xs text-[#d1c5b0]">No comments yet. Be the first!</p>
+                <p className="text-xs text-[#C8D6E5]">No comments yet. Be the first!</p>
               )}
               {comments.map(c => (
                 <div key={c.id} className="flex gap-3">
@@ -733,33 +733,33 @@ const Tasks: React.FC = () => {
                     className="h-7 w-7 shrink-0 rounded-full"
                     alt=""
                   />
-                  <div className="flex-1 rounded-xl bg-[#faf9f6] px-3 py-2">
+                  <div className="flex-1 rounded-xl bg-[#F8FAFC] px-3 py-2">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-[#1a1c1a]">{c.author}</span>
-                      <span className="text-[10px] text-[#7f7664]">{c.time}</span>
+                      <span className="text-[10px] text-[#64748B]">{c.time}</span>
                     </div>
-                    <p className="text-xs text-[#4d4636]">{c.content}</p>
+                    <p className="text-xs text-[#334155]">{c.content}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Comment input */}
-            <div className="shrink-0 border-t border-[#f4f3f1] px-6 py-3">
-              <div className="flex items-center gap-2 rounded-xl border border-[#d1c5b0] bg-[#faf9f6] px-3 py-2 focus-within:border-[#765b00]">
+            <div className="shrink-0 border-t border-[#EEF3F8] px-6 py-3">
+              <div className="flex items-center gap-2 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 py-2 focus-within:border-[#1E3A5F]">
                 <input
                   type="text"
                   placeholder="Add a comment..."
                   value={commentInput}
                   onChange={e => setCommentInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendComment(); } }}
-                  className="flex-1 bg-transparent text-sm text-[#4d4636] outline-none placeholder:text-[#d1c5b0]"
+                  className="flex-1 bg-transparent text-sm text-[#334155] outline-none placeholder:text-[#C8D6E5]"
                 />
                 <button
                   type="button"
                   onClick={sendComment}
                   disabled={!commentInput.trim() || sending}
-                  className="text-[#765b00] transition hover:text-[#594400] disabled:opacity-30"
+                  className="text-[#1E3A5F] transition hover:text-[#172D49] disabled:opacity-30"
                 >
                   <Send size={16} />
                 </button>

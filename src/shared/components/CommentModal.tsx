@@ -80,15 +80,15 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
       
       <div 
-        className="relative z-10 w-full max-w-2xl bg-[#faf9f6] rounded-[32px] shadow-[0_20px_60px_rgba(118,91,0,0.2)] border border-[#d1c5b0] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300"
+        className="relative z-10 w-full max-w-2xl bg-[#F8FAFC] rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.2)] border border-[#C8D6E5] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
         style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-[#d1c5b0]/50 bg-white/50 backdrop-blur-sm shrink-0">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-[#C8D6E5]/50 bg-white/50 backdrop-blur-sm shrink-0">
           <button 
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-[#1a1c1a]/5 text-[#7f7664] transition-colors"
+            className="p-2 rounded-full hover:bg-[#1a1c1a]/5 text-[#64748B] transition-colors"
           >
             <X size={20} />
           </button>
@@ -98,17 +98,17 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           {fetchLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="w-8 h-8 border-3 border-[#765b00]/20 border-t-[#765b00] rounded-full animate-spin"></div>
-              <p className="text-sm text-[#7f7664] font-medium">Loading messages...</p>
+              <div className="w-8 h-8 border-3 border-[#1E3A5F]/20 border-t-[#1E3A5F] rounded-full animate-spin"></div>
+              <p className="text-sm text-[#64748B] font-medium">Loading messages...</p>
             </div>
           ) : comments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-              <div className="w-16 h-16 bg-[#d1c5b0]/20 rounded-full flex items-center justify-center text-[#7f7664]">
+              <div className="w-16 h-16 bg-[#C8D6E5]/20 rounded-full flex items-center justify-center text-[#64748B]">
                 <MessageSquare size={32} strokeWidth={1.5} />
               </div>
               <div>
                 <p className="text-[#1a1c1a] font-bold">No messages yet</p>
-                <p className="text-sm text-[#7f7664]">Be the first to start the discussion!</p>
+                <p className="text-sm text-[#64748B]">Be the first to start the discussion!</p>
               </div>
             </div>
           ) : (
@@ -117,17 +117,17 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
                 <img
                   src={c.auteur?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.auteur?.prenom || 'U')}&background=random`}
                   alt="Avatar"
-                  className="w-10 h-10 rounded-full border border-[#d1c5b0] object-cover shadow-sm bg-white shrink-0"
+                  className="w-10 h-10 rounded-full border border-[#C8D6E5] object-cover shadow-sm bg-white shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-sm font-bold text-[#1a1c1a]">{c.auteur?.prenom} {c.auteur?.nom}</span>
-                    <div className="flex items-center gap-1 text-[10px] text-[#7f7664] font-medium bg-[#f4f3f1] px-2 py-0.5 rounded-full">
+                    <div className="flex items-center gap-1 text-[10px] text-[#64748B] font-medium bg-[#EEF3F8] px-2 py-0.5 rounded-full">
                       <Clock size={10} />
                       {new Date(c.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
                     </div>
                   </div>
-                  <div className="bg-white rounded-2xl rounded-tl-none p-4 text-[#4d4636] text-sm leading-relaxed shadow-sm border border-[#d1c5b0]/30">
+                  <div className="bg-white rounded-2xl rounded-tl-none p-4 text-[#334155] text-sm leading-relaxed shadow-sm border border-[#C8D6E5]/30">
                     {c.contenu}
                   </div>
                 </div>
@@ -139,11 +139,11 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
 
         {/* Footer Input */}
         {!readOnly && (
-          <div className="p-6 bg-white border-t border-[#d1c5b0]/50 shrink-0">
+          <div className="p-6 bg-white border-t border-[#C8D6E5]/50 shrink-0">
             <form onSubmit={handleSend} className="relative flex items-center gap-3">
               <input 
                 type="text"
-                className="flex-1 bg-[#f4f3f1] border border-transparent rounded-2xl px-5 py-4 text-sm focus:bg-white focus:border-[#765b00] outline-none transition-all pr-12 text-[#1a1c1a]"
+                className="flex-1 bg-[#EEF3F8] border border-transparent rounded-2xl px-5 py-4 text-sm focus:bg-white focus:border-[#1E3A5F] outline-none transition-all pr-12 text-[#1a1c1a]"
                 placeholder="Write a comment..."
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
@@ -152,7 +152,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
               <button 
                 type="submit" 
                 disabled={loading || !newComment.trim()}
-                className="absolute right-2 p-2.5 bg-[#765b00] text-white rounded-xl hover:bg-[#594400] transition-all disabled:opacity-30 shadow-lg shadow-[#765b00]/20 flex items-center justify-center"
+                className="absolute right-2 p-2.5 bg-[#1E3A5F] text-white rounded-xl hover:bg-[#172D49] transition-all disabled:opacity-30 shadow-lg shadow-[#1E3A5F]/20 flex items-center justify-center"
               >
                 <Send size={18} />
               </button>

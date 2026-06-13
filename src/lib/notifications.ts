@@ -125,12 +125,43 @@ export const notifyProjectProfessor = async (options: NotifyOptions) => {
       return;
     }
 
-    // 2. Fetch the professor's email
-    const { data: professor, error: profError } = await supabase
+    // 2. Resolve the professor user id. Some projects store encadrants.id,
+    // while others store utilisateurs.id directly.
+    let professorUserId = project.encadrant_id;
+    let { data: professor, error: profError } = await supabase
       .from('utilisateurs')
-      .select('email, nom, prenom')
-      .eq('id', project.encadrant_id)
+      .select('id, email, nom, prenom')
+      .eq('id', professorUserId)
       .single();
+
+    if (profError || !professor) {
+      const { data: encadrant } = await supabase
+        .from('encadrants')
+        .select('*')
+        .eq('id', project.encadrant_id)
+        .single();
+
+      const candidateIds = [
+        encadrant?.utilisateur_id,
+        encadrant?.user_id,
+        encadrant?.auth_user_id,
+      ].filter(Boolean);
+
+      for (const candidateId of candidateIds) {
+        const { data: candidateProfessor } = await supabase
+          .from('utilisateurs')
+          .select('id, email, nom, prenom')
+          .eq('id', candidateId)
+          .single();
+
+        if (candidateProfessor) {
+          professor = candidateProfessor;
+          professorUserId = candidateProfessor.id;
+          profError = null;
+          break;
+        }
+      }
+    }
 
     if (profError) {
       console.error('Error fetching professor details:', profError);
@@ -138,7 +169,7 @@ export const notifyProjectProfessor = async (options: NotifyOptions) => {
 
     // 3. Insert in-app notification
     const notification = {
-      user_id: project.encadrant_id,
+      user_id: professorUserId,
       sender_id: senderId,
       projet_id: projectId,
       title,

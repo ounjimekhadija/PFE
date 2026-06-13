@@ -37,17 +37,17 @@ const MessageContent: React.FC<MessageContentProps> = ({ text }) => {
     
     return (
       <div className="w-full max-w-xs">
-        <div className="flex items-center justify-between bg-[#8B6F47] text-white rounded-xl shadow-sm px-4 py-3 border border-[#6B5436]">
+        <div className="flex items-center justify-between bg-[#DCEBFA] text-[#1E3A5F] rounded-xl shadow-sm px-4 py-3 border border-[#8FB4D9]/60">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-md shrink-0">
+            <div className="w-10 h-10 flex items-center justify-center bg-[#1E3A5F] text-white rounded-md shrink-0">
               <span className="text-sm font-bold">{ext}</span>
             </div>
             <div className="min-w-0">
               <div className="text-sm font-semibold truncate">{name}</div>
-              <div className="text-xs opacity-80">{ext}</div>
+              <div className="text-xs text-[#64748B]">{ext}</div>
             </div>
           </div>
-          <a href={url} target="_blank" rel="noreferrer" download={name} className="ml-3 inline-flex items-center gap-2 text-sm font-medium text-white bg-white/10 px-3 py-1 rounded hover:bg-white/20">
+          <a href={url} target="_blank" rel="noreferrer" download={name} className="ml-3 inline-flex items-center gap-2 rounded bg-[#1E3A5F] px-3 py-1 text-sm font-medium text-white hover:bg-[#172D49]">
             Download
           </a>
         </div>

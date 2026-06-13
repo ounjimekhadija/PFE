@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Send, Video, Paperclip, Smile, CheckCheck, FileText } from 'lucide-react';
+import { Search, Send, Video, Paperclip, Smile, CheckCheck } from 'lucide-react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { supabase } from '../../../lib/supabase';
 import { notifyProjectStudents } from '../../../lib/notifications';
@@ -40,6 +40,7 @@ const Chat: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [creatingMeeting, setCreatingMeeting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +80,11 @@ const Chat: React.FC = () => {
     raw = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
     const { data } = supabase.storage.from('avatars').getPublicUrl(raw);
     return data?.publicUrl || fallback;
+  };
+
+  const getProjectMeetingUrl = (projectId: string) => {
+    const roomName = `PFEspace_Project_${projectId}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `https://meet.jit.si/${roomName}`;
   };
 
   const fetchProfessorProjectIds = async (authUserId: string): Promise<string[]> => {
@@ -244,11 +250,11 @@ const Chat: React.FC = () => {
             id: String(p.id),
             name: p.titre || `Project ${idx + 1}`,
             groupName: p.nom_groupe || '',
-            lastMsg: latest ? `${latestSender ? `${latestSender}: ` : ''}${latest.contenu}` : 'No messages for this project',
+            lastMsg: latest ? `${latestSender ? `${latestSender}: ` : ''}${latest.contenu}` : 'Aucun message pour ce projet',
             time: latest ? formatTime(latest.created_at) : '',
             unread: 0,
             active: idx === 0,
-            status: 'online',
+            status: 'offline',
             membersCount: membersCountByProject[String(p.id)] || 0,
           };
         });
@@ -266,7 +272,7 @@ const Chat: React.FC = () => {
         }
       } catch (err) {
         console.error('Error loading supervisor chat:', err);
-        setError(err instanceof Error ? err.message : 'Error loading chat.');
+        setError(err instanceof Error ? err.message : 'Erreur lors du chargement de la messagerie.');
         setContacts([]);
         setMessages([]);
       } finally {
@@ -346,14 +352,16 @@ const Chat: React.FC = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const filteredMessages = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return messages;
-    return messages.filter((m) => m.text.toLowerCase().includes(q));
-  }, [messages, search]);
+  const filteredMessages = messages;
 
   const selectedContact = contacts.find((c) => c.id === selectedProjectId) || null;
-  const filteredContacts = contacts; // No sidebar filtering as per user request
+  const filteredContacts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter((c) =>
+      [c.name, c.groupName, c.lastMsg].some((value) => value.toLowerCase().includes(q))
+    );
+  }, [contacts, search]);
 
   const onSelectProject = async (project: ContactItem) => {
     if (!currentUserId) return;
@@ -429,87 +437,103 @@ const Chat: React.FC = () => {
         type: 'MESSAGE'
       });
     } catch (err) {
-      setError('Error uploading file.');
+      setError('Erreur lors de l’envoi du fichier.');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleJoinCall = async () => {
-    if (!selectedProjectId) return;
-    const meetUrl = `https://meet.jit.si/Encadrant_Project_${selectedProjectId}`;
-    window.open(meetUrl, '_blank');
+  const handleCreateMeeting = async () => {
+    if (!selectedProjectId || !currentUserId || creatingMeeting) return;
 
-    // Notify students
-    if (currentUserId) {
-      await notifyProjectStudents({
-        projectId: selectedProjectId,
-        senderId: currentUserId,
-        title: 'Meeting Request',
-        message: `Professor started a meeting in "${selectedProjectTitle}". Click to join.`,
-        type: 'MEETING_REQUEST'
-      });
+    setCreatingMeeting(true);
+    const meetUrl = getProjectMeetingUrl(selectedProjectId);
+    const startedAt = new Date().toISOString();
+
+    const { error: meetingError } = await supabase.from('reunions').insert({
+      projet_id: selectedProjectId,
+      titre: `Appel vidéo - ${selectedProjectTitle}`,
+      date_heure: startedAt,
+      duree: 60,
+      lien_jitsi: meetUrl,
+      ordre_du_jour: `Appel vidéo lancé par l'encadrant pour le projet "${selectedProjectTitle}".`,
+      statut: 'EN_COURS',
+    });
+
+    if (meetingError) {
+      console.error('Erreur création réunion:', meetingError);
+      setError(meetingError.message);
+      setCreatingMeeting(false);
+      return;
     }
+
+    await notifyProjectStudents({
+      projectId: selectedProjectId,
+      senderId: currentUserId,
+      title: 'Nouvel appel vidéo',
+      message: `L'encadrant a lancé un appel vidéo pour "${selectedProjectTitle}". Lien: ${meetUrl}`,
+      type: 'MEETING_REQUEST'
+    });
+
+    window.open(meetUrl, '_blank');
+    setCreatingMeeting(false);
   };
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-[#faf9f6] antialiased text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex min-h-0 flex-1 overflow-hidden bg-[#F8FAFC] antialiased text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Sidebar */}
-      <div className="z-10 flex w-96 flex-col border-r border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-        <div className="p-8 pb-6">
+      <div className="z-10 flex w-80 flex-col border-r border-[#C8D6E5]/60 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+        <div className="p-6 pb-5">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-extrabold tracking-tight">Messages</h2>
           </div>
 
           <div className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7f7664]" />
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]" />
             <input
               type="text"
               placeholder="Rechercher une discussion..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#f4f3f1] border-none rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#765b00]/20 transition-all outline-none font-medium"
+              className="w-full rounded-xl border border-transparent bg-[#EEF3F8] py-3 pl-11 pr-4 text-sm font-medium outline-none transition-all focus:border-[#1E3A5F]/25 focus:ring-2 focus:ring-[#1E3A5F]/15"
             />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 space-y-2">
-          {loading && <div className="px-4 py-2 text-sm text-[#7f7664]">Loading discussions...</div>}
-          {!loading && filteredContacts.length === 0 && <div className="px-4 py-2 text-sm text-[#7f7664]">No discussion found.</div>}
+          {loading && <div className="px-4 py-2 text-sm text-[#64748B]">Chargement des discussions...</div>}
+          {!loading && filteredContacts.length === 0 && <div className="px-4 py-2 text-sm text-[#64748B]">Aucune discussion trouvée.</div>}
           {filteredContacts.map((c) => (
             <button
               key={c.id}
               onClick={() => onSelectProject(c)}
-              className={`w-full text-left flex items-center gap-4 px-4 py-4 rounded-2xl cursor-pointer transition-all duration-200 group ${
+              className={`w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all duration-200 group ${
                 c.active
-                  ? 'bg-[#ffd464]/30 shadow-sm border border-[#ebc254]'
-                  : 'hover:bg-[#f4f3f1] border border-transparent'
+                  ? 'bg-[#1E3A5F]/8 shadow-sm border border-[#1E3A5F]/20'
+                  : 'hover:bg-[#EEF3F8] border border-transparent'
               }`}
             >
               <div className="relative shrink-0">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl shadow-sm ${
-                  c.active ? 'bg-[#765b00] text-white' : 'bg-white border border-[#d1c5b0] text-[#765b00]'
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base shadow-sm ${
+                  c.active ? 'bg-[#1E3A5F] text-white' : 'bg-white border border-[#C8D6E5] text-[#1E3A5F]'
                 }`}>
                   {(c.groupName || c.name)[0]}
                 </div>
-                {c.status === 'online' && (
-                  <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-4 border-white rounded-full"></span>
-                )}
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-0.5">
                   <span className="font-bold text-[15px] truncate">{c.groupName || c.name}</span>
-                  <span className="text-[11px] font-bold text-[#7f7664] uppercase">{c.time}</span>
+                  <span className="text-[11px] font-bold text-[#64748B] uppercase">{c.time}</span>
                 </div>
                 {c.groupName && (
-                  <p className="text-[11px] text-[#765b00] font-semibold truncate mb-0.5">{c.name}</p>
+                  <p className="text-[11px] text-[#1E3A5F] font-semibold truncate mb-0.5">{c.name}</p>
                 )}
                 <div className="flex justify-between items-center">
-                  <p className="text-sm text-[#7f7664] truncate pr-2 font-medium">{c.lastMsg}</p>
+                  <p className="text-sm text-[#64748B] truncate pr-2 font-medium">{c.lastMsg}</p>
                   {c.unread > 0 && (
-                    <span className="bg-[#765b00] text-white text-[10px] font-bold rounded-lg px-2 py-1 shadow-sm">
+                    <span className="bg-[#1E3A5F] text-white text-[10px] font-bold rounded-lg px-2 py-1 shadow-sm">
                       {c.unread}
                     </span>
                   )}
@@ -524,44 +548,44 @@ const Chat: React.FC = () => {
       <div className="flex-1 flex flex-col relative bg-white" style={{ height: '100vh', overflow: 'hidden' }}>
 
         {/* Header */}
-        <header className="sticky top-0 z-20 flex items-center justify-between px-10 py-6 bg-white/80 backdrop-blur-md border-b border-transparent shadow-sm">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#C8D6E5]/60 bg-white/85 px-8 py-5 shadow-sm backdrop-blur-md">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#765b00] flex items-center justify-center text-white font-bold text-xl shadow-sm">G</div>
+            <div className="w-11 h-11 rounded-xl bg-[#1E3A5F] flex items-center justify-center text-white font-bold text-lg shadow-sm">G</div>
             <div>
               <h3 className="font-bold text-lg leading-none mb-1.5">{selectedProjectTitle}</h3>
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E3A5F]"></span>
                 </span>
-                <span className="text-xs font-bold text-[#7f7664] uppercase tracking-wide">{selectedContact?.membersCount || 0} membres actifs</span>
+                <span className="text-xs font-bold text-[#64748B] uppercase tracking-wide">{selectedContact?.membersCount || 0} membres</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <button
-              onClick={handleJoinCall}
-              disabled={!selectedProjectId}
-              className="bg-[#1a1c1a] hover:bg-[#4d4636] text-white font-bold px-6 py-3 rounded-2xl shadow-sm flex items-center gap-2 transition-all active:scale-95"
+              onClick={handleCreateMeeting}
+              disabled={!selectedProjectId || creatingMeeting}
+              aria-label="Créer un appel vidéo"
+              title="Créer un appel vidéo"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white shadow-sm ring-1 ring-[#DCEBFA]/40 transition-all hover:bg-[#172D49] active:scale-95 disabled:opacity-40"
             >
-              <Video size={18} />
-              <span>Lancer l'appel</span>
+              <Video size={22} strokeWidth={2.4} className="shrink-0" />
             </button>
           </div>
         </header>
 
         {/* Message Container */}
-        <div className="flex-1 overflow-y-auto px-10 py-10 flex flex-col gap-8 bg-[#faf9f6]/50">
-          {error && <div className="text-sm text-[#ba1a1a]">Error: {error}</div>}
-          {!loading && !selectedProjectId && <div className="text-sm text-[#7f7664]">No project assigned to this supervisor.</div>}
-          {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#7f7664]">No messages for this project.</div>}
+        <div className="flex-1 overflow-y-auto px-10 py-10 flex flex-col gap-8 bg-[#F8FAFC]/50">
+          {error && <div className="text-sm text-[#ba1a1a]">Erreur : {error}</div>}
+          {!loading && !selectedProjectId && <div className="text-sm text-[#64748B]">Aucun projet assigné à cet encadrant.</div>}
+          {!loading && selectedProjectId && messages.length === 0 && <div className="text-sm text-[#64748B]">Aucun message pour ce projet.</div>}
           {filteredMessages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'} group`}>
               <div className={`max-w-[65%] flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
                 <div className="flex items-center gap-2 mb-2 px-1">
-                  <span className="text-[11px] font-bold text-[#7f7664] uppercase tracking-widest">{msg.name}</span>
-                  <span className="text-[11px] font-medium text-[#d1c5b0]">{msg.time}</span>
+                  <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-widest">{msg.name}</span>
+                  <span className="text-[11px] font-medium text-[#C8D6E5]">{msg.time}</span>
                 </div>
 
                 <div className={`flex items-end gap-3 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -572,8 +596,8 @@ const Chat: React.FC = () => {
                   />
                   <div className={`shadow-sm text-[15px] leading-relaxed font-medium overflow-hidden ${
                     msg.isMe
-                      ? 'bg-[#765b00] text-white rounded-3xl rounded-tr-none'
-                      : 'bg-white border border-[#d1c5b0] text-[#4d4636] rounded-3xl rounded-tl-none'
+                      ? 'bg-[#1E3A5F] text-white rounded-2xl rounded-tr-sm'
+                      : 'bg-white border border-[#C8D6E5] text-[#334155] rounded-2xl rounded-tl-sm'
                   }`}>
                     <div className="px-6 py-4">
                       <MessageContent text={msg.text} />
@@ -583,8 +607,8 @@ const Chat: React.FC = () => {
 
                 {msg.isMe && msg.isRead && (
                   <div className="mt-1.5 flex gap-1 items-center">
-                    <CheckCheck size={14} className="text-[#765b00]" />
-                    <span className="text-[10px] text-[#7f7664] font-bold uppercase">Lu</span>
+                    <CheckCheck size={14} className="text-[#1E3A5F]" />
+                    <span className="text-[10px] text-[#64748B] font-bold uppercase">Lu</span>
                   </div>
                 )}
               </div>
@@ -594,27 +618,31 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-8 bg-white border-t border-transparent">
-          <div className="max-w-4xl mx-auto relative flex items-center gap-4 bg-[#f4f3f1] p-2 rounded-[2rem] border border-transparent shadow-inner">
+        <div className="bg-white px-6 py-3">
+          <div className="max-w-4xl mx-auto relative flex items-center gap-3">
 
-            {/* Emoji picker */}
+
             <div className="relative" ref={emojiRef}>
               <button
                 type="button"
                 onClick={() => setShowEmoji((v) => !v)}
-                className={`p-3 transition-colors ${showEmoji ? 'text-[#765b00]' : 'text-[#7f7664] hover:text-[#765b00]'}`}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-colors ${
+                  showEmoji ? 'bg-[#DCEBFA] text-[#1E3A5F]' : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1E3A5F]'
+                }`}
+                aria-label="Ajouter un emoji"
+                title="Ajouter un emoji"
               >
-                <Smile size={24} />
+                <Smile size={22} />
               </button>
               {showEmoji && (
-                <div className="absolute bottom-14 left-0 z-30 w-72 rounded-2xl border border-[#f4f3f1] bg-white p-3 shadow-[0_8px_24px_rgba(118,91,0,0.15)]">
+                <div className="absolute bottom-14 left-0 z-30 w-72 rounded-2xl border border-[#EEF3F8] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.15)]">
                   <div className="grid grid-cols-8 gap-1">
                     {EMOJIS.map((em) => (
                       <button
                         key={em}
                         type="button"
                         onClick={() => { setInput((v) => v + em); setShowEmoji(false); }}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-lg hover:bg-[#f4f3f1] transition"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-lg transition hover:bg-[#EEF3F8]"
                       >
                         {em}
                       </button>
@@ -624,21 +652,33 @@ const Chat: React.FC = () => {
               )}
             </div>
 
-            {/* File attachment */}
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-3 text-[#7f7664] hover:text-[#765b00] transition-colors disabled:opacity-40"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[#64748B] transition-colors hover:bg-[#EEF3F8] hover:text-[#1E3A5F] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Joindre un fichier"
+              title="Joindre un fichier"
             >
-              {uploading ? <span className="text-xs font-bold text-[#765b00]">...</span> : <Paperclip size={24} />}
+              {uploading ? <span className="text-xs font-bold text-[#1E3A5F]">...</span> : <Paperclip size={22} />}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCreateMeeting}
+              disabled={!selectedProjectId || !currentUserId || creatingMeeting}
+              aria-label="Créer un appel vidéo"
+              title="Créer un appel vidéo"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Video size={20} />
             </button>
 
             <input
               type="text"
               placeholder="Écrivez votre message..."
-              className="flex-1 bg-transparent border-none py-3 text-[#4d4636] focus:ring-0 outline-none font-medium placeholder:text-[#7f7664]"
+              className="h-12 flex-1 rounded-2xl border border-[#C8D6E5] bg-[#EEF3F8] px-5 text-[#334155] outline-none font-medium placeholder:text-[#64748B] focus:border-[#1E3A5F]/30 focus:ring-2 focus:ring-[#1E3A5F]/10"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -652,7 +692,7 @@ const Chat: React.FC = () => {
             <button
               onClick={handleSend}
               disabled={!input.trim() || !selectedProjectId || !currentUserId}
-              className="bg-[#765b00] hover:bg-[#594400] text-white p-4 rounded-2xl shadow-sm transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>

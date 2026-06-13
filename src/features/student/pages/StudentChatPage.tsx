@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Send, Video, Paperclip, Smile, CheckCheck } from 'lucide-react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { supabase } from '../../../lib/supabase';
@@ -56,6 +56,7 @@ const StudentChat: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [creatingMeeting, setCreatingMeeting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,6 +96,32 @@ const StudentChat: React.FC = () => {
     raw = raw.replace(/^\/+/, '').replace(/^avatars\//, '');
     const { data } = supabase.storage.from('avatars').getPublicUrl(raw);
     return data?.publicUrl || fallback;
+  };
+
+  const getProjectMeetingUrl = (activeProjectId: string) => {
+    const roomName = `PFEspace_Project_${activeProjectId}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `https://meet.jit.si/${roomName}`;
+  };
+
+  const mapMeeting = (meeting: any): ReunionItem => ({
+    id: String(meeting.id),
+    titre: meeting.titre || 'Réunion',
+    dateHeure: meeting.date_heure || '',
+    duree: meeting.duree ?? null,
+    lienJitsi: meeting.lien_jitsi || null,
+    ordreDuJour: meeting.ordre_du_jour || null,
+    statut: meeting.statut || null,
+  });
+
+  const loadProjectMeetings = async (activeProjectId: string) => {
+    const { data, error: meetingsError } = await supabase
+      .from('reunions')
+      .select('id, titre, date_heure, duree, lien_jitsi, ordre_du_jour, statut')
+      .eq('projet_id', activeProjectId)
+      .order('date_heure', { ascending: true });
+
+    if (meetingsError) throw meetingsError;
+    setProjectMeetings((data || []).map(mapMeeting));
   };
 
   useEffect(() => {
@@ -204,15 +231,7 @@ const StudentChat: React.FC = () => {
         ]);
 
         setMemberCount(members?.length || 0);
-        setProjectMeetings((meetings || []).map((meeting: any) => ({
-          id: String(meeting.id),
-          titre: meeting.titre || 'Réunion',
-          dateHeure: meeting.date_heure || '',
-          duree: meeting.duree ?? null,
-          lienJitsi: meeting.lien_jitsi || null,
-          ordreDuJour: meeting.ordre_du_jour || null,
-          statut: meeting.statut || null,
-        })));
+        setProjectMeetings((meetings || []).map(mapMeeting));
 
         if (student.projet_id && user.id) {
           fetchMessages(student.projet_id, user.id);
@@ -226,6 +245,27 @@ const StudentChat: React.FC = () => {
 
     init();
   }, []);
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    const channel = supabase
+      .channel(`student_reunions_${projectId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'reunions', filter: `projet_id=eq.${projectId}` },
+        () => {
+          loadProjectMeetings(projectId).catch((err) => {
+            console.error('Erreur chargement réunions:', err);
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId]);
 
   const markProjectMessagesAsRead = async (activeProjectId: string, myUserId: string) => {
     await supabase
@@ -356,7 +396,53 @@ const StudentChat: React.FC = () => {
   }, [filteredContacts]);
 
   const selectedContact = contacts.find((c) => c.id === selectedContactId) || null;
-  const nextMeeting = projectMeetings.find((meeting) => new Date(meeting.dateHeure).getTime() >= Date.now()) || projectMeetings[0] || null;
+  const nextMeeting = useMemo(() => {
+    const meetingsWithLink = projectMeetings.filter((meeting) => meeting.lienJitsi);
+    const now = Date.now();
+    const futureMeetings = meetingsWithLink
+      .filter((meeting) => new Date(meeting.dateHeure).getTime() >= now)
+      .sort((a, b) => new Date(a.dateHeure).getTime() - new Date(b.dateHeure).getTime());
+
+    if (futureMeetings[0]) return futureMeetings[0];
+
+    return [...meetingsWithLink].sort((a, b) => new Date(b.dateHeure).getTime() - new Date(a.dateHeure).getTime())[0] || null;
+  }, [projectMeetings]);
+  const activeMeetingUrl = nextMeeting?.lienJitsi || (projectId ? getProjectMeetingUrl(projectId) : null);
+
+  const handleCreateMeeting = async () => {
+    if (!projectId || !currentUserId || !activeMeetingUrl || creatingMeeting) return;
+
+    setCreatingMeeting(true);
+    try {
+      const { error: meetingError } = await supabase.from('reunions').insert({
+        projet_id: projectId,
+        titre: `Appel vidéo - ${projectTitle}`,
+        date_heure: new Date().toISOString(),
+        duree: 60,
+        lien_jitsi: activeMeetingUrl,
+        ordre_du_jour: `Appel vidéo lancé par un étudiant pour le projet "${projectTitle}".`,
+        statut: 'EN_COURS',
+      });
+
+      if (meetingError) throw meetingError;
+
+      await notifyProjectProfessor({
+        projectId,
+        senderId: currentUserId,
+        title: 'Nouvel appel vidéo',
+        message: `Un étudiant a lancé un appel vidéo pour "${projectTitle}". Lien: ${activeMeetingUrl}`,
+        type: 'MEETING_REQUEST'
+      });
+
+      window.open(activeMeetingUrl, '_blank');
+      await loadProjectMeetings(projectId);
+    } catch (err: any) {
+      console.error('Erreur création appel vidéo:', err);
+      setError(err?.message || 'Erreur création appel vidéo');
+    } finally {
+      setCreatingMeeting(false);
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -454,7 +540,7 @@ const StudentChat: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center text-[#7f7664]">Loading...</div>;
+    return <div className="flex-1 flex items-center justify-center text-[#64748B]">Loading...</div>;
   }
 
   if (error) {
@@ -462,20 +548,20 @@ const StudentChat: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#faf9f6] text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div className="z-10 flex w-80 flex-col border-r border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+    <div className="flex h-full overflow-hidden bg-[#F8FAFC] text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+      <div className="z-10 flex w-80 flex-col border-r border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
         <div className="p-6 pb-4">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-extrabold tracking-tight">Messages</h2>
           </div>
           <div className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7f7664]" />
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#64748B]" />
             <input
               type="text"
               placeholder="Search contacts"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-2xl border-none bg-[#f4f3f1] py-3 pl-12 pr-4 text-sm font-medium text-[#1a1c1a] placeholder-[#7f7664] outline-none focus:ring-2 focus:ring-[#765b00]/20"
+              className="w-full rounded-2xl border-none bg-[#EEF3F8] py-3 pl-12 pr-4 text-sm font-medium text-[#1a1c1a] placeholder-[#64748B] outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
             />
           </div>
         </div>
@@ -483,30 +569,30 @@ const StudentChat: React.FC = () => {
         <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
           {groupedContacts.professor && (
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7f7664] mb-2 px-4">SUPERVISOR</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-2 px-4">SUPERVISOR</h3>
               <div
                 key={groupedContacts.professor.id}
                 className={`flex w-full items-center gap-4 rounded-2xl px-4 py-4 text-left transition-all ${
-                  'border border-[#ebc254] bg-[#ffd464]/30 shadow-sm'
+                  'border border-[#BFD7EF] bg-[#DCEBFA]/30 shadow-sm'
                 }`}
               >
                 <div className="relative shrink-0">
                   <img
                     src={resolveAvatar(groupedContacts.professor.avatar_url, groupedContacts.professor.name)}
                     alt={groupedContacts.professor.name}
-                    className={`h-12 w-12 rounded-2xl object-cover ${selectedContactId === groupedContacts.professor.id ? 'border-2 border-[#765b00]' : 'border border-[#d1c5b0]'}`}
+                    className={`h-12 w-12 rounded-2xl object-cover ${selectedContactId === groupedContacts.professor.id ? 'border-2 border-[#1E3A5F]' : 'border border-[#C8D6E5]'}`}
                   />
                   {groupedContacts.professor.status === 'online' && <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="mb-0.5 flex items-center justify-between gap-3">
                     <p className="truncate font-bold text-[#1a1c1a]">{groupedContacts.professor.name}</p>
-                    <span className="text-[11px] font-bold uppercase text-[#7f7664]">{groupedContacts.professor.time}</span>
+                    <span className="text-[11px] font-bold uppercase text-[#64748B]">{groupedContacts.professor.time}</span>
                   </div>
-                  <p className="mb-0.5 truncate text-[11px] font-semibold text-[#765b00]">Supervisor</p>
+                  <p className="mb-0.5 truncate text-[11px] font-semibold text-[#1E3A5F]">Supervisor</p>
                   <div className="flex items-center justify-between gap-3">
-                    <p className="truncate text-sm font-medium text-[#7f7664]">{groupedContacts.professor.lastMsg}</p>
-                    {groupedContacts.professor.unread > 0 && <span className="rounded-lg bg-[#765b00] px-2 py-1 text-[10px] font-bold text-white">{groupedContacts.professor.unread}</span>}
+                    <p className="truncate text-sm font-medium text-[#64748B]">{groupedContacts.professor.lastMsg}</p>
+                    {groupedContacts.professor.unread > 0 && <span className="rounded-lg bg-[#1E3A5F] px-2 py-1 text-[10px] font-bold text-white">{groupedContacts.professor.unread}</span>}
                   </div>
                 </div>
               </div>
@@ -515,7 +601,7 @@ const StudentChat: React.FC = () => {
 
           {groupedContacts.students.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#7f7664] mb-2 px-4">MEMBRES ({groupedContacts.students.length})</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-2 px-4">MEMBRES ({groupedContacts.students.length})</h3>
               {groupedContacts.students.map((contact) => (
                 <div
                   key={contact.id}
@@ -527,19 +613,19 @@ const StudentChat: React.FC = () => {
                     <img
                       src={resolveAvatar(contact.avatar_url, contact.name)}
                       alt={contact.name}
-                      className={`h-12 w-12 rounded-2xl object-cover ${selectedContactId === contact.id ? 'border-2 border-[#765b00]' : 'border border-[#d1c5b0]'}`}
+                      className={`h-12 w-12 rounded-2xl object-cover ${selectedContactId === contact.id ? 'border-2 border-[#1E3A5F]' : 'border border-[#C8D6E5]'}`}
                     />
                     {contact.status === 'online' && <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="mb-0.5 flex items-center justify-between gap-3">
                       <p className="truncate font-bold text-[#1a1c1a]">{contact.name}</p>
-                      <span className="text-[11px] font-bold uppercase text-[#7f7664]">{contact.time}</span>
+                      <span className="text-[11px] font-bold uppercase text-[#64748B]">{contact.time}</span>
                     </div>
-                    <p className="mb-0.5 truncate text-[11px] font-semibold text-[#7f7664]">Student</p>
+                    <p className="mb-0.5 truncate text-[11px] font-semibold text-[#64748B]">Student</p>
                     <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-medium text-[#7f7664]">{contact.lastMsg}</p>
-                      {contact.unread > 0 && <span className="rounded-lg bg-[#765b00] px-2 py-1 text-[10px] font-bold text-white">{contact.unread}</span>}
+                      <p className="truncate text-sm font-medium text-[#64748B]">{contact.lastMsg}</p>
+                      {contact.unread > 0 && <span className="rounded-lg bg-[#1E3A5F] px-2 py-1 text-[10px] font-bold text-white">{contact.unread}</span>}
                     </div>
                   </div>
                 </div>
@@ -552,38 +638,9 @@ const StudentChat: React.FC = () => {
       <div className="flex flex-1 flex-col relative bg-white">
         {selectedContactId ? (
           <>
-            <header className="flex-shrink-0 z-20 flex items-center justify-between border-b border-transparent bg-white/80 px-8 py-5 shadow-sm backdrop-blur-md">
-              <div className="flex items-center gap-4">
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[#765b00] text-xl font-bold text-white shadow-sm">
-                  <img
-                    src={resolveAvatar(selectedContact?.avatar_url, selectedContact?.name || 'D')}
-                    alt={selectedContact?.name || 'Discussion'}
-                    className="h-full w-full rounded-2xl object-cover"
-                  />
-                  {selectedContact?.status === 'online' && <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />}
-                </div>
-                <div>
-                  <h3 className="mb-1 text-lg font-bold leading-none">{projectTitle}</h3>
-                  <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-green-500">
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span> EN LIGNE
-                  </p>
-                </div>
-              </div>
-              <button
-                className="inline-flex items-center gap-2 rounded-2xl bg-[#1a1c1a] px-5 py-3 font-bold text-white transition-all hover:bg-[#4d4636]"
-                type="button"
-                disabled={!nextMeeting?.lienJitsi}
-                onClick={() => {
-                  if (nextMeeting?.lienJitsi) window.open(nextMeeting.lienJitsi, '_blank');
-                }}
-              >
-                <Video size={18} /> Appel Vidéo
-              </button>
-            </header>
-
             <div className="flex-1 overflow-y-auto px-8 py-8">
               {filteredMessages.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-[#7f7664]">
+                <div className="flex h-full items-center justify-center text-[#64748B]">
                   No message
                 </div>
               ) : (
@@ -592,8 +649,8 @@ const StudentChat: React.FC = () => {
                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex max-w-[65%] flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
                         <div className="mb-2 flex items-center gap-2 px-1">
-                          <span className="text-[11px] font-bold uppercase tracking-widest text-[#7f7664]">{msg.name}</span>
-                          <span className="text-[11px] font-medium text-[#d1c5b0]">{msg.time}</span>
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-[#64748B]">{msg.name}</span>
+                          <span className="text-[11px] font-medium text-[#C8D6E5]">{msg.time}</span>
                         </div>
   
                         <div className={`flex items-end gap-3 ${msg.isMe ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -604,8 +661,8 @@ const StudentChat: React.FC = () => {
                           />
                           <div className={`overflow-hidden text-[15px] font-medium leading-relaxed shadow-sm ${
                             msg.isMe
-                              ? 'rounded-3xl rounded-tr-none bg-[#765b00] text-white'
-                              : 'rounded-3xl rounded-tl-none border border-[#d1c5b0] bg-white text-[#4d4636]'
+                              ? 'rounded-3xl rounded-tr-none bg-[#1E3A5F] text-white'
+                              : 'rounded-3xl rounded-tl-none border border-[#C8D6E5] bg-white text-[#334155]'
                           }`}>
                             <div className="px-6 py-4">
                               <MessageContent text={msg.text} />
@@ -615,8 +672,8 @@ const StudentChat: React.FC = () => {
   
                         {msg.isMe && msg.isRead && (
                           <div className="mt-1.5 flex items-center gap-1 px-1">
-                            <CheckCheck size={14} className="text-[#765b00]" />
-                            <span className="text-[10px] font-bold uppercase text-[#7f7664]">VU</span>
+                            <CheckCheck size={14} className="text-[#1E3A5F]" />
+                            <span className="text-[10px] font-bold uppercase text-[#64748B]">VU</span>
                           </div>
                         )}
                       </div>
@@ -627,20 +684,73 @@ const StudentChat: React.FC = () => {
               <div ref={bottomRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="flex-shrink-0 border-t border-transparent bg-white p-6">
-              <div className="mx-auto flex max-w-4xl items-center gap-4 rounded-[2rem] border border-transparent bg-[#f4f3f1] p-2 shadow-inner">
+            <form onSubmit={handleSendMessage} className="flex-shrink-0 bg-white px-6 py-3">
+              <div className="mx-auto flex max-w-4xl items-center gap-3">
+                <div className="relative" ref={emojiRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmoji((v) => !v)}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-colors ${
+                      showEmoji ? 'bg-[#DCEBFA] text-[#1E3A5F]' : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1E3A5F]'
+                    }`}
+                    aria-label="Ajouter un emoji"
+                    title="Ajouter un emoji"
+                  >
+                    <Smile size={22} />
+                  </button>
+                  {showEmoji && (
+                    <div className="absolute bottom-14 left-0 z-30 w-72 rounded-2xl border border-[#EEF3F8] bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.15)]">
+                      <div className="grid grid-cols-8 gap-1">
+                        {EMOJIS.map((em) => (
+                          <button
+                            key={em}
+                            type="button"
+                            onClick={() => { setInput((v) => v + em); setShowEmoji(false); }}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-lg transition hover:bg-[#EEF3F8]"
+                          >
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <input ref={fileInputRef} type="file" className="hidden" onChange={handleAttachFile} />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[#64748B] transition-colors hover:bg-[#EEF3F8] hover:text-[#1E3A5F] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Joindre un fichier"
+                  title="Joindre un fichier"
+                >
+                  {uploading ? <span className="text-xs font-bold text-[#1E3A5F]">...</span> : <Paperclip size={22} />}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!activeMeetingUrl || creatingMeeting}
+                  aria-label="Créer un appel vidéo"
+                  title="Créer un appel vidéo"
+                  onClick={handleCreateMeeting}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Video size={20} />
+                </button>
+
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Écrivez votre message..."
-                  className="flex-1 rounded-2xl border-none bg-transparent px-4 py-3 text-[#1a1c1a] placeholder-[#7f7664] outline-none"
+                  className="h-12 flex-1 rounded-2xl border border-[#C8D6E5] bg-[#EEF3F8] px-5 text-[#1a1c1a] placeholder-[#64748B] outline-none focus:border-[#1E3A5F]/30 focus:ring-2 focus:ring-[#1E3A5F]/10"
                 />
 
                 <button
                   type="submit"
                   disabled={!input.trim() || uploading}
-                  className="rounded-full bg-[#765b00] p-4 text-white transition-all hover:bg-[#594400] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={20} />
                 </button>
@@ -648,7 +758,7 @@ const StudentChat: React.FC = () => {
             </form>
           </>
         ) : (
-          <div className="flex flex-1 items-center justify-center text-[#7f7664]">
+          <div className="flex flex-1 items-center justify-center text-[#64748B]">
             Sélectionnez une discussion
           </div>
         )}

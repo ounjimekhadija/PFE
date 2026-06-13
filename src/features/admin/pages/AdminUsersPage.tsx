@@ -68,7 +68,7 @@ const toText = (value: string | null | undefined, fallback = 'N/A'): string => {
 };
 
 const roleBadgeClass = (role: string): string => {
-  if (role === 'ADMINISTRATEUR') return 'bg-[#ffd464]/40 text-[#594400]';
+  if (role === 'ADMINISTRATEUR') return 'bg-[#DCEBFA]/40 text-[#172D49]';
   if (role === 'ENCADRANT') return 'bg-[#ECFDF5] text-[#065F46]';
   return 'bg-[#FFF7ED] text-[#9A3412]';
 };
@@ -488,17 +488,17 @@ const AdminUsers: React.FC = () => {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
       <header className="mb-4 shrink-0 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1c1a]">User Management</h1>
-          <p className="mt-0.5 text-sm text-[#7f7664]">Oversee your organization's members and their specific roles.</p>
+          <p className="mt-0.5 text-sm text-[#64748B]">Oversee your organization's members and their specific roles.</p>
         </div>
         <div className="flex items-center gap-2">
           <button type="button"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#765b00] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(118,91,0,0.2)] transition hover:bg-[#594400]"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(15,23,42,0.2)] transition hover:bg-[#172D49]"
             onClick={() => { setCreateError(null); setCreateSuccess(null); resetForm(); setShowAddModal(true); }}>
             <UserPlus size={14} />Add User
           </button>
@@ -506,7 +506,7 @@ const AdminUsers: React.FC = () => {
       </header>
 
       {/* Banners */}
-      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">Loading users...</div>}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">Loading users...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{error}</div>}
       {!showAddModal && createError && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{createError}</div>}
       {!showAddModal && createSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
@@ -514,33 +514,33 @@ const AdminUsers: React.FC = () => {
       {/* Stat Cards */}
       <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
         {[
-          { label: 'TOTAL USERS', value: stats.total, icon: Users, iconBg: 'bg-[#ffd464]', iconColor: 'text-[#765b00]', trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
-          { label: 'ADMINS', value: stats.admins, icon: ShieldCheck, iconBg: 'bg-[#f4f3f1]', iconColor: 'text-[#4d4636]', trend: null },
-          { label: 'ENCADRANTS', value: stats.encadrants, icon: GraduationCap, iconBg: 'bg-[#f4f3f1]', iconColor: 'text-[#4d4636]', trend: null },
-          { label: 'ETUDIANTS', value: stats.etudiants, icon: User, iconBg: 'bg-[#f4f3f1]', iconColor: 'text-[#4d4636]', trend: null },
+          { label: 'TOTAL USERS', value: stats.total, icon: Users, trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
+          { label: 'ADMINS', value: stats.admins, icon: ShieldCheck, trend: null },
+          { label: 'ENCADRANTS', value: stats.encadrants, icon: GraduationCap, trend: null },
+          { label: 'ETUDIANTS', value: stats.etudiants, icon: User, trend: null },
         ].map((card) => (
-          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             <div className="mb-3 flex items-start justify-between">
-              <div className={`rounded-xl ${card.iconBg} p-2.5 ${card.iconColor}`}><card.icon size={18} /></div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#1E3A5F]"><card.icon size={18} /></div>
               {card.trend && <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-xs font-semibold text-[#10B981]">{card.trend}</span>}
             </div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#7f7664]">{card.label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">{card.label}</p>
             <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{card.value}</p>
           </article>
         ))}
       </section>
 
       {/* Directory */}
-      <section className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+      <section className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
         <div className="shrink-0 flex items-center justify-between border-b border-transparent px-5 py-3">
           <h2 className="font-semibold text-[#1a1c1a]">Directory</h2>
-          <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1]">
+          <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8]">
             <Filter size={15} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#7f7664]">No users found.</p>}
+          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#64748B]">No users found.</p>}
           {rows.length > 0 && (
             <table className="w-full border-collapse table-fixed">
               <colgroup>
@@ -551,16 +551,16 @@ const AdminUsers: React.FC = () => {
                 <col style={{ width: '20%' }} />
                 <col style={{ width: '7%' }} />
               </colgroup>
-              <thead className="sticky top-0 bg-[#f4f3f1]">
+              <thead className="sticky top-0 bg-[#EEF3F8]">
                 <tr>
                   {['NOM & PRENOM', 'ROLE', 'CONTACT', 'FILIERE / GROUPE', 'PROJET', 'ACTIONS'].map((h) => (
-                    <th key={h} className="border-b border-transparent px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-[#7f7664]">{h}</th>
+                    <th key={h} className="border-b border-transparent px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {paginatedRows.map((row, i) => (
-                  <tr key={row.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-[#faf9f6]'} hover:bg-[#ffd464]/10 transition-colors`}>
+                  <tr key={row.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]'} hover:bg-[#DCEBFA]/10 transition-colors`}>
                     <td className="border-b border-transparent px-4 py-3">
                       <div className="flex items-center gap-3">
                         <img
@@ -570,7 +570,7 @@ const AdminUsers: React.FC = () => {
                         />
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-[#1a1c1a]">{row.prenom} {row.nom}</p>
-                          <p className="text-xs text-[#7f7664]">ID: #{row.id.slice(0, 6)}</p>
+                          <p className="text-xs text-[#64748B]">ID: #{row.id.slice(0, 6)}</p>
                         </div>
                       </div>
                     </td>
@@ -579,11 +579,11 @@ const AdminUsers: React.FC = () => {
                     </td>
                     <td className="border-b border-transparent px-4 py-3">
                       <p className="truncate text-xs text-[#1a1c1a]">{row.email}</p>
-                      <p className="text-xs text-[#7f7664]">{row.telephone}</p>
+                      <p className="text-xs text-[#64748B]">{row.telephone}</p>
                     </td>
                     <td className="border-b border-transparent px-4 py-3">
                       <p className="truncate text-xs text-[#1a1c1a]">{row.filiere}</p>
-                      <p className="truncate text-xs text-[#7f7664]">{row.groupe}</p>
+                      <p className="truncate text-xs text-[#64748B]">{row.groupe}</p>
                     </td>
                     <td className="border-b border-transparent px-4 py-3">
                       <p className="truncate text-sm text-[#1a1c1a]">{row.projet === 'N/A' ? '—' : row.projet}</p>
@@ -591,11 +591,11 @@ const AdminUsers: React.FC = () => {
                     <td className="border-b border-transparent px-4 py-3">
                       <div className="relative" ref={openMenuId === row.id ? menuRef : null}>
                         <button type="button" onClick={() => setOpenMenuId(openMenuId === row.id ? null : row.id)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#7f7664] transition hover:bg-[#f4f3f1]">
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#64748B] transition hover:bg-[#EEF3F8]">
                           <MoreVertical size={16} />
                         </button>
                         {openMenuId === row.id && (
-                          <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-transparent bg-white shadow-[0_4px_16px_rgba(118,91,0,0.12)]">
+                          <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.12)]">
                             <button type="button" onClick={() => { setDeleteConfirmId(row.id); setOpenMenuId(null); }}
                               className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]">
                               Delete
@@ -613,15 +613,15 @@ const AdminUsers: React.FC = () => {
 
         {/* Pagination */}
         <div className="shrink-0 flex items-center justify-between border-t border-transparent px-5 py-3">
-          <p className="text-sm text-[#7f7664]">Showing {paginatedRows.length} of {rows.length} results</p>
+          <p className="text-sm text-[#64748B]">Showing {paginatedRows.length} of {rows.length} results</p>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
-              className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#4d4636] transition hover:border-[#c4b99a] disabled:opacity-40">
+              className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#334155] transition hover:border-[#c4b99a] disabled:opacity-40">
               Previous
             </button>
-            <span className="text-sm text-[#7f7664]">{currentPage} / {totalPages}</span>
+            <span className="text-sm text-[#64748B]">{currentPage} / {totalPages}</span>
             <button type="button" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}
-              className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#4d4636] transition hover:border-[#c4b99a] disabled:opacity-40">
+              className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#334155] transition hover:border-[#c4b99a] disabled:opacity-40">
               Next
             </button>
           </div>
@@ -630,10 +630,10 @@ const AdminUsers: React.FC = () => {
 
       {showAddModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
-          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(118,91,0,0.15)]">
+          <div className="my-4 max-h-[92vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-transparent bg-white shadow-[0_20px_50px_rgba(15,23,42,0.15)]">
             <div className="flex items-center justify-between border-b border-transparent px-6 py-4">
               <h2 className="text-xl font-semibold text-[#1a1c1a]">Create a user</h2>
-              <button className="text-[#7f7664]" onClick={() => setShowAddModal(false)} aria-label="Close">
+              <button className="text-[#64748B]" onClick={() => setShowAddModal(false)} aria-label="Close">
                 &times;
               </button>
             </div>
@@ -644,20 +644,20 @@ const AdminUsers: React.FC = () => {
                 {createSuccess && <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
 
                 <div className="relative" ref={roleDropdownRef}>
-                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">Role</label>
+                  <label className="mb-1 block text-sm font-medium text-[#334155]">Role</label>
                   <button
                     type="button"
                     onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                    className="flex w-full items-center justify-between rounded-xl border border-[#dcd6c1] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                    className="flex w-full items-center justify-between rounded-xl border border-[#dcd6c1] bg-white px-3 py-2 text-sm text-[#1a1c1a] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20"
                   >
                     <span>{roles.find(r => r.value === form.role)?.label}</span>
-                    <svg className={`h-4 w-4 text-[#7f7664] transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`h-4 w-4 text-[#64748B] transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
 
                   {showRoleDropdown && (
-                    <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(118,91,0,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
+                    <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-[#dcd6c1] bg-white shadow-[0_10px_25px_rgba(15,23,42,0.1)] transition-all animate-in fade-in slide-in-from-top-1">
                       {roles.map((role) => (
                         <button
                           key={role.value}
@@ -667,8 +667,8 @@ const AdminUsers: React.FC = () => {
                             setShowRoleDropdown(false);
                           }}
                           className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${form.role === role.value
-                            ? 'bg-[#765b00] text-white'
-                            : 'text-[#1a1c1a] hover:bg-[#765b00]/5'
+                            ? 'bg-[#1E3A5F] text-white'
+                            : 'text-[#1a1c1a] hover:bg-[#1E3A5F]/5'
                             }`}
                         >
                           {role.label}
@@ -680,10 +680,10 @@ const AdminUsers: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Last name</label>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Last name</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                       value={form.nom}
                       onChange={(e) => setForm((f) => ({ ...f, nom: e.target.value }))}
                       required
@@ -691,10 +691,10 @@ const AdminUsers: React.FC = () => {
                     {formErrors.nom && <p className="mt-1 text-xs text-red-500">{formErrors.nom[0]}</p>}
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">First name</label>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">First name</label>
                     <input
                       type="text"
-                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                       value={form.prenom}
                       onChange={(e) => setForm((f) => ({ ...f, prenom: e.target.value }))}
                       required
@@ -706,19 +706,19 @@ const AdminUsers: React.FC = () => {
                 {form.role !== 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Phone number</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Phone number</label>
                       <input
                         type="tel"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                         value={form.phone}
                         onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Email</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Email</label>
                       <input
                         type="email"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                         value={form.email}
                         onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                         required
@@ -730,10 +730,10 @@ const AdminUsers: React.FC = () => {
 
                 {form.role === 'ETUDIANT' && (
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#4d4636]">Email</label>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Email</label>
                     <input
                       type="email"
-                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                      className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -743,10 +743,10 @@ const AdminUsers: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4d4636]">Password</label>
+                  <label className="mb-1 block text-sm font-medium text-[#334155]">Password</label>
                   <input
                     type="password"
-                    className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                    className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                     value={form.password}
                     onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                     required
@@ -757,10 +757,10 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ADMINISTRATEUR' && (
                   <>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Organization name</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Organization name</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#765b00] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#765b00' }}
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20 [&>option]:bg-white [&>option]:text-[#1a1c1a] [&>option:checked]:bg-[#1E3A5F] [&>option:checked]:text-white [&>option:hover]:bg-[#1a1c1a] [&>option:hover]:text-white" style={{ accentColor: '#1E3A5F' }}
                         value={form.nomOrganisation}
                         onChange={(e) => setForm((f) => ({ ...f, nomOrganisation: e.target.value }))}
                         required
@@ -775,10 +775,10 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">Student number</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Student number</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20"
                         value={form.numeroEtudiant}
                         onChange={(e) => setForm((f) => ({ ...f, numeroEtudiant: e.target.value }))}
                         required
@@ -786,10 +786,10 @@ const AdminUsers: React.FC = () => {
                       {formErrors.numeroEtudiant && <p className="mt-1 text-xs text-red-500">{formErrors.numeroEtudiant[0]}</p>}
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#4d4636]">CIN</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">CIN</label>
                       <input
                         type="text"
-                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/20"
+                        className="w-full rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-3 py-2 text-sm text-[#1a1c1a] outline-none focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/20"
                         value={form.cin}
                         onChange={(e) => setForm((f) => ({ ...f, cin: e.target.value }))}
                       />
@@ -799,17 +799,17 @@ const AdminUsers: React.FC = () => {
                 )}
               </div>
 
-              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white pt-4">
+              <div className="sticky bottom-0 mt-6 flex justify-end gap-2 border-t border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white pt-4">
                 <button
                   type="button"
-                  className="rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(118,91,0,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(118,91,0,0.08)] bg-white px-5 py-2 text-sm font-semibold text-[#4d4636]"
+                  className="rounded-xl border border-[#dcd6c1] shadow-[0_2px_4px_rgba(15,23,42,0.05)] transition-all hover:border-[#c4b99a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] bg-white px-5 py-2 text-sm font-semibold text-[#334155]"
                   onClick={() => setShowAddModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[#765b00] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(118,91,0,0.2)] disabled:opacity-50"
+                  className="rounded-xl bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(15,23,42,0.2)] disabled:opacity-50"
                   disabled={createLoading}
                 >
                   {createLoading ? 'Creating...' : 'Create'}
@@ -825,11 +825,11 @@ const AdminUsers: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 transition-all animate-in fade-in duration-300">
           <div className="w-full max-w-sm rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
             <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirm Deletion</h2>
-            <p className="mt-2 text-sm text-[#7f7664]">This action is irreversible. The user will be permanently deleted.</p>
+            <p className="mt-2 text-sm text-[#64748B]">This action is irreversible. The user will be permanently deleted.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[#4d4636]"
+                className="rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[#334155]"
                 onClick={() => setDeleteConfirmId(null)}
                 disabled={deleteLoading}
               >

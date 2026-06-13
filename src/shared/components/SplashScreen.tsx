@@ -34,26 +34,26 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     <div className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0f0f0e] transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
       <div className="relative flex flex-col items-center">
         {/* Animated Background Glow */}
-        <div className="absolute -inset-20 bg-[#765b00] opacity-10 blur-[100px] animate-pulse"></div>
+        <div className="absolute -inset-20 bg-[#1E3A5F] opacity-10 blur-[100px] animate-pulse"></div>
         
         {/* Logo / Brand Name */}
         <div className="mb-12 relative">
           <h1 className="text-6xl font-bold tracking-tighter text-white animate-fade-in-up">
-            PFE<span className="text-[#765b00]">space</span>
+            PFE<span className="text-[#1E3A5F]">space</span>
           </h1>
-          <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#765b00] to-transparent animate-expand"></div>
+          <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#1E3A5F] to-transparent animate-expand"></div>
         </div>
 
         {/* Progress Bar Container */}
         <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
           <div 
-            className="h-full bg-gradient-to-r from-[#765b00] to-[#b88c00] transition-all duration-100 ease-linear"
+            className="h-full bg-gradient-to-r from-[#1E3A5F] to-[#2F5D89] transition-all duration-100 ease-linear"
             style={{ width: `${progress}%` }}
           ></div>
         </div>
         
         {/* Subtitle */}
-        <p className="mt-4 text-[#7f7664] text-sm tracking-[0.2em] uppercase animate-pulse">
+        <p className="mt-4 text-[#64748B] text-sm tracking-[0.2em] uppercase animate-pulse">
           Initializing your workspace
         </p>
       </div>

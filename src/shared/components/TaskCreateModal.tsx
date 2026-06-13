@@ -137,18 +137,18 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300" onClick={onClose}>
       <div 
-        className="bg-[#faf9f6] rounded-[24px] shadow-[0_20px_50px_rgba(118,91,0,0.15)] p-8 w-full max-w-lg flex flex-col border border-[#d1c5b0] relative overflow-visible" 
+        className="bg-[#F8FAFC] rounded-[24px] shadow-[0_20px_50px_rgba(15,23,42,0.15)] p-8 w-full max-w-lg flex flex-col border border-[#C8D6E5] relative overflow-visible" 
         onClick={(e) => e.stopPropagation()}
         style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
       >
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-2xl font-bold text-[#1a1c1a]">Create a new task</h2>
-            <p className="text-sm text-[#7f7664] mt-1">Add details for your team.</p>
+            <p className="text-sm text-[#64748B] mt-1">Add details for your team.</p>
           </div>
           <button 
             onClick={onClose} 
-            className="p-2 rounded-full hover:bg-[#1a1c1a]/5 text-[#7f7664] transition-colors"
+            className="p-2 rounded-full hover:bg-[#1a1c1a]/5 text-[#64748B] transition-colors"
           >
             <X size={20} />
           </button>
@@ -157,12 +157,12 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
         <div className="space-y-6">
           {/* Title Input */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#4d4636] ml-1">Task title</label>
+            <label className="text-sm font-bold text-[#334155] ml-1">Task title</label>
             <div className="relative">
               <input
                 type="text"
                 placeholder="Ex: Database design"
-                className={`w-full p-4 rounded-xl border ${errors?.title ? 'border-red-500' : 'border-[#d1c5b0]'} bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-4 focus:ring-[#765b00]/10 transition-all`}
+                className={`w-full p-4 rounded-xl border ${errors?.title ? 'border-red-500' : 'border-[#C8D6E5]'} bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10 transition-all`}
                 value={newTask.title || ''}
                 onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
               />
@@ -177,11 +177,11 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
 
           {/* Description Textarea */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#4d4636] ml-1">Description</label>
+            <label className="text-sm font-bold text-[#334155] ml-1">Description</label>
             <textarea
               placeholder="Describe what needs to be done..."
               rows={3}
-              className="w-full p-4 rounded-xl border border-[#d1c5b0] bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#765b00] focus:ring-4 focus:ring-[#765b00]/10 transition-all resize-none"
+              className="w-full p-4 rounded-xl border border-[#C8D6E5] bg-white text-[#1a1c1a] shadow-sm outline-none focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10 transition-all resize-none"
               value={newTask.description || ''}
               onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
             />
@@ -190,22 +190,22 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Priority Dropdown */}
             <div className="space-y-2" ref={priorityRef}>
-              <label className="text-sm font-bold text-[#4d4636] ml-1">Priority</label>
+              <label className="text-sm font-bold text-[#334155] ml-1">Priority</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[#d1c5b0] bg-white text-[#1a1c1a] shadow-sm hover:border-[#765b00]/50 transition-all outline-none"
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[#C8D6E5] bg-white text-[#1a1c1a] shadow-sm hover:border-[#1E3A5F]/50 transition-all outline-none"
                 >
                   <div className="flex items-center gap-2">
                     <Flag size={16} className={selectedPriority.color} />
                     <span className="text-sm font-medium">{selectedPriority.value}</span>
                   </div>
-                  <ChevronDown size={16} className={`text-[#7f7664] transition-transform duration-300 ${showPriorityDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={16} className={`text-[#64748B] transition-transform duration-300 ${showPriorityDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showPriorityDropdown && (
-                  <div className="absolute z-[60] mt-2 w-full bg-white border border-[#d1c5b0] rounded-xl shadow-[0_10px_25px_rgba(118,91,0,0.1)] overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute z-[60] mt-2 w-full bg-white border border-[#C8D6E5] rounded-xl shadow-[0_10px_25px_rgba(15,23,42,0.1)] overflow-hidden animate-in fade-in slide-in-from-top-2">
                     {priorities.map((p) => (
                       <button
                         key={p.value}
@@ -214,7 +214,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
                           setNewTask({ ...newTask, priority: p.value as any });
                           setShowPriorityDropdown(false);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-[#765b00]/5 transition-colors font-medium"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-[#1E3A5F]/5 transition-colors font-medium"
                       >
                         <Flag size={14} className={p.color} />
                         {p.value}
@@ -227,31 +227,31 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
 
             {/* Assignee Dropdown */}
             <div className="space-y-2" ref={assigneeRef}>
-              <label className="text-sm font-bold text-[#4d4636] ml-1">Assign to</label>
+              <label className="text-sm font-bold text-[#334155] ml-1">Assign to</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[#d1c5b0] bg-white text-[#1a1c1a] shadow-sm hover:border-[#765b00]/50 transition-all outline-none"
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-[#C8D6E5] bg-white text-[#1a1c1a] shadow-sm hover:border-[#1E3A5F]/50 transition-all outline-none"
                 >
                   <div className="flex items-center gap-2">
-                    <User size={16} className="text-[#7f7664]" />
+                    <User size={16} className="text-[#64748B]" />
                     <span className="text-sm font-medium truncate">
                       {selectedAssignee ? selectedAssignee.name : 'Select a member'}
                     </span>
                   </div>
-                  <ChevronDown size={16} className={`text-[#7f7664] transition-transform duration-300 ${showAssigneeDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={16} className={`text-[#64748B] transition-transform duration-300 ${showAssigneeDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showAssigneeDropdown && (
-                  <div className="absolute z-[60] mt-2 w-full bg-white border border-[#d1c5b0] rounded-xl shadow-[0_10px_25px_rgba(118,91,0,0.1)] overflow-hidden animate-in fade-in slide-in-from-top-2 max-h-48 overflow-y-auto">
+                  <div className="absolute z-[60] mt-2 w-full bg-white border border-[#C8D6E5] rounded-xl shadow-[0_10px_25px_rgba(15,23,42,0.1)] overflow-hidden animate-in fade-in slide-in-from-top-2 max-h-48 overflow-y-auto">
                     <button
                       type="button"
                       onClick={() => {
                         setNewTask({ ...newTask, assignee: '' });
                         setShowAssigneeDropdown(false);
                       }}
-                      className="w-full px-4 py-3 text-sm text-left hover:bg-[#765b00]/5 transition-colors font-medium text-[#7f7664]"
+                      className="w-full px-4 py-3 text-sm text-left hover:bg-[#1E3A5F]/5 transition-colors font-medium text-[#64748B]"
                     >
                       Unassigned
                     </button>
@@ -263,7 +263,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
                           setNewTask({ ...newTask, assignee: option.id });
                           setShowAssigneeDropdown(false);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-[#765b00]/5 transition-colors font-medium"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-[#1E3A5F]/5 transition-colors font-medium"
                       >
                         <img 
                           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(option.name)}&background=random`} 
@@ -283,14 +283,14 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({ isOpen, onClose, assi
         <div className="flex items-center justify-end gap-3 mt-10">
           <button 
             onClick={onClose}
-            className="px-6 py-3 rounded-xl font-bold text-[#4d4636] bg-[#f4f3f1] hover:bg-[#efeeeb] transition-all"
+            className="px-6 py-3 rounded-xl font-bold text-[#334155] bg-[#EEF3F8] hover:bg-[#E5EDF5] transition-all"
           >
             Cancel
           </button>
           <button 
             onClick={handleCreateTask}
             disabled={loading}
-            className="px-6 py-3 rounded-xl font-bold text-white bg-[#1a1c1a] hover:bg-[#4d4636] transition-all shadow-lg shadow-[#1a1c1a]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-3 rounded-xl font-bold text-white bg-[#1a1c1a] hover:bg-[#334155] transition-all shadow-lg shadow-[#1a1c1a]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

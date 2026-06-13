@@ -131,20 +131,20 @@ const StudentSettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-[#faf9f6] text-sm font-medium text-[#7f7664]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+      <div className="flex flex-1 items-center justify-center bg-[#F8FAFC] text-sm font-medium text-[#64748B]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
         Loading data...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#faf9f6] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-6 md:p-8 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-[#1a1c1a]">Settings</h1>
-        <p className="mt-1 text-sm text-[#7f7664]">Manage your account settings and profile information.</p>
+        <p className="mt-1 text-sm text-[#64748B]">Manage your account settings and profile information.</p>
       </header>
 
-      <div className="rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+      <div className="rounded-2xl border border-transparent bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
         <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
           <aside className="space-y-2">
             {[
@@ -159,8 +159,8 @@ const StudentSettingsPage: React.FC = () => {
                   onClick={() => setActiveTab(item.id as 'profile' | 'security')}
                   className={`w-full rounded-xl px-4 py-3 text-left text-sm font-medium transition ${
                     active
-                      ? 'bg-[#ffd464] text-[#594400]'
-                      : 'text-[#7f7664] hover:bg-[#f4f3f1] hover:text-[#1a1c1a]'
+                      ? 'bg-[#DCEBFA] text-[#172D49]'
+                      : 'text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1a1c1a]'
                   }`}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -181,7 +181,7 @@ const StudentSettingsPage: React.FC = () => {
 
             {activeTab === 'profile' && (
               <form onSubmit={handleSave} className="space-y-6">
-                <div className="flex flex-col items-center gap-5 rounded-2xl border border-transparent bg-[#f4f3f1] p-6 sm:flex-row">
+                <div className="flex flex-col items-center gap-5 rounded-2xl border border-transparent bg-[#EEF3F8] p-6 sm:flex-row">
                   <div className="relative cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <img
                       src={profile.avatar}
@@ -197,7 +197,7 @@ const StudentSettingsPage: React.FC = () => {
                   </div>
                   <div className="text-center sm:text-left">
                     <p className="text-lg font-semibold text-[#1a1c1a]">{profile.name}</p>
-                    <p className="text-sm text-[#7f7664]">{profile.email}</p>
+                    <p className="text-sm text-[#64748B]">{profile.email}</p>
                   </div>
                 </div>
 
@@ -208,13 +208,13 @@ const StudentSettingsPage: React.FC = () => {
                     { label: 'GitHub', key: 'github', type: 'text' },
                     { label: 'LinkedIn', key: 'linkedin', type: 'text' },
                   ].map(({ label, key, type }) => (
-                    <label key={key} className="space-y-2 text-sm font-medium text-[#4d4636]">
+                    <label key={key} className="space-y-2 text-sm font-medium text-[#334155]">
                       {label}
                       <input
                         type={type}
                         value={profile[key as keyof typeof profile]}
                         onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                        className="w-full rounded-xl border border-[#efeeeb] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/15"
+                        className="w-full rounded-xl border border-[#E5EDF5] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/15"
                       />
                     </label>
                   ))}
@@ -222,7 +222,7 @@ const StudentSettingsPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#765b00] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#594400]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1E3A5F] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#172D49]"
                 >
                   <Save size={16} />
                   Save Changes
@@ -238,20 +238,20 @@ const StudentSettingsPage: React.FC = () => {
                   { label: 'New Password', key: 'new' },
                   { label: 'Confirm New Password', key: 'confirm' },
                 ].map(({ label, key }) => (
-                  <label key={key} className="space-y-2 text-sm font-medium text-[#4d4636]">
+                  <label key={key} className="space-y-2 text-sm font-medium text-[#334155]">
                     {label}
                     <input
                       type="password"
                       value={passwords[key as keyof typeof passwords]}
                       onChange={(e) => setPasswords({ ...passwords, [key]: e.target.value })}
-                      className="w-full rounded-xl border border-[#efeeeb] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#765b00] focus:ring-2 focus:ring-[#765b00]/15"
+                      className="w-full rounded-xl border border-[#E5EDF5] bg-white px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition focus:border-[#1E3A5F] focus:ring-2 focus:ring-[#1E3A5F]/15"
                     />
                   </label>
                 ))}
 
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#1a1c1a] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#4d4636]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#1a1c1a] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#334155]"
                 >
                   <Lock size={16} />
                   Change Password

@@ -247,9 +247,9 @@ const AdminDashboard: React.FC = () => {
 
   const projectStatus = useMemo(() => [
     { name: 'Completed', value: projects.filter((p) => p.progress >= 80).length, color: '#10B981' },
-    { name: 'In Progress', value: projects.filter((p) => p.progress > 0 && p.progress < 80).length, color: '#765b00' },
+    { name: 'In Progress', value: projects.filter((p) => p.progress > 0 && p.progress < 80).length, color: '#1E3A5F' },
     { name: 'Delayed', value: projects.filter((p) => toDaysDelay(p.deadline) > 0 && p.progress < 80).length, color: '#F97316' },
-    { name: 'Pending', value: projects.filter((p) => p.progress === 0).length, color: '#7f7664' },
+    { name: 'Pending', value: projects.filter((p) => p.progress === 0).length, color: '#64748B' },
   ], [projects]);
 
   const ringProgress = Math.max(6, completionRate);
@@ -407,7 +407,7 @@ const AdminDashboard: React.FC = () => {
       map.set(p.supervisor, { totalProgress: current.totalProgress + p.progress, count: current.count + 1 });
     });
     const entries = Array.from(map.entries());
-    const colors = ['#765b00', '#ffd464', '#4d4636', '#d1c5b0', '#F97316'];
+    const colors = ['#1E3A5F', '#DCEBFA', '#334155', '#C8D6E5', '#F97316'];
     return entries.length > 0
       ? entries.map(([name, stats], i) => ({ 
           name, 
@@ -420,19 +420,19 @@ const AdminDashboard: React.FC = () => {
   const maxBarCount = 100;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#faf9f6] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+    <div className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] p-5 text-[#1a1c1a]" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
 
       {/* Header */}
       <header className="mb-4 shrink-0 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1c1a]">Platform Overview</h1>
-          <p className="mt-0.5 text-sm text-[#7f7664]">Real-time performance metrics and team activity</p>
+          <p className="mt-0.5 text-sm text-[#64748B]">Real-time performance metrics and team activity</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleExportReport}
-            className="flex items-center gap-2 rounded-xl bg-[#ffd464] px-4 py-2 text-sm font-semibold text-[#594400] shadow-[0_4px_16px_rgba(118,91,0,0.2)] transition hover:bg-[#ebc254]"
+            className="flex items-center gap-2 rounded-xl bg-[#DCEBFA] px-4 py-2 text-sm font-semibold text-[#172D49] shadow-[0_4px_16px_rgba(15,23,42,0.2)] transition hover:bg-[#BFD7EF]"
           >
             <Download size={14} /> Export Report
           </button>
@@ -440,7 +440,7 @@ const AdminDashboard: React.FC = () => {
       </header>
 
       {loading && (
-        <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#f4f3f1] px-4 py-2 text-sm text-[#4d4636]">
+        <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">
           Loading dashboard data from database...
         </div>
       )}
@@ -455,18 +455,18 @@ const AdminDashboard: React.FC = () => {
       <section className="mb-4 shrink-0 grid grid-cols-4 gap-3">
         {[
           { label: 'Total Students', value: String(totalStudents), trend: `+${Math.max(1, Math.round(totalStudents * 0.08))}`, trendClass: 'text-[#10B981] bg-[#ECFDF5]', icon: Users },
-          { label: 'Active Projects', value: String(projects.length), trend: projectStatus[1].value > 0 ? `${projectStatus[1].value} active` : 'Steady', trendClass: 'text-[#765b00] bg-[#ffd464]/30', icon: Layers },
+          { label: 'Active Projects', value: String(projects.length), trend: projectStatus[1].value > 0 ? `${projectStatus[1].value} active` : 'Steady', trendClass: 'text-[#1E3A5F] bg-[#DCEBFA]/30', icon: Layers },
           { label: 'Completion Rate', value: `${completionRate}%`, trend: `+${completionRate}%`, trendClass: 'text-[#10B981] bg-[#ECFDF5]', icon: TrendingUp },
           { label: 'Avg. Delay', value: `${avgDelay} Days`, trend: avgDelay > 0 ? `+${avgDelay}d` : 'None', trendClass: avgDelay > 0 ? 'text-[#ba1a1a] bg-[#ffdad6]' : 'text-[#10B981] bg-[#ECFDF5]', icon: Clock3 },
         ].map((card) => (
-          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+          <article key={card.label} className="rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             <div className="mb-3 flex items-start justify-between">
-              <div className="rounded-xl bg-[#f4f3f1] p-2.5 text-[#765b00]">
+              <div className="rounded-xl bg-[#EEF3F8] p-2.5 text-[#1E3A5F]">
                 <card.icon size={18} />
               </div>
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${card.trendClass}`}>{card.trend}</span>
             </div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#7f7664]">{card.label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">{card.label}</p>
             <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{card.value}</p>
           </article>
         ))}
@@ -476,15 +476,15 @@ const AdminDashboard: React.FC = () => {
       <section className="flex-1 min-h-0 mb-4 grid grid-cols-[2fr_1fr_1fr] gap-4">
 
         {/* Bar Chart — Project Distribution */}
-        <article className="flex min-h-0 flex-col rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+        <article className="flex min-h-0 flex-col rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           <div className="mb-4 flex items-center justify-between shrink-0">
             <div>
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Project Progress</h2>
-              <p className="text-[9px] text-[#7f7664]/60">Average completion by supervisor</p>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Project Progress</h2>
+              <p className="text-[9px] text-[#64748B]/60">Average completion by supervisor</p>
             </div>
             <div className="flex flex-wrap gap-3">
               {barData.slice(0, 4).map((b) => (
-                <span key={b.name} className="flex items-center gap-1.5 text-[9px] font-bold text-[#7f7664]">
+                <span key={b.name} className="flex items-center gap-1.5 text-[9px] font-bold text-[#64748B]">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: b.color }} />
                   <span className="truncate max-w-[60px]">{b.name}</span>
                 </span>
@@ -494,13 +494,13 @@ const AdminDashboard: React.FC = () => {
           <div className="relative flex flex-1 min-h-0 items-end gap-4 pb-2 px-2">
             {/* Subtle Grid Lines */}
             <div className="absolute inset-x-0 bottom-8 top-0 flex flex-col justify-between pointer-events-none opacity-20">
-              {[1, 2, 3].map((i) => <div key={i} className="w-full border-t border-dashed border-[#7f7664]/30" />)}
+              {[1, 2, 3].map((i) => <div key={i} className="w-full border-t border-dashed border-[#64748B]/30" />)}
             </div>
             
             {barData.map((bar) => (
               <div key={bar.name} className="group relative flex flex-1 flex-col items-center gap-2">
                 <div className="absolute -top-6 opacity-0 transition-all group-hover:-top-8 group-hover:opacity-100">
-                  <span className="rounded-md bg-[#1a1c1a] px-2 py-1 text-[9px] font-bold text-white shadow-lg">{bar.count}% Progress</span>
+                  <span className="rounded-md bg-[#1E3A5F] px-2 py-1 text-[9px] font-bold text-white shadow-lg">{bar.count}% Progress</span>
                 </div>
                 <div
                   className="w-full rounded-t-2xl transition-all duration-500 ease-out group-hover:brightness-110"
@@ -510,7 +510,7 @@ const AdminDashboard: React.FC = () => {
                     boxShadow: `0 -4px 12px ${bar.color}20, inset 0 2px 4px rgba(255,255,255,0.2)`
                   }}
                 />
-                <span className="text-[9px] font-bold text-[#7f7664] transition-colors group-hover:text-[#1a1c1a] truncate w-full text-center uppercase tracking-tighter">
+                <span className="text-[9px] font-bold text-[#64748B] transition-colors group-hover:text-[#1a1c1a] truncate w-full text-center uppercase tracking-tighter">
                   {bar.name}
                 </span>
               </div>
@@ -519,24 +519,24 @@ const AdminDashboard: React.FC = () => {
         </article>
 
         {/* Overall Progress Ring */}
-        <article className="flex min-h-0 flex-col items-center justify-between rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664] self-start">Overall Progress</h2>
+        <article className="flex min-h-0 flex-col items-center justify-between rounded-2xl border border-transparent bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#64748B] self-start">Overall Progress</h2>
           <div
             className="relative h-36 w-36 rounded-full"
-            style={{ background: `conic-gradient(#ffd464 ${ringProgress}%, #e8e3da 0%)` }}
+            style={{ background: `conic-gradient(#DCEBFA ${ringProgress}%, #e8e3da 0%)` }}
           >
             <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white">
               <p className="text-2xl font-bold text-[#1a1c1a]">{completionRate}%</p>
             </div>
           </div>
-          <p className="text-center text-sm font-semibold text-[#765b00]">
+          <p className="text-center text-sm font-semibold text-[#1E3A5F]">
             {avgDelay > 0 ? `${avgDelay} days behind schedule` : projects.length > 0 ? 'Ahead of schedule' : 'No data yet'}
           </p>
         </article>
 
         {/* Active Onboarding — Dark Card */}
-        <article className="flex min-h-0 flex-col justify-between rounded-2xl bg-[#1a1c1a] p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#7f7664]">Active Onboarding</p>
+        <article className="flex min-h-0 flex-col justify-between rounded-2xl bg-[#1E3A5F] p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-white/65">Active Onboarding</p>
           <div>
             <div className="mb-3 flex -space-x-2">
               {onboardingMembers.slice(0, 4).map((m, i) => (
@@ -545,11 +545,11 @@ const AdminDashboard: React.FC = () => {
                   src={m.avatar}
                   alt={m.name}
                   title={m.name}
-                  className="h-10 w-10 rounded-full border-2 border-[#1a1c1a] object-cover"
+                  className="h-10 w-10 rounded-full border-2 border-[#1E3A5F] object-cover"
                 />
               ))}
               {(totalStudents + totalProfessors) > 4 && (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#1a1c1a] bg-[#efeeeb] text-xs font-bold text-[#1a1c1a]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#1E3A5F] bg-[#DCEBFA] text-xs font-bold text-[#1E3A5F]">
                   +{totalStudents + totalProfessors - 4}
                 </div>
               )}
@@ -558,7 +558,7 @@ const AdminDashboard: React.FC = () => {
               {totalStudents + totalProfessors} new members joined this week
             </p>
           </div>
-          <Link to="/users" className="mt-4 flex items-center justify-center rounded-2xl border border-[#4d4636] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#4d4636]">
+          <Link to="/users" className="mt-4 flex items-center justify-center rounded-2xl border border-white/20 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10">
             View List
           </Link>
         </article>

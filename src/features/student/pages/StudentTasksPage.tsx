@@ -239,17 +239,17 @@ const StudentTasks: React.FC = () => {
   return (
     // h-screen + flex-col : le board occupe exactement la hauteur du viewport
     <div
-      className="bg-[#faf9f6] p-8 flex flex-col"
+      className="bg-[#F8FAFC] p-8 flex flex-col"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif', height: '100vh' }}
     >
       {/* Header — hauteur fixe, ne rétrécit jamais */}
       <header className="mb-8 flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold text-[#1a1c1a]">Tasks Board</h1>
-          <p className="text-[#7f7664] mt-1">Manage your team's tasks and sub-tasks.</p>
+          <p className="text-[#64748B] mt-1">Manage your team's tasks and sub-tasks.</p>
         </div>
         <button
-          className="bg-[#1a1c1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-[#4d4636] transition-all shadow-md"
+          className="bg-[#1a1c1a] text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm hover:bg-[#334155] transition-all shadow-md"
           onClick={() => setIsCreateModalOpen(true)}
         >
           <Plus size={16} />
@@ -284,8 +284,8 @@ const StudentTasks: React.FC = () => {
             >
               {/* En-tête colonne — hauteur fixe */}
               <div className="flex items-center gap-3 mb-4 px-2 flex-shrink-0">
-                <h3 className="font-bold text-[#4d4636]">{column.title}</h3>
-                <span className="bg-[#d1c5b0] text-[#7f7664] text-xs font-bold px-2 py-0.5 rounded-full">
+                <h3 className="font-bold text-[#334155]">{column.title}</h3>
+                <span className="bg-[#C8D6E5] text-[#64748B] text-xs font-bold px-2 py-0.5 rounded-full">
                   {column.tasks.length}
                 </span>
               </div>
@@ -301,7 +301,7 @@ const StudentTasks: React.FC = () => {
                     {...provided.droppableProps}
                     ref={provided.innerRef}
                     className={`flex-1 min-h-0 overflow-y-auto space-y-4 pr-2 rounded-2xl transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-[#ffd464]/10' : ''
+                      snapshot.isDraggingOver ? 'bg-[#DCEBFA]/10' : ''
                     }`}
                   >
                     {column.tasks.map((task, index) => (
@@ -313,7 +313,7 @@ const StudentTasks: React.FC = () => {
                             {...provided.dragHandleProps}
                             className={`bg-white rounded-[24px] p-6 border border-transparent transition-all ${
                               snapshot.isDragging
-                                ? 'shadow-2xl ring-2 ring-[#765b00]/20 scale-105 rotate-2 z-50'
+                                ? 'shadow-2xl ring-2 ring-[#1E3A5F]/20 scale-105 rotate-2 z-50'
                                 : 'shadow-sm hover:shadow-md'
                             }`}
                           >
@@ -329,7 +329,7 @@ const StudentTasks: React.FC = () => {
                             </div>
 
                             <h4 className="font-bold text-[#1a1c1a] mb-2">{task.title}</h4>
-                            <p className="text-sm text-[#7f7664] mb-6 line-clamp-2">{task.description}</p>
+                            <p className="text-sm text-[#64748B] mb-6 line-clamp-2">{task.description}</p>
 
                             <div className="flex items-center justify-between pt-4 border-t border-transparent">
                               <div className="flex items-center gap-2">
@@ -338,11 +338,11 @@ const StudentTasks: React.FC = () => {
                                   alt={task.assignee}
                                   className="w-8 h-8 rounded-full border-2 border-white object-cover"
                                 />
-                                <span className="text-xs font-semibold text-[#4d4636]">{task.assignee}</span>
+                                <span className="text-xs font-semibold text-[#334155]">{task.assignee}</span>
                               </div>
 
                               <button
-                                className="flex items-center gap-1 text-xs font-bold text-[#7f7664] focus:outline-none"
+                                className="flex items-center gap-1 text-xs font-bold text-[#64748B] focus:outline-none"
                                 onClick={() => {
                                   setSelectedTaskId(task.db_id || null);
                                   setIsCommentOpen(true);

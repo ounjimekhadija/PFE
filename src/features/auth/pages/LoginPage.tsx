@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Github, Facebook, Chrome } from 'lucide-react';
 import { motion } from 'motion/react';
 import { UserRole } from '../../../shared/types';
 import { supabase } from '../../../lib/supabase';
@@ -125,88 +124,77 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-warm-surface relative overflow-hidden">
-      {/* Background texture and gradients */}
-      <div
-        className="absolute inset-0 opacity-50"
-        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23d1c5b0\' fill-opacity=\'0.1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}
-      ></div>
-      <div className="absolute top-[-20%] left-[-20%] w-2/5 h-2/5 bg-gradient-radial from-warm-primary-container/40 to-transparent to-70% animate-pulse"></div>
-      <div className="absolute bottom-[-20%] right-[-20%] w-2/5 h-2/5 bg-gradient-radial from-warm-tertiary-container/40 to-transparent to-70% animate-pulse-slow"></div>
-
-      {/* Decorative shapes */}
-      <div className="absolute w-28 h-28 bg-warm-primary-container/30 rounded-3xl backdrop-blur-sm top-8 left-1/4 z-10 shadow-lg animate-spin-slow"></div>
-      <div className="absolute w-24 h-24 bg-warm-secondary-container/20 rounded-2xl backdrop-blur-md bottom-16 right-24 z-10 shadow-xl"></div>
-      <div className="absolute w-16 h-16 bg-warm-primary/20 rounded-full backdrop-blur-sm top-20 right-16 z-10 shadow-lg animate-pulse"></div>
-      <div className="absolute w-14 h-14 bg-warm-surface-container/40 rounded-xl backdrop-blur-sm top-1/4 left-10 z-10 shadow-md"></div>
-      {/* More rounded squares */}
-      <div className="absolute w-20 h-20 bg-warm-tertiary-container/20 rounded-2xl backdrop-blur-lg top-1/2 right-1/3 z-10 shadow-lg animate-pulse"></div>
-      <div className="absolute w-12 h-12 bg-warm-primary-container/20 rounded-full backdrop-blur-sm bottom-10 left-1/3 z-10 shadow-md animate-spin-slow"></div>
-      <div className="absolute w-32 h-32 bg-warm-secondary-container/10 rounded-3xl backdrop-blur-xl bottom-[-50px] left-[-50px] z-10 shadow-2xl"></div>
-      <div className="absolute w-16 h-16 bg-warm-primary/10 rounded-2xl backdrop-blur-md top-[-30px] right-1/4 z-10 shadow-lg"></div>
-      <div className="absolute w-8 h-8 bg-warm-tertiary-container/30 rounded-full backdrop-blur-sm bottom-20 right-10 z-10 shadow-sm animate-pulse"></div>
-
-      <motion.div
+    <div className="min-h-screen w-full bg-white text-[#050505]">
+      <motion.main
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-xl bg-warm-surface-container-lowest/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-16 flex flex-col items-center border border-warm-surface-container-high/30 shadow-warm-secondary/10"
+        className="mx-auto grid min-h-screen w-full max-w-[1440px] grid-cols-1 lg:grid-cols-[58%_42%]"
       >
-        <div className="absolute inset-0 rounded-3xl shadow-inner-lg shadow-warm-surface-container-high/50 pointer-events-none"></div>
-        <h1 className="text-4xl font-bold text-warm-on-surface mb-2 text-center font-jakarta">Login Form</h1>
-        <div className="w-20 h-1.5 bg-warm-primary rounded-full mb-10 mx-auto"></div>
+        <section className="flex min-h-[42vh] items-center justify-center px-8 py-10 sm:px-12 lg:min-h-screen lg:px-14">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-auto w-full max-w-[360px] object-contain sm:max-w-[460px] lg:max-w-[560px]"
+          />
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8">
-          {error && <div className="text-warm-on-error text-sm text-center font-semibold bg-warm-error-container/80 p-3 border border-warm-error/50 rounded-lg">{error}</div>}
-          {info && <div className="text-green-800 text-sm text-center font-semibold bg-green-200/80 p-3 border border-green-500/40 rounded-lg">{info}</div>}
-          <div className="relative">
-            <input
-              type="email"
-              id="email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="peer w-full bg-warm-surface-container rounded-lg py-4 px-4 text-warm-on-surface placeholder-transparent text-base font-medium focus:outline-none transition-all"
-              placeholder="Email address"
-              required
-            />
-            <label
-              htmlFor="email"
-              className={`absolute left-4 pointer-events-none transition-all duration-300 
-                ${username ? 'text-sm -top-3.5 text-warm-primary' : 'text-base top-4 text-warm-on-surface-variant/80'}
-                peer-focus:text-sm peer-focus:-top-3.5 peer-focus:text-warm-primary`}
-            >
-              Email address
-            </label>
+        </section>
+
+        <section className="flex min-h-[58vh] items-center justify-center border-t border-[#DADDE1] px-6 py-10 lg:min-h-screen lg:border-l lg:border-t-0 lg:px-16">
+          <div className="w-full max-w-[520px]">
+            <h2 className="mb-7 text-2xl font-bold text-[#050505]">Se connecter</h2>
+
+            <form onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {error}
+                </div>
+              )}
+              {info && (
+                <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+                  {info}
+                </div>
+              )}
+
+              <input
+                type="email"
+                id="email"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="h-20 w-full rounded-[22px] border border-[#CCD0D5] bg-white px-6 text-xl font-medium text-[#050505] outline-none transition focus:border-[#1877F2] focus:ring-4 focus:ring-[#1877F2]"
+                placeholder="E-mail ou numéro de mobile"
+                required
+              />
+
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-20 w-full rounded-[22px] border border-[#CCD0D5] bg-white px-6 text-xl font-medium text-[#050505] outline-none transition focus:border-[#1877F2] focus:ring-4 focus:ring-[#1877F2]"
+                placeholder="Mot de passe"
+                required
+              />
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-3 h-14 w-full rounded-full bg-[#1877F2] px-6 text-xl font-bold text-white transition hover:bg-[#166FE5] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Connexion...' : 'Se connecter'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="mx-auto mt-5 text-lg font-bold text-[#050505] transition hover:text-[#1877F2]"
+              >
+                Mot de passe oublié ?
+              </button>
+            </form>
           </div>
-          <div className="relative">
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="peer w-full bg-warm-surface-container rounded-lg py-4 px-4 text-warm-on-surface placeholder-transparent text-base font-medium focus:outline-none transition-all"
-              placeholder="Password"
-              required
-            />
-            <label
-              htmlFor="password"
-              className={`absolute left-4 pointer-events-none transition-all duration-300 
-                ${password ? 'text-sm -top-3.5 text-warm-primary' : 'text-base top-4 text-warm-on-surface-variant/80'}
-                peer-focus:text-sm peer-focus:-top-3.5 peer-focus:text-warm-primary`}
-            >
-              Password
-            </label>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-warm-primary text-warm-on-primary font-bold py-4 px-6 rounded-xl text-lg shadow-lg shadow-warm-primary/30 hover:bg-warm-primary-dim transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl hover:-translate-y-1"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        
-      </motion.div>
+        </section>
+      </motion.main>
     </div>
   );
 };

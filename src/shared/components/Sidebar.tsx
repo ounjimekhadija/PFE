@@ -144,7 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
               <button
                 key="logout"
                 onClick={onLogout}
-                className={`relative w-full flex items-center h-16 px-6 gap-4 text-gray-500 hover:text-red-500 transition-colors duration-300 mb-2`}
+                className={`relative w-full flex items-center h-16 px-6 gap-4 text-[#64748B] hover:text-[#1E3A5F] transition-colors duration-300 mb-2`}
                 style={{ background: 'none', border: 'none', outline: 'none', cursor: 'pointer' }}
               >
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="min-w-[40px] h-10 flex items-center justify-center rounded-full"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -152,7 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
                   <motion.span 
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="font-bold text-xs tracking-widest whitespace-nowrap text-red-500"
+                    className="font-bold text-xs tracking-widest whitespace-nowrap text-[#1E3A5F]"
                   >
                     LOG OUT
                   </motion.span>

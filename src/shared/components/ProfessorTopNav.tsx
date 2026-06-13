@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Bell, CheckSquare, FileText, Home, LogOut, MessageCircle, Moon, Settings, Sun, Users, Mail, MessageSquare, CheckCircle, FileCheck, ExternalLink, Video } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDarkMode } from '../hooks/useDarkMode';
@@ -19,11 +19,11 @@ interface Notification {
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard', to: '/dashboard', icon: Home },
-  { id: 'members', label: 'People', to: '/members', icon: Users },
-  { id: 'tasks', label: 'Tasks', to: '/tasks', icon: CheckSquare },
-  { id: 'deliverables', label: 'Deliverables', to: '/deliverables', icon: FileText },
-  { id: 'chat', label: 'Inbox', to: '/chat', icon: MessageCircle },
+  { id: 'dashboard', label: 'Tableau de bord', to: '/dashboard', icon: Home },
+  { id: 'members', label: 'Membres', to: '/members', icon: Users },
+  { id: 'tasks', label: 'TÃ¢ches', to: '/tasks', icon: CheckSquare },
+  { id: 'deliverables', label: 'Livrables', to: '/deliverables', icon: FileText },
+  { id: 'chat', label: 'Messagerie', to: '/chat', icon: MessageCircle },
 ];
 
 const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
@@ -162,7 +162,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
       case 'MEETING_REQUEST': return <Video size={14} className="text-green-500" />;
       case 'COMMENT_LIVRABLE': return <Mail size={14} className="text-amber-500" />;
       case 'COMMENT_TACHE': return <Mail size={14} className="text-amber-500" />;
-      default: return <Bell size={14} className="text-[#765b00]" />;
+      default: return <Bell size={14} className="text-[#1E3A5F]" />;
     }
   };
 
@@ -180,8 +180,8 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   };
 
   return (
-    <header className="bg-[#faf9f6] px-4 py-3 md:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-[28px] border border-transparent bg-white px-4 py-2 shadow-[0_4px_16px_rgba(118,91,0,0.06)]">
+    <header className="bg-[#F8FAFC] px-4 py-3 md:px-8" style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}>
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 rounded-2xl border border-[#C8D6E5]/60 bg-white px-4 py-2 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
@@ -193,8 +193,8 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
                 title={item.label}
                 className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
                   isActive
-                    ? 'bg-[#1a1c1a] text-white shadow-[0_2px_8px_rgba(26,28,26,0.25)]'
-                    : 'text-[#7f7664] hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white'
+                    ? 'bg-[#1E3A5F] text-white shadow-[0_2px_8px_rgba(30,58,95,0.25)]'
+                    : 'text-[#64748B] hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white'
                 }`}
               >
                 <Icon size={18} />
@@ -206,7 +206,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
         <div className="flex items-center gap-2">
           <Link
             to="/settings"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
             aria-label="Settings"
           >
             <Settings size={16} />
@@ -215,7 +215,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
           <div className="relative" ref={notifRef}>
             <button
               type="button"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#7f7664] transition hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-transparent text-[#64748B] transition hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927] hover:text-[#1a1c1a] dark:hover:text-white"
               aria-label="Notifications"
               onClick={() => setShowNotif(!showNotif)}
             >
@@ -226,7 +226,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
             </button>
 
             {showNotif && (
-              <div className="absolute right-0 top-11 z-50 mt-2 w-80 rounded-[24px] border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_8px_32px_rgba(118,91,0,0.15)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute right-0 top-11 z-50 mt-2 w-80 rounded-[24px] border border-transparent bg-white dark:bg-[#1c1b19] p-4 shadow-[0_8px_32px_rgba(15,23,42,0.15)] backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-bold text-[#1a1c1a] dark:text-white">Notifications</h3>
@@ -238,43 +238,43 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
                   </div>
                   <button 
                     onClick={handleMarkAllRead}
-                    className="text-[11px] font-bold text-[#765b00] hover:underline"
+                    className="text-[11px] font-bold text-[#1E3A5F] hover:underline"
                   >
-                      Mark all as read
+                      Tout marquer comme lu
                   </button>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto space-y-1 pr-1">
-                  {loading && <p className="py-8 text-center text-xs text-[#7f7664]">Loading...</p>}
+                  {loading && <p className="py-8 text-center text-xs text-[#64748B]">Chargement...</p>}
                   {!loading && notifications.length === 0 ? (
-                    <p className="py-8 text-center text-xs text-[#7f7664]">No notifications.</p>
+                    <p className="py-8 text-center text-xs text-[#64748B]">Aucune notification.</p>
                   ) : (
                     notifications.map((n) => (
                       <div 
                         key={n.id} 
                         onClick={() => handleNotificationClick(n)}
                         className={`group relative flex items-start gap-3 p-3 rounded-2xl transition-all cursor-pointer ${
-                          n.is_read ? 'hover:bg-[#f4f3f1] dark:hover:bg-[#2a2927]' : 'bg-[#765b00]/5 hover:bg-[#765b00]/10'
+                          n.is_read ? 'hover:bg-[#EEF3F8] dark:hover:bg-[#2a2927]' : 'bg-[#1E3A5F]/5 hover:bg-[#1E3A5F]/10'
                         }`}
                       >
                         <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-                          n.is_read ? 'bg-[#f4f3f1] text-[#7f7664]' : 'bg-[#ffd464] text-[#765b00]'
+                          n.is_read ? 'bg-[#EEF3F8] text-[#64748B]' : 'bg-[#DCEBFA] text-[#1E3A5F]'
                         }`}>
                           {getNotifIcon(n.type)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-xs font-bold truncate ${n.is_read ? 'text-[#4d4636] dark:text-[#d1c5b0]' : 'text-[#1a1c1a] dark:text-white'}`}>
+                          <p className={`text-xs font-bold truncate ${n.is_read ? 'text-[#334155] dark:text-[#C8D6E5]' : 'text-[#1a1c1a] dark:text-white'}`}>
                             {n.title}
                           </p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-[#7f7664] line-clamp-2">
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-[#64748B] line-clamp-2">
                             {n.message}
                           </p>
-                          <p className="mt-1 text-[10px] font-bold text-[#d1c5b0] uppercase tracking-widest">
+                          <p className="mt-1 text-[10px] font-bold text-[#C8D6E5] uppercase tracking-widest">
                             {formatTime(n.created_at)}
                           </p>
                         </div>
                         {!n.is_read && (
-                          <div className="absolute top-4 right-4 h-1.5 w-1.5 rounded-full bg-[#765b00]" />
+                          <div className="absolute top-4 right-4 h-1.5 w-1.5 rounded-full bg-[#1E3A5F]" />
                         )}
                       </div>
                     ))
@@ -291,7 +291,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
             className={`flex h-9 w-9 items-center justify-center rounded-full transition ${
               isDark
                 ? 'bg-[#222222] text-white shadow-[0_2px_8px_rgba(0,0,0,0.4)]'
-                : 'border border-transparent text-[#7f7664] hover:bg-[#f4f3f1] hover:text-[#1a1c1a]'
+                : 'border border-transparent text-[#64748B] hover:bg-[#EEF3F8] hover:text-[#1a1c1a]'
             }`}
           >
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -299,11 +299,11 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-2 text-xs font-semibold text-[#7f7664] transition hover:bg-[#ffdad6] hover:border-[#f5c2be] hover:text-[#ba1a1a]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#DCEBFA] bg-[#EEF3F8] px-3 py-2 text-xs font-semibold text-[#1E3A5F] transition hover:border-[#C8D6E5] hover:bg-[#DCEBFA] dark:border-[#274563] dark:bg-[#102033] dark:text-[#DCEBFA] dark:hover:bg-[#173150]"
             onClick={onLogout}
           >
             <LogOut size={14} />
-            Logout
+            Déconnexion
           </button>
         </div>
       </div>

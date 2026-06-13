@@ -245,15 +245,15 @@ const StudentDeliverables: React.FC = () => {
     const s = (status || '').toUpperCase();
     if (s === 'VALIDATED' || s === 'VALIDE') return 'bg-green-100 text-green-600';
     if (s === 'REJECTED' || s === 'REJETE') return 'bg-[#ffdad6] text-[#ba1a1a]';
-    return 'bg-[#ffd464] text-[#594400]';
+    return 'bg-[#DCEBFA] text-[#172D49]';
   };
 
   const getDocIcon = (type: string) => {
     const t = (type || '').toUpperCase();
     if (t.includes('PDF')) return <FileText className="text-[#ba1a1a]" size={24} />;
-    if (t.includes('DIAGRAM') || t.includes('SCHEMA')) return <FileImage className="text-[#765b00]" size={24} />;
+    if (t.includes('DIAGRAM') || t.includes('SCHEMA')) return <FileImage className="text-[#1E3A5F]" size={24} />;
     if (t.includes('PROGRAM') || t.includes('CODE')) return <FileCode className="text-[#1a1c1a]" size={24} />;
-    return <FileText className="text-[#765b00]" size={24} />;
+    return <FileText className="text-[#1E3A5F]" size={24} />;
   };
 
   const getInitials = (prenom: string, nom: string) =>
@@ -262,7 +262,7 @@ const StudentDeliverables: React.FC = () => {
   return (
     // Conteneur racine : hauteur pleine et scroll
     <div
-      className="bg-[#faf9f6] text-[#1a1c1a] h-screen overflow-y-auto"
+      className="bg-[#F8FAFC] text-[#1a1c1a] h-screen overflow-y-auto"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
       {/* Conteneur interne avec un grand padding-bottom pour voir le bas des cartes */}
@@ -271,14 +271,13 @@ const StudentDeliverables: React.FC = () => {
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-[#1a1c1a]">Deliverables</h1>
-            <p className="mt-1 text-sm text-[#7f7664]">Upload and manage your project documents and versions.</p>
+            <p className="mt-1 text-sm text-[#64748B]">Upload and manage your project documents and versions.</p>
           </div>
           <button
-            className="bg-[#765b00] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-[#594400] transition-all shadow-sm"
+            className="bg-[#1E3A5F] text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-[#172D49] transition-all shadow-sm"
             onClick={() => setShowUploadModal(true)}
           >
             <Upload size={20} />
-            Upload Document
           </button>
         </header>
 
@@ -288,9 +287,9 @@ const StudentDeliverables: React.FC = () => {
             <motion.div
               key={doc.id}
               onClick={() => setSelectedDoc(doc)}
-              className={`cursor-pointer rounded-2xl border-2 p-5 shadow-[0_4px_16px_rgba(118,91,0,0.06)] transition-all ${
+              className={`cursor-pointer rounded-2xl border-2 p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all ${
                 selectedDoc?.id === doc.id
-                  ? 'border-transparent bg-[#ffd464]/10'
+                  ? 'border-transparent bg-[#DCEBFA]/10'
                   : 'border-transparent bg-white hover:border-transparent'
               }`}
             >
@@ -301,37 +300,37 @@ const StudentDeliverables: React.FC = () => {
               </div>
 
               <h3 className="mb-1 text-base font-bold text-[#1a1c1a]">{doc.title}</h3>
-              <p className="mb-4 text-sm text-[#7f7664]">{doc.type} • Last updated {doc.lastModified}</p>
+              <p className="mb-4 text-sm text-[#64748B]">{doc.type} • Last updated {doc.lastModified}</p>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#7f7664]">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#64748B]">
                   <History size={14} />
                   {doc.versions.length} Versions
                 </div>
                 <div className="flex gap-2">
                   <button
-                    className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                    className="rounded-xl border border-transparent bg-white p-2 text-[#64748B] transition-all hover:text-[#1E3A5F]"
                     title="View comments"
                     onClick={e => { e.stopPropagation(); handleShowComments(doc); }}
                   >
                     <MessageSquare size={18} />
                   </button>
                   <button
-                    className="rounded-xl border border-transparent bg-[#765b00] p-2 text-white transition-all hover:bg-[#594400]"
+                    className="rounded-xl border border-transparent bg-[#1E3A5F] p-2 text-white transition-all hover:bg-[#172D49]"
                     title="View versions"
                     onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
                   >
                     <Eye size={18} />
                   </button>
                   <button
-                    className="rounded-xl border border-transparent bg-white p-2 text-[#7f7664] transition-all hover:text-[#765b00]"
+                    className="rounded-xl border border-transparent bg-white p-2 text-[#64748B] transition-all hover:text-[#1E3A5F]"
                     title="Upload new version"
                     onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
                   >
                     <PlusCircle size={18} />
                   </button>
                   <button
-                    className="rounded-xl border border-transparent bg-[#ffd464] p-2 text-white transition-all hover:bg-[#ebc254]"
+                    className="rounded-xl border border-transparent bg-[#DCEBFA] p-2 text-white transition-all hover:bg-[#BFD7EF]"
                     title="Download latest version"
                     onClick={e => {
                       e.stopPropagation();
@@ -419,7 +418,7 @@ const StudentDeliverables: React.FC = () => {
                 className="w-full px-4 py-2 border border-[#e8e6e0] rounded-xl focus:outline-none bg-white flex justify-between items-center text-[#1a1c1a] text-center"
               >
                 <span className="flex-1 font-medium">{newType === 'Report' ? 'Report / Rapport' : newType === 'Diagram' ? 'Diagram / Schéma' : 'Document PDF'}</span>
-                <ChevronDown size={16} className={`text-[#7f7664] transition-transform ${typeDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={16} className={`text-[#64748B] transition-transform ${typeDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               
               {typeDropdownOpen && (
@@ -434,7 +433,7 @@ const StudentDeliverables: React.FC = () => {
                       <div
                         key={type.value}
                         className={`px-4 py-2 cursor-pointer transition-colors text-sm font-bold text-center ${
-                          newType === type.value ? 'bg-[#ffd464]/20 text-[#765b00]' : 'text-[#4d4636] hover:bg-[#f4f3f1]'
+                          newType === type.value ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'
                         }`}
                         onClick={() => {
                           setNewType(type.value);
@@ -448,32 +447,32 @@ const StudentDeliverables: React.FC = () => {
                 </>
               )}
             </div>
-            <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
+            <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#EEF3F8] transition-colors">
               <input
                 type="file"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
               />
               <div className="flex flex-col items-center justify-center gap-2">
-                <Upload size={24} className="text-[#7f7664]" />
-                <span className="text-sm font-medium text-[#4d4636]">
+                <Upload size={24} className="text-[#64748B]" />
+                <span className="text-sm font-medium text-[#334155]">
                   {selectedFile ? selectedFile.name : "Click to upload a file"}
                 </span>
                 {selectedFile && (
-                  <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                  <span className="text-xs text-[#64748B]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                 )}
               </div>
             </div>
             <div className="flex gap-3 w-full">
               <button
-                className={`flex-1 font-bold py-2 rounded-xl transition-all ${(!newTitle.trim() || !selectedFile || uploading) ? 'bg-[#ebc254] text-white cursor-not-allowed' : 'bg-[#765b00] hover:bg-[#594400] text-white'}`}
+                className={`flex-1 font-bold py-2 rounded-xl transition-all ${(!newTitle.trim() || !selectedFile || uploading) ? 'bg-[#BFD7EF] text-white cursor-not-allowed' : 'bg-[#1E3A5F] hover:bg-[#172D49] text-white'}`}
                 onClick={handleUpload}
                 disabled={!newTitle.trim() || !selectedFile || uploading}
               >
                 {uploading ? 'Upload...' : 'Upload'}
               </button>
               <button
-                className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
+                className="flex-1 bg-[#E5EDF5] hover:bg-[#D5E1ED] text-[#334155] font-bold py-2 rounded-xl transition-all"
                 onClick={() => { setShowUploadModal(false); setNewTitle(''); setSelectedFile(null); }}
               >
                 Cancel
@@ -491,19 +490,19 @@ const StudentDeliverables: React.FC = () => {
             style={{ borderRadius: '24px', boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}
           >
             <div className="flex items-center gap-3 px-6 pt-6 pb-4" style={{ borderBottom: '1px solid #f0ede6' }}>
-              <div className="flex items-center justify-center flex-shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: '#f4f3f1' }}>
-                <MessageSquare size={20} color="#765b00" />
+              <div className="flex items-center justify-center flex-shrink-0" style={{ width: 40, height: 40, borderRadius: 12, background: '#EEF3F8' }}>
+                <MessageSquare size={20} color="#1E3A5F" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-[#1a1c1a]" style={{ fontSize: 15, margin: 0 }}>Commentaires</p>
-                <p className="text-[#7f7664] uppercase tracking-widest font-semibold truncate" style={{ fontSize: 11, margin: 0 }}>
+                <p className="text-[#64748B] uppercase tracking-widest font-semibold truncate" style={{ fontSize: 11, margin: 0 }}>
                   {selectedDoc.title}
                 </p>
               </div>
               <button
                 onClick={() => setShowCommentModal(false)}
-                className="flex items-center justify-center flex-shrink-0 text-[#7f7664] hover:text-[#1a1c1a] transition-colors"
-                style={{ width: 32, height: 32, borderRadius: 10, background: '#f4f3f1', border: 'none', cursor: 'pointer' }}
+                className="flex items-center justify-center flex-shrink-0 text-[#64748B] hover:text-[#1a1c1a] transition-colors"
+                style={{ width: 32, height: 32, borderRadius: 10, background: '#EEF3F8', border: 'none', cursor: 'pointer' }}
               >
                 <X size={16} />
               </button>
@@ -511,10 +510,10 @@ const StudentDeliverables: React.FC = () => {
             <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 420 }}>
               {comments.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <div className="flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 16, background: '#f4f3f1' }}>
+                  <div className="flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 16, background: '#EEF3F8' }}>
                     <MessageSquare size={22} color="#c5b98a" />
                   </div>
-                  <p className="font-medium text-[#7f7664]" style={{ fontSize: 14, margin: 0 }}>No comments</p>
+                  <p className="font-medium text-[#64748B]" style={{ fontSize: 14, margin: 0 }}>No comments</p>
                   <p style={{ fontSize: 12, color: '#b0a88a', marginTop: 4 }}>Professor's comments will appear here.</p>
                 </div>
               ) : (
@@ -522,8 +521,8 @@ const StudentDeliverables: React.FC = () => {
                   {comments.map((comment) => (
                     <div key={comment.id} style={{ display: 'flex', gap: 12 }}>
                       <div
-                        className="flex items-center justify-center flex-shrink-0 font-bold text-[#594400]"
-                        style={{ width: 36, height: 36, borderRadius: '50%', background: '#ffd464', fontSize: 12 }}
+                        className="flex items-center justify-center flex-shrink-0 font-bold text-[#172D49]"
+                        style={{ width: 36, height: 36, borderRadius: '50%', background: '#DCEBFA', fontSize: 12 }}
                       >
                         {getInitials(comment.auteur_prenom, comment.auteur_nom)}
                       </div>
@@ -536,8 +535,8 @@ const StudentDeliverables: React.FC = () => {
                             🕐 {new Date(comment.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <div style={{ background: '#f4f3f1', borderRadius: '0 12px 12px 12px', padding: '10px 14px' }}>
-                          <p className="text-[#4d4636]" style={{ fontSize: 14, margin: 0, lineHeight: 1.6 }}>{comment.contenu}</p>
+                        <div style={{ background: '#EEF3F8', borderRadius: '0 12px 12px 12px', padding: '10px 14px' }}>
+                          <p className="text-[#334155]" style={{ fontSize: 14, margin: 0, lineHeight: 1.6 }}>{comment.contenu}</p>
                         </div>
                       </div>
                     </div>
@@ -555,26 +554,26 @@ const StudentDeliverables: React.FC = () => {
           <div className="bg-white rounded-[32px] p-8 flex flex-col w-full max-w-lg relative" style={{ maxHeight: '80vh' }}>
             <div className="flex justify-between items-center mb-8 flex-shrink-0">
               <h3 className="text-xl font-bold text-[#1a1c1a]">Version History</h3>
-              <button onClick={() => setShowModal(false)} className="flex items-center justify-center text-[#7f7664] hover:text-[#1a1c1a] transition-colors" style={{ width: 32, height: 32, borderRadius: 10, background: '#f4f3f1' }}>
+              <button onClick={() => setShowModal(false)} className="flex items-center justify-center text-[#64748B] hover:text-[#1a1c1a] transition-colors" style={{ width: 32, height: 32, borderRadius: 10, background: '#EEF3F8' }}>
                 <X size={16} />
               </button>
             </div>
             {selectedDoc.versions.length === 0 ? (
-              <p className="text-center text-[#7f7664] py-4">Aucune version disponible.</p>
+              <p className="text-center text-[#64748B] py-4">Aucune version disponible.</p>
             ) : (
               <div className="overflow-y-auto pr-2" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 {selectedDoc.versions.map((v, i) => (
-                  <div key={i} className="relative pl-8 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-0.5 before:bg-[#d1c5b0] last:before:hidden">
-                    <div className="absolute left-[-4px] top-2 w-2.5 h-2.5 rounded-full bg-[#765b00] border-2 border-white" />
+                  <div key={i} className="relative pl-8 before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-0 before:w-0.5 before:bg-[#C8D6E5] last:before:hidden">
+                    <div className="absolute left-[-4px] top-2 w-2.5 h-2.5 rounded-full bg-[#1E3A5F] border-2 border-white" />
                     <div className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-[#f0ede6]">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-bold text-[#765b00]">{v.version}</span>
-                        <span className="text-[10px] font-bold text-[#7f7664] uppercase tracking-widest">{v.date}</span>
+                        <span className="text-sm font-bold text-[#1E3A5F]">{v.version}</span>
+                        <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-widest">{v.date}</span>
                       </div>
-                      <p className="text-sm text-[#4d4636] mb-3">{v.comment}</p>
+                      <p className="text-sm text-[#334155] mb-3">{v.comment}</p>
                       <div className="flex items-center gap-2">
                         <img src={`https://picsum.photos/seed/${v.author.replace(/ /g, '')}/50/50`} className="w-5 h-5 rounded-full" alt={v.author} />
-                        <span className="text-xs font-medium text-[#7f7664]">{v.author}</span>
+                        <span className="text-xs font-medium text-[#64748B]">{v.author}</span>
                       </div>
                     </div>
                   </div>
@@ -590,33 +589,33 @@ const StudentDeliverables: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md transition-all animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col items-center">
             <h2 className="text-xl font-bold mb-2 text-[#1a1c1a]">Nouvelle version</h2>
-            <p className="text-sm text-[#7f7664] mb-6 text-center">{selectedDoc.title}</p>
-            <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#f4f3f1] transition-colors">
+            <p className="text-sm text-[#64748B] mb-6 text-center">{selectedDoc.title}</p>
+            <div className="w-full mb-6 border-2 border-dashed border-[#e8e6e0] rounded-xl p-4 relative text-center hover:bg-[#EEF3F8] transition-colors">
               <input
                 type="file"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
               />
               <div className="flex flex-col items-center justify-center gap-2">
-                <Upload size={24} className="text-[#7f7664]" />
-                <span className="text-sm font-medium text-[#4d4636]">
+                <Upload size={24} className="text-[#64748B]" />
+                <span className="text-sm font-medium text-[#334155]">
                   {selectedFile ? selectedFile.name : "Click to upload a file"}
                 </span>
                 {selectedFile && (
-                  <span className="text-xs text-[#7f7664]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                  <span className="text-xs text-[#64748B]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                 )}
               </div>
             </div>
             <div className="flex gap-3 w-full">
               <button
-                className={`flex-1 font-bold py-2 rounded-xl transition-all ${(!selectedFile || uploading) ? 'bg-[#ebc254] text-white cursor-not-allowed' : 'bg-[#765b00] hover:bg-[#594400] text-white'}`}
+                className={`flex-1 font-bold py-2 rounded-xl transition-all ${(!selectedFile || uploading) ? 'bg-[#BFD7EF] text-white cursor-not-allowed' : 'bg-[#1E3A5F] hover:bg-[#172D49] text-white'}`}
                 onClick={handleAddNewVersion}
                 disabled={!selectedFile || uploading}
               >
                 {uploading ? 'Upload...' : 'Update'}
               </button>
               <button
-                className="flex-1 bg-[#efeeeb] hover:bg-[#e3e2e0] text-[#4d4636] font-bold py-2 rounded-xl transition-all"
+                className="flex-1 bg-[#E5EDF5] hover:bg-[#D5E1ED] text-[#334155] font-bold py-2 rounded-xl transition-all"
                 onClick={() => { setShowAddVersionModal(false); setSelectedFile(null); }}
               >
                 Cancel
