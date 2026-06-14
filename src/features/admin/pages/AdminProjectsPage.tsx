@@ -572,7 +572,7 @@ const AdminProjects: React.FC = () => {
                   </button>
 
                   {showEncadrantDropdown && (
-                    <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-[#D8E2EC] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-all animate-in fade-in slide-in-from-top-1">
+                    <div className="mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-[#D8E2EC] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-all animate-in fade-in slide-in-from-top-1">
                       <button
                         type="button"
                         onClick={() => {

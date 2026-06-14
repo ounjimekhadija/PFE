@@ -449,34 +449,34 @@ const Chat: React.FC = () => {
     setCreatingMeeting(true);
     const meetUrl = getProjectMeetingUrl(selectedProjectId);
     const startedAt = new Date().toISOString();
-
-    const { error: meetingError } = await supabase.from('reunions').insert({
-      projet_id: selectedProjectId,
-      titre: `Appel vidéo - ${selectedProjectTitle}`,
-      date_heure: startedAt,
-      duree: 60,
-      lien_jitsi: meetUrl,
-      ordre_du_jour: `Appel vidéo lancé par l'encadrant pour le projet "${selectedProjectTitle}".`,
-      statut: 'EN_COURS',
-    });
-
-    if (meetingError) {
-      console.error('Erreur création réunion:', meetingError);
-      setError(meetingError.message);
-      setCreatingMeeting(false);
-      return;
-    }
-
-    await notifyProjectStudents({
-      projectId: selectedProjectId,
-      senderId: currentUserId,
-      title: 'Nouvel appel vidéo',
-      message: `L'encadrant a lancé un appel vidéo pour "${selectedProjectTitle}". Lien: ${meetUrl}`,
-      type: 'MEETING_REQUEST'
-    });
-
     window.open(meetUrl, '_blank');
-    setCreatingMeeting(false);
+
+    try {
+      const { error: meetingError } = await supabase.from('reunions').insert({
+        projet_id: selectedProjectId,
+        titre: `Appel vidéo - ${selectedProjectTitle}`,
+        date_heure: startedAt,
+        duree: 60,
+        lien_jitsi: meetUrl,
+        ordre_du_jour: `Appel vidéo lancé par l'encadrant pour le projet "${selectedProjectTitle}".`,
+        statut: 'EN_COURS',
+      });
+
+      if (meetingError) throw meetingError;
+
+      await notifyProjectStudents({
+        projectId: selectedProjectId,
+        senderId: currentUserId,
+        title: 'Nouvel appel vidéo',
+        message: `L'encadrant a lancé un appel vidéo pour "${selectedProjectTitle}". Lien: ${meetUrl}`,
+        type: 'MEETING_REQUEST'
+      });
+    } catch (err) {
+      console.error('Erreur création réunion:', err);
+      setError(err instanceof Error ? err.message : 'Erreur création réunion');
+    } finally {
+      setCreatingMeeting(false);
+    }
   };
 
   return (

@@ -238,7 +238,7 @@ const StudentDashboard: React.FC = () => {
       <header className="mb-3 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold leading-tight text-[#1a1c1a]">Bonjour Ahmed !</h1>
+            <h1 className="text-2xl font-bold leading-tight text-[#1a1c1a]">Bonjour !</h1>
             <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusClass}`}>
               {statusLabel}
             </span>
@@ -436,8 +436,6 @@ const StudentDashboard: React.FC = () => {
 };
 
 export default StudentDashboard;
-
-
 
 
 
