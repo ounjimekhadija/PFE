@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Download, Filter, MoreVertical, User, Users } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -35,7 +35,7 @@ const AdminMembers: React.FC = () => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterFiliere, setFilterFiliere] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'pending'>('all');
+  const [filterStatut, setFilterStatut] = useState<'all' | 'active' | 'pending'>('all');
   const [filterPos, setFilterPos] = useState({ top: 0, right: 0 });
   const [filiereDropdownOpen, setFiliereDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -114,7 +114,7 @@ const AdminMembers: React.FC = () => {
         const uniqueFilieres = Array.from(new Set(formatted.map((s) => s.filiere).filter(Boolean))) as string[];
         setFilieres(uniqueFilieres);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error loading data');
+        setError(err instanceof Error ? err.message : 'Erreur lors du chargement des données');
       } finally {
         setLoading(false);
       }
@@ -130,10 +130,10 @@ const AdminMembers: React.FC = () => {
 
   const filteredStudents = useMemo(() => students.filter((s) => {
     if (filterFiliere && s.filiere !== filterFiliere) return false;
-    if (filterStatus === 'active' && !s.nom_groupe) return false;
-    if (filterStatus === 'pending' && s.nom_groupe) return false;
+    if (filterStatut === 'active' && !s.nom_groupe) return false;
+    if (filterStatut === 'pending' && s.nom_groupe) return false;
     return true;
-  }), [students, filterFiliere, filterStatus]);
+  }), [students, filterFiliere, filterStatut]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
   const paginatedStudents = useMemo(
@@ -148,7 +148,7 @@ const AdminMembers: React.FC = () => {
       workbook.created = new Date();
 
       // --- SHEET 1: STUDENTS ---
-      const studentSheet = workbook.addWorksheet('Students List', { views: [{ showGridLines: false }] });
+      const studentSheet = workbook.addWorksheet('Étudiants List', { views: [{ showGridLines: false }] });
       
       // Title
       studentSheet.mergeCells('A1:E2');
@@ -161,7 +161,7 @@ const AdminMembers: React.FC = () => {
       // Generation Date
       studentSheet.mergeCells('A3:E3');
       const dateCell = studentSheet.getCell('A3');
-      dateCell.value = `Generated on ${new Date().toLocaleDateString()}`;
+      dateCell.value = `Généré le ${new Date().toLocaleDateString()}`;
       dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF7F7664' } };
       dateCell.alignment = { vertical: 'middle', horizontal: 'right' };
       
@@ -213,12 +213,12 @@ const AdminMembers: React.FC = () => {
         { width: 25 },
       ];
 
-      // --- SHEET 2: GROUPS ---
+      // --- SHEET 2: GROUPES ---
       const groupSheet = workbook.addWorksheet('Groups Summary', { views: [{ showGridLines: false }] });
       
       groupSheet.mergeCells('A1:C2');
       const gTitleCell = groupSheet.getCell('A1');
-      gTitleCell.value = 'GROUPS SUMMARY';
+      gTitleCell.value = 'GROUPES SUMMARY';
       gTitleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
       gTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
       gTitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -269,8 +269,8 @@ const AdminMembers: React.FC = () => {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       saveAs(blob, `Student_Management_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (err) {
-      console.error('Export failed:', err);
-      alert('Failed to generate the Excel report.');
+      console.error("Échec de l'export :", err);
+      alert('Impossible de générer le rapport Excel.');
     }
   };
 
@@ -316,7 +316,7 @@ const AdminMembers: React.FC = () => {
       {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">Loading students...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#fecaca] bg-[#ffdad6] px-4 py-2 text-sm text-[#ba1a1a]">{error}</div>}
 
-      {/* ── STUDENTS TAB ── */}
+      {/* -- STUDENTS TAB -- */}
       {activeTab === 'students' && (
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
 
@@ -334,7 +334,7 @@ const AdminMembers: React.FC = () => {
                   }
                   setFilterOpen((o) => !o);
                 }}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${filterOpen || filterFiliere || filterStatus !== 'all' ? 'border-[#1E3A5F] bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'border-transparent text-[#64748B] hover:bg-[#EEF3F8]'}`}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${filterOpen || filterFiliere || filterStatut !== 'all' ? 'border-[#1E3A5F] bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'border-transparent text-[#64748B] hover:bg-[#EEF3F8]'}`}
               >
                 <Filter size={15} />
               </button>
@@ -344,7 +344,7 @@ const AdminMembers: React.FC = () => {
                   className="fixed z-50 w-56 rounded-2xl border border-[#EEF3F8] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
                   style={{ top: filterPos.top, right: filterPos.right }}
                 >
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Category</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Catégorie</p>
                   <div className="relative mb-4">
                     <button
                       type="button"
@@ -378,25 +378,25 @@ const AdminMembers: React.FC = () => {
                     )}
                   </div>
 
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Status</p>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Statut</p>
                   <div className="mb-2 flex flex-col gap-1">
                     {(['all', 'active', 'pending'] as const).map((s) => (
                       <button
                         key={s}
                         type="button"
-                        onClick={() => { setFilterStatus(s); setCurrentPage(1); }}
-                        className={`rounded-lg px-3 py-2 text-left text-sm font-semibold capitalize transition ${filterStatus === s ? 'bg-[#1E3A5F] text-white' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
+                        onClick={() => { setFilterStatut(s); setCurrentPage(1); }}
+                        className={`rounded-lg px-3 py-2 text-left text-sm font-semibold capitalize transition ${filterStatut === s ? 'bg-[#1E3A5F] text-white' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
                       >
                         {s}
                       </button>
                     ))}
                   </div>
 
-                  {(filterFiliere || filterStatus !== 'all') && (
+                  {(filterFiliere || filterStatut !== 'all') && (
                     <div className="mt-4 flex justify-center">
                       <button
                         type="button"
-                        onClick={() => { setFilterFiliere(''); setFilterStatus('all'); setCurrentPage(1); }}
+                        onClick={() => { setFilterFiliere(''); setFilterStatut('all'); setCurrentPage(1); }}
                         className="text-sm font-semibold text-[#ba1a1a] transition hover:text-[#901313]"
                       >
                         Clear filters
@@ -456,7 +456,7 @@ const AdminMembers: React.FC = () => {
                         <td className="border-b border-transparent px-4 py-3">
                           <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: isActive ? '#10B981' : '#f59e0b' }}>
                             <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: isActive ? '#10B981' : '#f59e0b' }} />
-                            {isActive ? 'Active' : 'Pending'}
+                            {isActive ? 'Active' : 'En attente'}
                           </span>
                         </td>
                         <td className="border-b border-transparent px-4 py-3">
@@ -487,7 +487,7 @@ const AdminMembers: React.FC = () => {
         </section>
       )}
 
-      {/* ── GROUPS TAB ── */}
+      {/* -- GROUPES TAB -- */}
       {activeTab === 'groups' && (
         <section className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           {filieres.length > 0 && (
@@ -548,3 +548,6 @@ const AdminMembers: React.FC = () => {
 };
 
 export default AdminMembers;
+
+
+

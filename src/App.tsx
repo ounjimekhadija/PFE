@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Sidebar from './shared/components/Sidebar';
@@ -163,3 +163,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+
+

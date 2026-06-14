@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Save, Shield, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -129,7 +129,7 @@ const AdminSettingsPage: React.FC = () => {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwords.new !== passwords.confirm) {
-      alert('Passwords do not match.');
+      alert('Les mots de passe ne correspondent pas.');
       return;
     }
     try {
@@ -210,7 +210,7 @@ const AdminSettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {[
-                  { label: 'Telephone', key: 'phone', type: 'text' },
+                  { label: 'Téléphone', key: 'phone', type: 'text' },
                   { label: 'Website', key: 'website', type: 'text' },
                   { label: 'GitHub', key: 'github', type: 'text' },
                   { label: 'LinkedIn', key: 'linkedin', type: 'text' },
@@ -277,3 +277,7 @@ const AdminSettingsPage: React.FC = () => {
 };
 
 export default AdminSettingsPage;
+
+
+
+

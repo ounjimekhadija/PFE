@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 
 export type NotificationType = 
   | 'MESSAGE' 
@@ -59,7 +59,9 @@ export const notifyProjectStudents = async (options: NotifyOptions) => {
 
     if (!students || students.length === 0) return;
 
-    const studentIds = students.map(s => s.id);
+    const studentIds = students.map(s => s.id).filter((id) => id !== senderId);
+
+    if (studentIds.length === 0) return;
 
     // 2. Fetch student emails
     const { data: userDetails, error: userError } = await supabase
@@ -168,25 +170,27 @@ export const notifyProjectProfessor = async (options: NotifyOptions) => {
     }
 
     // 3. Insert in-app notification
-    const notification = {
-      user_id: professorUserId,
-      sender_id: senderId,
-      projet_id: projectId,
-      title,
-      message,
-      type,
-    };
+    if (professorUserId !== senderId) {
+      const notification = {
+        user_id: professorUserId,
+        sender_id: senderId,
+        projet_id: projectId,
+        title,
+        message,
+        type,
+      };
 
-    const { error: notifyError } = await supabase
-      .from('notifications')
-      .insert(notification);
+      const { error: notifyError } = await supabase
+        .from('notifications')
+        .insert(notification);
 
-    if (notifyError) {
-      console.error('Error inserting professor notification:', notifyError);
+      if (notifyError) {
+        console.error('Error inserting professor notification:', notifyError);
+      }
     }
 
     // 4. Send email notification
-    if (professor?.email) {
+    if (professorUserId !== senderId && professor?.email) {
       await sendEmail(
         professor.email,
         `[StudentHub] ${title}`,
@@ -216,7 +220,10 @@ export const notifyAdmins = async (options: Omit<NotifyOptions, 'projectId'> & {
       return;
     }
 
-    const notifications = admins.map(admin => ({
+    const recipientAdmins = admins.filter((admin) => admin.id !== senderId);
+    if (recipientAdmins.length === 0) return;
+
+    const notifications = recipientAdmins.map(admin => ({
       user_id: admin.id,
       sender_id: senderId,
       projet_id: projectId || null,
@@ -235,7 +242,7 @@ export const notifyAdmins = async (options: Omit<NotifyOptions, 'projectId'> & {
     }
 
     // 3. Send email notification
-    for (const admin of admins) {
+    for (const admin of recipientAdmins) {
       if (admin.email) {
         await sendEmail(
           admin.email,
@@ -248,3 +255,5 @@ export const notifyAdmins = async (options: Omit<NotifyOptions, 'projectId'> & {
     console.error('Unexpected error in notifyAdmins:', err);
   }
 };
+
+

@@ -50,7 +50,7 @@ const StudentChat: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectMeetings, setProjectMeetings] = useState<ReunionItem[]>([]);
-  const [supervisorName, setSupervisorName] = useState('Supervisor');
+  const [supervisorName, setEncadrantName] = useState('Encadrant');
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +155,7 @@ const StudentChat: React.FC = () => {
           .single();
 
         if (projectError || !project?.encadrant_id) {
-          setError('Supervisor not found');
+          setError('Encadrant non trouvé');
           return;
         }
 
@@ -166,18 +166,18 @@ const StudentChat: React.FC = () => {
           .single();
 
         if (professorError || !professor) {
-          setError('Supervisor details not found');
+          setError('Détails de l\'encadrant non trouvés');
           return;
         }
 
         const professorName = `${professor.prenom} ${professor.nom}`;
-        setSupervisorName(professorName);
+        setEncadrantName(professorName);
         setProjectTitle(project?.titre || 'Discussion');
         const contact: ContactItem = {
           id: professor.id,
           name: professorName,
           groupName: project?.nom_groupe || project?.titre || '',
-          lastMsg: 'Loading project messages...',
+          lastMsg: 'Chargement des messages du projet...',
           time: '',
           unread: 0,
           active: true,
@@ -205,7 +205,7 @@ const StudentChat: React.FC = () => {
                 id: projStudent.id,
                 name: studentName,
                 groupName: project?.nom_groupe || project?.titre || '',
-                lastMsg: 'Loading project messages...',
+                lastMsg: 'Chargement des messages du projet...',
                 time: '',
                 unread: 0,
                 active: false,
@@ -808,3 +808,6 @@ const StudentChat: React.FC = () => {
 };
 
 export default StudentChat;
+
+
+

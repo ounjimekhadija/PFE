@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Upload, History, Download, Trash2, Eye, PlusCircle, MessageSquare, X, ChevronDown } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -24,8 +24,8 @@ interface StudentDeliverable {
   versions: DeliverableVersion[];
 }
 
-const StudentDeliverables: React.FC = () => {
-  const [deliverables, setDeliverables] = useState<StudentDeliverable[]>([]);
+const StudentLivrables: React.FC = () => {
+  const [deliverables, setLivrables] = useState<StudentDeliverable[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showCommentModal, setShowCommentModal] = useState(false);
@@ -52,25 +52,25 @@ const StudentDeliverables: React.FC = () => {
       .eq('id', user.id)
       .single();
 
-    if (error || !student) throw new Error("Student profile not found for logged in user.");
-    if (!student.projet_id) throw new Error("No project associated with this student.");
+    if (error || !student) throw new Error("Profil étudiant introuvable pour l'utilisateur connecté.");
+    if (!student.projet_id) throw new Error("Aucun projet n'est associé à cet étudiant.");
 
     return { studentId: student.id, projectId: student.projet_id };
   };
 
   useEffect(() => {
-    fetchDeliverables();
+    fetchLivrables();
 
     const channel = supabase.channel('livrables_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'livrables' }, () => {
-        fetchDeliverables();
+        fetchLivrables();
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const fetchDeliverables = async () => {
+  const fetchLivrables = async () => {
     try {
       setLoading(true);
       const { projectId } = await getCurrentStudentContext();
@@ -99,13 +99,13 @@ const StudentDeliverables: React.FC = () => {
             id: v.id,
             version: v.version,
             date: new Date(v.created_at).toISOString().split('T')[0],
-            author: v.etudiants?.utilisateurs ? `${v.etudiants.utilisateurs.prenom} ${v.etudiants.utilisateurs.nom}` : 'Unknown',
+            author: v.etudiants?.utilisateurs ? `${v.etudiants.utilisateurs.prenom} ${v.etudiants.utilisateurs.nom}` : 'Inconnu',
             comment: `Version soumise`,
             size: v.taille_fichier,
             url: v.chemin_fichier || v.url_externe
           })) || []
         }));
-        setDeliverables(formattedData);
+        setLivrables(formattedData);
       }
     } catch (err) {
       console.error('Erreur:', err);
@@ -132,7 +132,7 @@ const StudentDeliverables: React.FC = () => {
 
   const handleUpload = async () => {
     if (!newTitle.trim() || !selectedFile) {
-      alert("Please enter a title and select a file.");
+      alert("Veuillez saisir un titre et sélectionner un fichier.");
       return;
     }
     try {
@@ -153,7 +153,7 @@ const StudentDeliverables: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw new Error(`Deliverables Error: ${error.message}`);
+      if (error) throw new Error(`Erreur livrable : ${error.message}`);
 
       const { error: vError } = await supabase.from('livrable_versions').insert({
         livrable_id: data.id,
@@ -170,17 +170,17 @@ const StudentDeliverables: React.FC = () => {
       setShowUploadModal(false);
       setNewTitle('');
       setSelectedFile(null);
-      fetchDeliverables();
+      fetchLivrables();
 
       await notifyProjectProfessor({
         projectId,
         senderId: studentId,
-        title: 'New Deliverable Submitted',
-        message: `Student submitted a new deliverable: "${newTitle.trim()}".`,
+        title: 'Nouveau livrable soumis',
+        message: `Un étudiant a soumis un nouveau livrable : "${newTitle.trim()}".`,
         type: 'SUBMISSION_LIVRABLE'
       });
     } catch (error: any) {
-      alert(`Error creating deliverable: \n${error.message}`);
+      alert(`Erreur lors de la création du livrable : \n${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -188,7 +188,7 @@ const StudentDeliverables: React.FC = () => {
 
   const handleAddNewVersion = async () => {
     if (!selectedDoc || !selectedFile) {
-      alert("Please select a file.");
+      alert("Veuillez sélectionner un fichier.");
       return;
     }
     try {
@@ -226,14 +226,14 @@ const StudentDeliverables: React.FC = () => {
       setShowAddVersionModal(false);
       setSelectedFile(null);
       setVersionComment('Nouvelle version');
-      fetchDeliverables();
+      fetchLivrables();
 
       const { projectId } = await getCurrentStudentContext();
       await notifyProjectProfessor({
         projectId,
         senderId: studentId,
-        title: 'New Deliverable Version',
-        message: `Student uploaded a new version of "${selectedDoc.title}".`,
+        title: 'Nouvelle version de livrable',
+        message: `Un étudiant a téléversé une nouvelle version de "${selectedDoc.title}".`,
         type: 'SUBMISSION_LIVRABLE'
       });
     } catch (error: any) {
@@ -260,7 +260,7 @@ const StudentDeliverables: React.FC = () => {
         window.open(fileUrl, '_blank');
       } else {
         supabase.storage.from('documents').createSignedUrl(fileUrl, 3600, { download: true }).then(({ data, error }) => {
-          if (error) { alert("Error accessing file: " + error.message); return; }
+          if (error) { alert("Erreur lors de l'accès au fichier : " + error.message); return; }
           if (data?.signedUrl) {
             const link = document.createElement('a');
             link.href = data.signedUrl;
@@ -273,7 +273,7 @@ const StudentDeliverables: React.FC = () => {
         });
       }
     } else {
-      alert("The file is not available in Storage.");
+      alert("Le fichier n'est pas disponible dans le stockage.");
     }
   };
 
@@ -291,8 +291,8 @@ const StudentDeliverables: React.FC = () => {
         {/* Header */}
         <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-[#1a1c1a]">Deliverables</h1>
-            <p className="mt-1 text-sm text-[#64748B]">Upload and manage your project documents and versions.</p>
+            <h1 className="text-2xl font-semibold text-[#1a1c1a]">Livrables</h1>
+            <p className="mt-1 text-sm text-[#64748B]">Déposez et gérez les documents et versions de votre projet.</p>
           </div>
           <button
             className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1E3A5F] px-6 py-3 font-bold text-white shadow-sm transition-all hover:bg-[#172D49] sm:w-auto sm:px-8 sm:py-4"
@@ -302,7 +302,7 @@ const StudentDeliverables: React.FC = () => {
           </button>
         </header>
 
-        {/* Deliverables grid with extra bottom margin */}
+        {/* Livrables grid with extra bottom margin */}
         <div className="grid grid-cols-1 gap-5 mb-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {deliverables.map((doc) => {
             const latestVersion = doc.versions[0];
@@ -342,8 +342,8 @@ const StudentDeliverables: React.FC = () => {
                 </div>
                 <button
                   className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#1E3A5F] text-white transition-all hover:bg-[#172D49]"
-                  title="Download latest version"
-                  aria-label="Download latest version"
+                  title="Télécharger la dernière version"
+                  aria-label="Télécharger la dernière version"
                   onClick={e => {
                     e.stopPropagation();
                     downloadLatestVersion(doc);
@@ -361,31 +361,31 @@ const StudentDeliverables: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     className="rounded-xl border border-transparent bg-white p-2 text-[#64748B] transition-all hover:text-[#1E3A5F]"
-                    title="View comments"
+                    title="Voir les commentaires"
                     onClick={e => { e.stopPropagation(); handleShowComments(doc); }}
                   >
                     <MessageSquare size={18} />
                   </button>
                   <button
                     className="rounded-xl border border-transparent bg-[#1E3A5F] p-2 text-white transition-all hover:bg-[#172D49]"
-                    title="View versions"
+                    title="Voir les versions"
                     onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowModal(true); }}
                   >
                     <Eye size={18} />
                   </button>
                   <button
                     className="rounded-xl border border-transparent bg-white p-2 text-[#64748B] transition-all hover:text-[#1E3A5F]"
-                    title="Upload new version"
+                    title="Upload une nouvelle version"
                     onClick={e => { e.stopPropagation(); setSelectedDoc(doc); setShowAddVersionModal(true); }}
                   >
                     <PlusCircle size={18} />
                   </button>
                   <button
                     className="rounded-xl border border-transparent bg-[#ba1a1a] p-2 text-white transition-all hover:bg-[#8c1d18]"
-                    title="Delete deliverable"
+                    title="Supprimer deliverable"
                     onClick={async e => {
                       e.stopPropagation();
-                      if (window.confirm('Are you sure you want to delete this deliverable and permanently erase its files from Storage?')) {
+                      if (window.confirm('Voulez-vous vraiment supprimer ce livrable et effacer définitivement ses fichiers du stockage ?')) {
                         try {
                           const { data: versions } = await supabase
                             .from('livrable_versions')
@@ -400,9 +400,9 @@ const StudentDeliverables: React.FC = () => {
                           }
                           await supabase.from('livrable_versions').delete().eq('livrable_id', doc.id);
                           await supabase.from('livrables').delete().eq('id', doc.id);
-                          fetchDeliverables();
+                          fetchLivrables();
                         } catch (err) {
-                          alert("Unable to delete the deliverable.");
+                          alert("Impossible de supprimer le livrable.");
                         }
                       }
                     }}
@@ -436,7 +436,7 @@ const StudentDeliverables: React.FC = () => {
                 onClick={() => setTypeDropdownOpen(!typeDropdownOpen)}
                 className="w-full px-4 py-2 border border-[#e8e6e0] rounded-xl focus:outline-none bg-white flex justify-between items-center text-[#1a1c1a] text-center"
               >
-                <span className="flex-1 font-medium">{newType === 'Report' ? 'Report / Rapport' : newType === 'Diagram' ? 'Diagram / Schéma' : 'Document PDF'}</span>
+                <span className="flex-1 font-medium">{newType === 'Report' ? 'Rapport' : newType === 'Diagram' ? 'Diagramme / Schéma' : 'Document PDF'}</span>
                 <ChevronDown size={16} className={`text-[#64748B] transition-transform ${typeDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
               
@@ -445,8 +445,8 @@ const StudentDeliverables: React.FC = () => {
                   <div className="fixed inset-0 z-[100]" onClick={() => setTypeDropdownOpen(false)} />
                   <div className="absolute top-full left-0 right-0 z-[101] mt-1 bg-white border border-[#e8e6e0] rounded-xl shadow-lg overflow-hidden py-1">
                     {[
-                      { value: 'Report', label: 'Report / Rapport' },
-                      { value: 'Diagram', label: 'Diagram / Schéma' },
+                      { value: 'Report', label: 'Rapport' },
+                      { value: 'Diagram', label: 'Diagramme / Schéma' },
                       { value: 'PDF', label: 'Document PDF' },
                     ].map(type => (
                       <div
@@ -475,7 +475,7 @@ const StudentDeliverables: React.FC = () => {
               <div className="flex flex-col items-center justify-center gap-2">
                 <Upload size={24} className="text-[#64748B]" />
                 <span className="text-sm font-medium text-[#334155]">
-                  {selectedFile ? selectedFile.name : "Click to upload a file"}
+                  {selectedFile ? selectedFile.name : "Cliquez pour déposer un fichier"}
                 </span>
                 {selectedFile && (
                   <span className="text-xs text-[#64748B]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
@@ -488,13 +488,13 @@ const StudentDeliverables: React.FC = () => {
                 onClick={handleUpload}
                 disabled={!newTitle.trim() || !selectedFile || uploading}
               >
-                {uploading ? 'Upload...' : 'Upload'}
+                {uploading ? 'Dépôt...' : 'Upload'}
               </button>
               <button
                 className="flex-1 bg-[#E5EDF5] hover:bg-[#D5E1ED] text-[#334155] font-bold py-2 rounded-xl transition-all"
                 onClick={() => { setShowUploadModal(false); setNewTitle(''); setSelectedFile(null); }}
               >
-                Cancel
+                Annuler
               </button>
             </div>
           </div>
@@ -532,8 +532,8 @@ const StudentDeliverables: React.FC = () => {
                   <div className="flex items-center justify-center mb-3" style={{ width: 48, height: 48, borderRadius: 16, background: '#EEF3F8' }}>
                     <MessageSquare size={22} color="#c5b98a" />
                   </div>
-                  <p className="font-medium text-[#64748B]" style={{ fontSize: 14, margin: 0 }}>No comments</p>
-                  <p style={{ fontSize: 12, color: '#b0a88a', marginTop: 4 }}>Professor's comments will appear here.</p>
+                  <p className="font-medium text-[#64748B]" style={{ fontSize: 14, margin: 0 }}>Aucun commentaire</p>
+                  <p style={{ fontSize: 12, color: '#b0a88a', marginTop: 4 }}>Les commentaires de l'encadrant apparaîtront ici.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -551,7 +551,7 @@ const StudentDeliverables: React.FC = () => {
                             {comment.auteur_prenom} {comment.auteur_nom}
                           </span>
                           <span className="text-[#b0a88a]" style={{ fontSize: 12 }}>
-                            🕐 {new Date(comment.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(comment.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                         <div style={{ background: '#EEF3F8', borderRadius: '0 12px 12px 12px', padding: '10px 14px' }}>
@@ -572,7 +572,7 @@ const StudentDeliverables: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
           <div className="relative my-4 flex w-full max-w-lg flex-col bg-white p-5 sm:p-8" style={{ maxHeight: 'calc(100dvh - 2rem)', borderRadius: '32px' }}>
             <div className="flex justify-between items-center mb-8 flex-shrink-0">
-              <h3 className="text-xl font-bold text-[#1a1c1a]">Version History</h3>
+              <h3 className="text-xl font-bold text-[#1a1c1a]">Historique des versions</h3>
               <button onClick={() => setShowModal(false)} className="flex items-center justify-center text-[#64748B] hover:text-[#1a1c1a] transition-colors" style={{ width: 32, height: 32, borderRadius: 10, background: '#EEF3F8' }}>
                 <X size={16} />
               </button>
@@ -618,7 +618,7 @@ const StudentDeliverables: React.FC = () => {
               <div className="flex flex-col items-center justify-center gap-2">
                 <Upload size={24} className="text-[#64748B]" />
                 <span className="text-sm font-medium text-[#334155]">
-                  {selectedFile ? selectedFile.name : "Click to upload a file"}
+                  {selectedFile ? selectedFile.name : "Cliquez pour déposer un fichier"}
                 </span>
                 {selectedFile && (
                   <span className="text-xs text-[#64748B]">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
@@ -631,13 +631,13 @@ const StudentDeliverables: React.FC = () => {
                 onClick={handleAddNewVersion}
                 disabled={!selectedFile || uploading}
               >
-                {uploading ? 'Upload...' : 'Update'}
+                {uploading ? 'Dépôt...' : 'Mettre à jour'}
               </button>
               <button
                 className="flex-1 bg-[#E5EDF5] hover:bg-[#D5E1ED] text-[#334155] font-bold py-2 rounded-xl transition-all"
                 onClick={() => { setShowAddVersionModal(false); setSelectedFile(null); }}
               >
-                Cancel
+                Annuler
               </button>
             </div>
           </div>
@@ -648,4 +648,8 @@ const StudentDeliverables: React.FC = () => {
   );
 };
 
-export default StudentDeliverables;
+export default StudentLivrables;
+
+
+
+

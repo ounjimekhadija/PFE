@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, Filter, GraduationCap, MoreVertical, ShieldCheck, User, UserPlus, Users, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
@@ -91,8 +91,8 @@ const AdminUsers: React.FC = () => {
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [createLoading, setCreateLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmId, setSupprimerConfirmId] = useState<string | null>(null);
+  const [deleteLoading, setSupprimerLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
 
@@ -278,7 +278,7 @@ const AdminUsers: React.FC = () => {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Error loading users.';
+          : 'Erreur lors du chargement des utilisateurs.';
       setError(message);
       setRows([]);
       setProjectOptions([]);
@@ -334,9 +334,9 @@ const AdminUsers: React.FC = () => {
     return session.access_token;
   };
 
-  const handleDeleteUser = async (id: string) => {
+  const handleSupprimerUser = async (id: string) => {
     try {
-      setDeleteLoading(true);
+      setSupprimerLoading(true);
       setCreateError(null);
       setCreateSuccess(null);
       const token = await getAccessToken();
@@ -345,23 +345,23 @@ const AdminUsers: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Deletion failed.');
-      setCreateSuccess('User successfully deleted.');
-      setDeleteConfirmId(null);
+      if (!response.ok) throw new Error(body?.error || 'La suppression a échoué.');
+      setCreateSuccess('Utilisateur supprimé avec succès.');
+      setSupprimerConfirmId(null);
       await fetchUsers();
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : 'Error during deletion.';
+          : 'Erreur lors de la suppression.';
       setCreateError(message);
-      setDeleteConfirmId(null);
+      setSupprimerConfirmId(null);
     } finally {
-      setDeleteLoading(false);
+      setSupprimerLoading(false);
     }
   };
 
-  const postCreateUser = async (token: string, payload: Record<string, unknown>) => {
+  const postCréerUser = async (token: string, payload: Record<string, unknown>) => {
     const response = await fetch(`${API_BASE_URL}/api/auth/admin/users`, {
       method: 'POST',
       headers: {
@@ -381,15 +381,15 @@ const AdminUsers: React.FC = () => {
       setCreateSuccess(null);
       setExportLoading(true);
 
-      if (rows.length === 0) throw new Error('No data to export.');
+      if (rows.length === 0) throw new Error('Aucune donnée à exporter.');
 
       const data = rows.map((row) => ({
         Nom: row.nom,
-        Prénom: row.prenom,
-        Rôle: row.role,
-        Téléphone: row.telephone,
+        'Prénom': row.prenom,
+        'Rôle': row.role,
+        'Téléphone': row.telephone,
         Email: row.email,
-        Filière: row.filiere,
+        'Filière': row.filiere,
         'Nom du groupe': row.groupe,
         'Nom du projet': row.projet,
       }));
@@ -401,12 +401,12 @@ const AdminUsers: React.FC = () => {
       const stamp = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `users_export_${stamp}.xlsx`);
 
-      setCreateSuccess('Excel export successful.');
+      setCreateSuccess('Export Excel réussi.');
     } catch (err: unknown) {
       const message =
         typeof err === 'object' && err !== null && 'message' in err
           ? String((err as { message?: string }).message)
-          : "Error during Excel export.";
+          : "Erreur lors de l'export Excel.";
       setCreateError(message);
     } finally {
       setExportLoading(false);
@@ -422,7 +422,7 @@ const AdminUsers: React.FC = () => {
     if (!validation.success) {
       const flattenedErrors = validation.error.flatten().fieldErrors;
       setFormErrors(flattenedErrors as Record<string, string[]>);
-      setCreateError('Please fix the errors in the form.');
+      setCreateError('Veuillez corriger les erreurs du formulaire.');
       return;
     }
     setFormErrors({});
@@ -430,7 +430,7 @@ const AdminUsers: React.FC = () => {
     try {
       setCreateLoading(true);
       const token = await getAccessToken();
-      await postCreateUser(token, {
+      await postCréerUser(token, {
         role: form.role,
         nom: form.nom,
         prenom: form.prenom,
@@ -452,7 +452,7 @@ const AdminUsers: React.FC = () => {
         projetId: form.role === 'ETUDIANT' && form.projetId ? form.projetId : null,
       });
 
-      setCreateSuccess('User successfully created.');
+      setCreateSuccess('Utilisateur créé avec succès.');
       await fetchUsers();
       setShowAddModal(false);
       resetForm();
@@ -460,9 +460,9 @@ const AdminUsers: React.FC = () => {
       // If backend returns field-specific errors (from validate middleware)
       if (err.errors) {
         setFormErrors(err.errors);
-        setCreateError('Server validation error.');
+        setCreateError('Erreur de validation côté serveur.');
       } else {
-        const message = err.error || err.message || 'Error creating user.';
+        const message = err.error || err.message || "Erreur lors de la création de l'utilisateur.";
         setCreateError(message);
       }
     } finally {
@@ -508,7 +508,7 @@ const AdminUsers: React.FC = () => {
       </header>
 
       {/* Banners */}
-      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">Loading users...</div>}
+      {loading && <div className="mb-3 shrink-0 rounded-2xl border border-transparent bg-[#EEF3F8] px-4 py-2 text-sm text-[#334155]">Chargement des utilisateurs...</div>}
       {!loading && error && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{error}</div>}
       {!showAddModal && createError && <div className="mb-3 shrink-0 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] px-4 py-2 text-sm text-[#B91C1C]">{createError}</div>}
       {!showAddModal && createSuccess && <div className="mb-3 shrink-0 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
@@ -516,10 +516,10 @@ const AdminUsers: React.FC = () => {
       {/* Stat Cards */}
       <section className="mb-4 grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: 'TOTAL USERS', value: stats.total, icon: Users, trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
+          { label: 'TOTAL UTILISATEURS', value: stats.total, icon: Users, trend: `+${Math.max(1, Math.round(stats.total * 0.08))}%` },
           { label: 'ADMINS', value: stats.admins, icon: ShieldCheck, trend: null },
           { label: 'ENCADRANTS', value: stats.encadrants, icon: GraduationCap, trend: null },
-          { label: 'ETUDIANTS', value: stats.etudiants, icon: User, trend: null },
+          { label: 'ÉTUDIANTS', value: stats.etudiants, icon: User, trend: null },
         ].map((card) => (
           <article key={card.label} className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
             <div className="mb-3 flex items-start justify-between">
@@ -542,7 +542,7 @@ const AdminUsers: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-auto">
-          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#64748B]">No users found.</p>}
+          {rows.length === 0 && !loading && <p className="py-12 text-center text-sm text-[#64748B]">Aucun utilisateur trouvé.</p>}
           {rows.length > 0 && (
             <table className="w-full min-w-[760px] border-collapse table-fixed">
               <colgroup>
@@ -555,7 +555,7 @@ const AdminUsers: React.FC = () => {
               </colgroup>
               <thead className="sticky top-0 bg-[#EEF3F8]">
                 <tr>
-                  {['NOM & PRENOM', 'ROLE', 'CONTACT', 'FILIERE / GROUPE', 'PROJET', 'ACTIONS'].map((h) => (
+                  {['NOM ET PRÉNOM', 'RÔLE', 'CONTACT', 'FILIÈRE / GROUPE', 'PROJET', 'ACTIONS'].map((h) => (
                     <th key={h} className="border-b border-transparent px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-[#64748B]">{h}</th>
                   ))}
                 </tr>
@@ -588,7 +588,7 @@ const AdminUsers: React.FC = () => {
                       <p className="truncate text-xs text-[#64748B]">{row.groupe}</p>
                     </td>
                     <td className="border-b border-transparent px-4 py-3">
-                      <p className="truncate text-sm text-[#1a1c1a]">{row.projet === 'N/A' ? '—' : row.projet}</p>
+                      <p className="truncate text-sm text-[#1a1c1a]">{row.projet === 'N/A' ? '-' : row.projet}</p>
                     </td>
                     <td className="border-b border-transparent px-4 py-3">
                       <div className="relative" ref={openMenuId === row.id ? menuRef : null}>
@@ -598,9 +598,9 @@ const AdminUsers: React.FC = () => {
                         </button>
                         {openMenuId === row.id && (
                           <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.12)]">
-                            <button type="button" onClick={() => { setDeleteConfirmId(row.id); setOpenMenuId(null); }}
+                            <button type="button" onClick={() => { setSupprimerConfirmId(row.id); setOpenMenuId(null); }}
                               className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]">
-                              Delete
+                              Supprimer
                             </button>
                           </div>
                         )}
@@ -619,7 +619,7 @@ const AdminUsers: React.FC = () => {
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}
               className="rounded-xl border border-transparent bg-white px-4 py-1.5 text-sm font-medium text-[#334155] transition hover:border-[#c4b99a] disabled:opacity-40">
-              Precedent
+              Précédent
             </button>
             <span className="text-sm text-[#64748B]">{currentPage} / {totalPages}</span>
             <button type="button" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}
@@ -639,15 +639,15 @@ const AdminUsers: React.FC = () => {
                   <UserPlus size={22} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-[#1a1c1a]">Create a user</h2>
-                  <p className="mt-1 text-sm text-[#64748B]">Add a new account and assign its role.</p>
+                  <h2 className="text-xl font-bold text-[#1a1c1a]">Créer un utilisateur</h2>
+                  <p className="mt-1 text-sm text-[#64748B]">Ajoutez un nouveau compte et attribuez-lui un rôle.</p>
                 </div>
               </div>
               <button
                 type="button"
                 className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition-colors hover:text-[#1a1c1a]"
                 onClick={() => setShowAddModal(false)}
-                aria-label="Close"
+                aria-label="Fermer"
               >
                 <X size={20} />
               </button>
@@ -659,7 +659,7 @@ const AdminUsers: React.FC = () => {
                 {createSuccess && <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm text-[#15803D]">{createSuccess}</div>}
 
                 <div className="relative" ref={roleDropdownRef}>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">Role</label>
+                  <label className="mb-1 block text-sm font-medium text-[#334155]">Rôle</label>
                   <button
                     type="button"
                     onClick={() => setShowRoleDropdown(!showRoleDropdown)}
@@ -695,7 +695,7 @@ const AdminUsers: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#334155]">Last name</label>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Nom</label>
                     <input
                       type="text"
                       className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
@@ -706,7 +706,7 @@ const AdminUsers: React.FC = () => {
                     {formErrors.nom && <p className="mt-1 text-xs text-red-500">{formErrors.nom[0]}</p>}
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-[#334155]">First name</label>
+                    <label className="mb-1 block text-sm font-medium text-[#334155]">Prénom</label>
                     <input
                       type="text"
                       className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
@@ -721,7 +721,7 @@ const AdminUsers: React.FC = () => {
                 {form.role !== 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Phone number</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Téléphone</label>
                       <input
                         type="tel"
                         className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
@@ -758,7 +758,7 @@ const AdminUsers: React.FC = () => {
                 )}
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#334155]">Password</label>
+                  <label className="mb-1 block text-sm font-medium text-[#334155]">Mot de passe</label>
                   <input
                     type="password"
                     className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
@@ -772,7 +772,7 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ADMINISTRATEUR' && (
                   <>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Organization name</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Nom de l'organisation</label>
                       <input
                         type="text"
                         className={modalInputClass} style={{ accentColor: '#1E3A5F' }}
@@ -790,7 +790,7 @@ const AdminUsers: React.FC = () => {
                 {form.role === 'ETUDIANT' && (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#334155]">Student number</label>
+                      <label className="mb-1 block text-sm font-medium text-[#334155]">Numéro étudiant</label>
                       <input
                         type="text"
                         className={modalInputClass}
@@ -820,14 +820,14 @@ const AdminUsers: React.FC = () => {
                   className="rounded-xl bg-[#EEF3F8] px-5 py-3 text-sm font-bold text-[#334155] transition-colors hover:bg-[#E2E8F0]"
                   onClick={() => setShowAddModal(false)}
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
                   className="rounded-xl bg-[#1E3A5F] px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#172D49] disabled:bg-[#BFD7EF]"
                   disabled={createLoading}
                 >
-                  {createLoading ? 'Creating...' : 'Create'}
+                  {createLoading ? 'Création...' : 'Créer'}
                 </button>
               </div>
             </form>
@@ -839,24 +839,24 @@ const AdminUsers: React.FC = () => {
       {deleteConfirmId && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
           <div className="my-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-transparent bg-white p-6 shadow-[0_20px_50px_rgba(2,6,23,0.25)]">
-            <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirm Deletion</h2>
-            <p className="mt-2 text-sm text-[#64748B]">This action is irreversible. The user will be permanently deleted.</p>
+            <h2 className="text-lg font-semibold text-[#1a1c1a]">Confirmer la suppression</h2>
+            <p className="mt-2 text-sm text-[#64748B]">Cette action est irréversible. L'utilisateur sera supprimé définitivement.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 className="rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-semibold text-[#334155]"
-                onClick={() => setDeleteConfirmId(null)}
+                onClick={() => setSupprimerConfirmId(null)}
                 disabled={deleteLoading}
               >
-                Cancel
+                Annuler
               </button>
               <button
                 type="button"
                 className="rounded-xl bg-[#DC2626] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                onClick={() => handleDeleteUser(deleteConfirmId)}
+                onClick={() => handleSupprimerUser(deleteConfirmId)}
                 disabled={deleteLoading}
               >
-                {deleteLoading ? 'Deleting...' : 'Delete'}
+                {deleteLoading ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>
@@ -868,3 +868,6 @@ const AdminUsers: React.FC = () => {
 };
 
 export default AdminUsers;
+
+
+

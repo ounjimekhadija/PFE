@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { MessageSquare, Send, X, ChevronDown, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
@@ -52,7 +52,7 @@ interface Iteration {
 }
 
 const statusConfig = {
-  PENDING:     { label: 'A faire',     color: 'bg-[#EEF3F8] text-[#64748B]',       dot: '#C8D6E5' },
+  PENDING:     { label: 'À faire',     color: 'bg-[#EEF3F8] text-[#64748B]',       dot: '#C8D6E5' },
   IN_PROGRESS: { label: 'En cours',    color: 'bg-[#DCEBFA]/20 text-[#1E3A5F]',    dot: '#DCEBFA' },
   DONE:        { label: 'Terminee',    color: 'bg-[#dcfce7] text-[#166534]',        dot: '#22c55e' },
 };
@@ -76,8 +76,8 @@ const Tasks: React.FC = () => {
   const [currentIteration, setCurrentIteration] = useState<Iteration | null>(null);
   const [validatedIterations, setValidatedIterations] = useState<Iteration[]>([]);
   const [selectedValidatedIter, setSelectedValidatedIter] = useState<Iteration | null>(null);
-  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [loadingDeliverables, setLoadingDeliverables] = useState(false);
+  const [deliverables, setLivrables] = useState<Deliverable[]>([]);
+  const [loadingLivrables, setLoadingLivrables] = useState(false);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [openIterProjectDropdown, setOpenIterProjectDropdown] = useState(false);
   const [openIterStatusDropdown, setOpenIterStatusDropdown] = useState(false);
@@ -90,13 +90,56 @@ const Tasks: React.FC = () => {
   const [iterSaving, setIterSaving] = useState(false);
   const [iterError, setIterError] = useState<string | null>(null);
 
+  const fetchProfessorProjects = async (authUserId: string) => {
+    const { data: directRows, error: directError } = await supabase
+      .from('projets')
+      .select('id, titre')
+      .eq('encadrant_id', authUserId);
+
+    if (directError) throw directError;
+    if (directRows && directRows.length > 0) return directRows;
+
+    const encadrantIds = new Set<string>();
+    const { data: encById } = await supabase
+      .from('encadrants')
+      .select('id')
+      .eq('id', authUserId)
+      .limit(1);
+
+    (encById || []).forEach((row: any) => {
+      if (row?.id) encadrantIds.add(String(row.id));
+    });
+
+    for (const column of ['utilisateur_id', 'user_id', 'auth_user_id']) {
+      const { data } = await supabase
+        .from('encadrants')
+        .select('id')
+        .eq(column, authUserId)
+        .limit(1);
+
+      (data || []).forEach((row: any) => {
+        if (row?.id) encadrantIds.add(String(row.id));
+      });
+    }
+
+    if (encadrantIds.size === 0) return [];
+
+    const { data: fallbackRows, error: fallbackError } = await supabase
+      .from('projets')
+      .select('id, titre')
+      .in('encadrant_id', Array.from(encadrantIds));
+
+    if (fallbackError) throw fallbackError;
+    return fallbackRows || [];
+  };
+
   const handleCreateIteration = async () => {
     if (!iterForm.projectId || !iterForm.dateDebut || !iterForm.dateFin) {
-      setIterError('Group, start date, and end date are required.');
+      setIterError('Le groupe, la date de début et la date de fin sont obligatoires.');
       return;
     }
     if (iterForm.dateFin < iterForm.dateDebut) {
-      setIterError('The end date must be after the start date.');
+      setIterError('La date de fin doit être après la date de début.');
       return;
     }
     setIterSaving(true);
@@ -144,8 +187,8 @@ const Tasks: React.FC = () => {
         await notifyProjectStudents({
           projectId: currentIteration.projectId,
           senderId: user.id,
-          title: 'Iteration Validated',
-          message: `Iteration ${currentIteration.numero} of "${currentIteration.projectTitle}" has been validated.`,
+          title: 'Itération validée',
+          message: `L'itération ${currentIteration.numero} du projet "${currentIteration.projectTitle}" a été validée.`,
           type: 'VALIDATION_ITERATION'
         });
       }
@@ -164,8 +207,7 @@ const Tasks: React.FC = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: projectRows } = await supabase
-          .from('projets').select('id, titre').eq('encadrant_id', user.id);
+        const projectRows = await fetchProfessorProjects(user.id);
 
         if (!projectRows || projectRows.length === 0) { setLoading(false); return; }
 
@@ -216,16 +258,16 @@ const Tasks: React.FC = () => {
         const mapped: TaskCard[] = (taskRows || []).map((t: any) => {
           const assignation = t.tache_assignations?.[0];
           const u = assignation?.etudiants?.utilisateurs;
-          const assignee = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Unassigned' : 'Unassigned';
+          const assignee = u ? `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Non assigné' : 'Non assigné';
           const projectId = projectByIter[String(t.iteration_id)] || '';
           return {
             id: String(t.id),
-            title: t.titre || 'Untitled task',
-            description: t.description || 'No description.',
+            title: t.titre || 'Tâche sans titre',
+            description: t.description || 'Aucune description.',
             assignee,
             status: toStatus(t.etat),
             priority: t.priorite,
-            dateLabel: t.created_at ? fmt(t.created_at) : '—',
+            dateLabel: t.created_at ? fmt(t.created_at) : '-',
             commentCount: Array.isArray(t.tache_commentaires) ? t.tache_commentaires.length : 0,
             projectTitle: projectTitleById[projectId] || 'Projet',
             projectId,
@@ -250,19 +292,19 @@ const Tasks: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const fetchDeliverables = async () => {
+    const fetchLivrables = async () => {
       if (!selectedValidatedIter) {
-        setDeliverables([]);
+        setLivrables([]);
         return;
       }
-      setLoadingDeliverables(true);
+      setLoadingLivrables(true);
       const { data, error } = await supabase
         .from('livrables')
         .select('id, titre, description, file_url, link_url, created_at')
         .eq('iteration_id', selectedValidatedIter.id);
       
       if (data) {
-        setDeliverables(data.map((d: any) => ({
+        setLivrables(data.map((d: any) => ({
           id: d.id,
           title: d.titre,
           description: d.description,
@@ -271,9 +313,9 @@ const Tasks: React.FC = () => {
           created_at: d.created_at,
         })));
       }
-      setLoadingDeliverables(false);
+      setLoadingLivrables(false);
     };
-    fetchDeliverables();
+    fetchLivrables();
   }, [selectedValidatedIter]);
 
   useEffect(() => {
@@ -389,7 +431,7 @@ const Tasks: React.FC = () => {
         projectId: selectedTask.projectId,
         senderId: user.id,
         title: 'New Comment on Task',
-        message: `Professor added a comment on task "${selectedTask.title}".`,
+        message: `L'encadrant a ajouté un commentaire sur task "${selectedTask.title}".`,
         type: 'COMMENT_TACHE'
       });
     }
@@ -397,9 +439,9 @@ const Tasks: React.FC = () => {
   };
 
   const columns: { key: TaskCard['status']; label: string; color: string }[] = [
-    { key: 'PENDING',     label: 'A faire',     color: '#C8D6E5' },
+    { key: 'PENDING',     label: 'À faire',     color: '#C8D6E5' },
     { key: 'IN_PROGRESS', label: 'En cours',    color: '#DCEBFA' },
-    { key: 'DONE',        label: 'Terminees',   color: '#22c55e' },
+    { key: 'DONE',        label: 'Terminées',   color: '#22c55e' },
   ];
 
   return (
@@ -409,7 +451,7 @@ const Tasks: React.FC = () => {
       <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1c1a]">Taches des groupes</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Consultez l'avancement, validez les iterations et laissez des commentaires.</p>
+          <p className="mt-1 text-sm text-[#64748B]">Consultez l'avancement, validez les itérations et laissez des commentaires.</p>
         </div>
 
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -449,14 +491,14 @@ const Tasks: React.FC = () => {
             disabled={projects.length === 0}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#172D49] disabled:opacity-40 sm:w-auto"
           >
-            <Plus size={15} /> Nouvelle iteration
+            <Plus size={15} /> Nouvelle itération
           </button>
         </div>
       </header>
 
-      {loading && <p className="text-sm text-[#64748B]">Chargement des taches...</p>}
+      {loading && <p className="text-sm text-[#64748B]">Chargement des tâches...</p>}
       {!loading && allIterations.length === 0 && (
-        <p className="text-sm text-[#64748B]">Aucune iteration trouvee. Creez une iteration pour commencer.</p>
+        <p className="text-sm text-[#64748B]">Aucune itération trouvee. Creez une itération pour commencer.</p>
       )}
 
       {/* Iterations strip */}
@@ -473,7 +515,7 @@ const Tasks: React.FC = () => {
                     onClick={handleValidateIteration}
                     className="rounded-xl bg-green-500 px-4 py-2 text-xs font-bold text-white"
                   >
-                    Valider l'iteration
+                    Valider l'itération
                   </button>
                 );
               }
@@ -483,12 +525,13 @@ const Tasks: React.FC = () => {
         </div>
       )}
 
-      {/* Kanban board — always shown when iterations exist */}
+      {/* Kanban board - always shown when iterations exist */}
       {!loading && allIterations.length > 0 && (
-        <div className="flex min-h-0 justify-center overflow-x-auto pb-1">
-          <div className="flex w-max gap-5">
+        <div className="flex min-h-0 flex-1 justify-center overflow-x-auto pb-1">
+          <div className="flex w-max items-start gap-5">
           {columns.map(col => {
             const colTasks = tasks.filter(t => t.status === col.key);
+            const shouldScroll = colTasks.length > 4;
             return (
               <div key={col.key} className="flex w-[82vw] max-w-[28rem] shrink-0 flex-col rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] sm:w-[26rem]">
                 {/* Column header */}
@@ -501,9 +544,9 @@ const Tasks: React.FC = () => {
                 </div>
 
                 {/* Tasks */}
-                <div className="flex-1 space-y-3 overflow-y-auto p-3 max-h-[400px]">
+                <div className={`space-y-3 p-3 ${shouldScroll ? 'max-h-[42rem] overflow-y-auto pr-2' : 'overflow-visible'}`}>
                   {colTasks.length === 0 && (
-                    <p className="py-6 text-center text-xs text-[#C8D6E5]">Aucune tache</p>
+                    <p className="py-6 text-center text-xs text-[#C8D6E5]">Aucune tâche</p>
                   )}
                   {colTasks.map(task => (
                     <button
@@ -550,7 +593,7 @@ const Tasks: React.FC = () => {
       )}
       {/* end kanban */}
 
-      {/* Create Iteration Modal */}
+      {/* Créer l'itération Modal */}
       {showIterModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center" onClick={() => setShowIterModal(false)}>
           <div className="my-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-transparent bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.15)] sm:p-6" onClick={e => e.stopPropagation()}>
@@ -616,7 +659,7 @@ const Tasks: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Start Date</label>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Date de début</label>
                   <input
                     type="date"
                     value={iterForm.dateDebut}
@@ -625,7 +668,7 @@ const Tasks: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">End Date</label>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Date de fin</label>
                   <input
                     type="date"
                     value={iterForm.dateFin}
@@ -636,7 +679,7 @@ const Tasks: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Status</label>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Statut</label>
                 <div className="relative" ref={iterStatusDropdownRef}>
                   <button
                     type="button"
@@ -678,7 +721,7 @@ const Tasks: React.FC = () => {
                 disabled={iterSaving}
                 className="w-full rounded-xl bg-[#1E3A5F] py-2.5 text-sm font-bold text-white transition hover:bg-[#172D49] disabled:opacity-50"
               >
-                {iterSaving ? 'Creating...' : 'Create Iteration'}
+                {iterSaving ? 'Création...' : "Créer l'itération"}
               </button>
             </div>
           </div>
@@ -713,7 +756,7 @@ const Tasks: React.FC = () => {
             {/* Details */}
             <div className="shrink-0 border-b border-[#EEF3F8] px-6 py-3">
               <div className="flex flex-col gap-2 text-xs text-[#64748B] sm:flex-row sm:items-center sm:gap-6">
-                <span><span className="font-semibold text-[#334155]">Assigned to:</span> {selectedTask.assignee}</span>
+                <span><span className="font-semibold text-[#334155]">Assignée à :</span> {selectedTask.assignee}</span>
                 <span><span className="font-semibold text-[#334155]">Date:</span> {selectedTask.dateLabel}</span>
               </div>
               <p className="mt-2 text-sm text-[#334155] leading-relaxed">{selectedTask.description}</p>
@@ -726,7 +769,7 @@ const Tasks: React.FC = () => {
               </p>
               {loadingComments && <p className="text-xs text-[#64748B]">Loading...</p>}
               {!loadingComments && comments.length === 0 && (
-                <p className="text-xs text-[#C8D6E5]">No comments yet. Be the first!</p>
+                <p className="text-xs text-[#C8D6E5]">Aucun commentaire yet. Be the first!</p>
               )}
               {comments.map(c => (
                 <div key={c.id} className="flex gap-3">
@@ -776,3 +819,13 @@ const Tasks: React.FC = () => {
 };
 
 export default Tasks;
+
+
+
+
+
+
+
+
+
+

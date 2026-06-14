@@ -1,6 +1,6 @@
-import { Project, Message, TaskColumn, Member, GroupDeliverables } from '../types';
+﻿import { Project, Message, TaskColumn, Member, GroupLivrables } from '../types';
 
-export const groupDeliverables: GroupDeliverables[] = [
+export const groupLivrables: GroupLivrables[] = [
   {
     groupName: 'Web Designing Group',
     deliverables: [
@@ -83,8 +83,8 @@ export const chatMessages: Message[] = [
   { id: 1, sender: 'Georgia Fernandez', text: 'Hi Naveen How r u there doing I\'ve called u yesterday', time: '22 NOV AT 5:33 PM', isMe: false, avatar: 'https://picsum.photos/seed/user1/40/40' },
   { id: 2, sender: 'Me', text: 'Hi, ya I\'ve seen just now, I was in a meeting then I forgot to call u', time: '22 NOV AT 5:35 PM', isMe: true, avatar: 'https://picsum.photos/seed/me/40/40' },
   { id: 3, sender: 'Georgia Fernandez', text: 'Ok, Tomorrow @RetroCoffee 8pm?', time: '22 NOV AT 5:36 PM', isMe: false, avatar: 'https://picsum.photos/seed/user1/40/40' },
-  { id: 4, sender: 'Me', text: 'Ok then, see u there ⚡️', time: '22 NOV AT 5:38 PM', isMe: true, avatar: 'https://picsum.photos/seed/me/40/40' },
-  { id: 5, sender: 'Georgia Fernandez', text: '👍 Ok then byee for now', time: '22 NOV AT 5:40 PM', isMe: false, avatar: 'https://picsum.photos/seed/user1/40/40' },
+  { id: 4, sender: 'Me', text: 'Ok then, see u there âš¡ï¸', time: '22 NOV AT 5:38 PM', isMe: true, avatar: 'https://picsum.photos/seed/me/40/40' },
+  { id: 5, sender: 'Georgia Fernandez', text: 'ðŸ‘ Ok then byee for now', time: '22 NOV AT 5:40 PM', isMe: false, avatar: 'https://picsum.photos/seed/user1/40/40' },
   { id: 6, sender: 'Me', text: 'Ok bye', time: '22 NOV AT 5:41 PM', isMe: true, avatar: 'https://picsum.photos/seed/me/40/40' },
 ];
 
@@ -95,7 +95,7 @@ export const taskColumns: TaskColumn[] = [
     tasks: [
       { id: 1, title: 'First pass at API documentation', assignee: 'poppajun & kate1993', status: 'PENDING', date: 'Nov 2, 2019', comments: 3, likes: 91 },
       { id: 2, title: 'Robert book delivery', assignee: 'shapppkin@yahoo.com', status: 'PENDING', date: 'Nov 2, 2019', comments: 0, likes: 14 },
-      { id: 3, title: 'Create backup strategy for backend', assignee: 'bubblegumboy & coldbrew', status: 'DONE', date: 'Dec 13, 2019', comments: 2, likes: 11 },
+      { id: 3, title: 'Créer backup strategy for backend', assignee: 'bubblegumboy & coldbrew', status: 'DONE', date: 'Dec 13, 2019', comments: 2, likes: 11 },
     ]
   },
   {
@@ -111,9 +111,12 @@ export const taskColumns: TaskColumn[] = [
     title: 'Other stuff',
     subtitle: 'It\'ll be sorted... someday',
     tasks: [
-      { id: 7, title: 'Update log v1.4 Onhovered card!', assignee: 'Jennyfer Onhover', status: 'DONE', date: 'Nov 9, 2019', comments: 0, likes: 1 },
+      { id: 7, title: 'Mettre à jour log v1.4 Onhovered card!', assignee: 'Jennyfer Onhover', status: 'DONE', date: 'Nov 9, 2019', comments: 0, likes: 1 },
       { id: 8, title: 'Family to-do list', assignee: 'Robert added a new task', status: 'PENDING', date: 'Nov 9, 2019', comments: 13, likes: 56 },
       { id: 9, title: 'File upload', assignee: 'shapppkin@yahoo.com', status: 'PENDING', date: 'Nov 9, 2019', comments: 1, likes: 15 },
     ]
   }
 ];
+
+
+

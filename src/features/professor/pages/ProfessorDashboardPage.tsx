@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Download, GraduationCap, Rocket, CheckCircle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
@@ -8,11 +8,11 @@ import { saveAs } from 'file-saver';
 interface ProjectBar {
   id: string;
   name: string;
-  timeProgress: number;
+  timeProgression: number;
   taskCompletion: number;
   tasks: {
     completed: number;
-    inProgress: number;
+    inProgression: number;
     late: number;
   } | null;
   recentCompleted: any[];
@@ -95,16 +95,57 @@ const Dashboard: React.FC = () => {
   const [allTasks, setAllTasks] = useState<any[]>([]);
   const [allStudents, setAllStudents] = useState<any[]>([]);
 
+  const fetchProfessorProjects = async (authUserId: string) => {
+    const { data: directRows, error: directError } = await supabase
+      .from('projets')
+      .select('id, titre, deadline_globale')
+      .eq('encadrant_id', authUserId);
+
+    if (directError) throw directError;
+    if (directRows && directRows.length > 0) return directRows;
+
+    const encadrantIds = new Set<string>();
+
+    const { data: encById } = await supabase
+      .from('encadrants')
+      .select('id')
+      .eq('id', authUserId)
+      .limit(1);
+
+    (encById || []).forEach((row: any) => {
+      if (row?.id) encadrantIds.add(String(row.id));
+    });
+
+    for (const column of ['utilisateur_id', 'user_id', 'auth_user_id']) {
+      const { data } = await supabase
+        .from('encadrants')
+        .select('id')
+        .eq(column, authUserId)
+        .limit(1);
+
+      (data || []).forEach((row: any) => {
+        if (row?.id) encadrantIds.add(String(row.id));
+      });
+    }
+
+    if (encadrantIds.size === 0) return [];
+
+    const { data: fallbackRows, error: fallbackError } = await supabase
+      .from('projets')
+      .select('id, titre, deadline_globale')
+      .in('encadrant_id', Array.from(encadrantIds));
+
+    if (fallbackError) throw fallbackError;
+    return fallbackRows || [];
+  };
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: projects } = await supabase
-          .from('projets')
-          .select('id, titre, deadline_globale')
-          .eq('encadrant_id', user.id);
+        const projects = await fetchProfessorProjects(user.id);
 
         if (!projects || projects.length === 0) { setLoading(false); return; }
 
@@ -189,27 +230,27 @@ const Dashboard: React.FC = () => {
           const taskCompletion = pTasks.length > 0 ? Math.round((pDone / pTasks.length) * 100) : 0;
 
           const projectIters = (iters || []).filter((it: any) => it.projet_id === p.id && it.date_debut);
-          let timeProgress = 0;
+          let timeProgression = 0;
           if (p.deadline_globale && projectIters.length > 0) {
             const startDates = projectIters.map((it: any) => new Date(it.date_debut).getTime()).filter((n: number) => !Number.isNaN(n));
             const startMs = Math.min(...startDates);
             const deadlineMs = new Date(p.deadline_globale).getTime();
             const nowMs = Date.now();
             if (!Number.isNaN(startMs) && !Number.isNaN(deadlineMs) && deadlineMs > startMs) {
-              timeProgress = Math.round(((nowMs - startMs) / (deadlineMs - startMs)) * 100);
-              if (timeProgress < 0) timeProgress = 0;
-              if (timeProgress > 100) timeProgress = 100;
+              timeProgression = Math.round(((nowMs - startMs) / (deadlineMs - startMs)) * 100);
+              if (timeProgression < 0) timeProgression = 0;
+              if (timeProgression > 100) timeProgression = 100;
             }
           }
 
           const currentIter = (iters || []).find((it: any) => it.projet_id === p.id && it.statut === 'EN_COURS');
-          let iterTasks: { completed: number; inProgress: number; late: number } | null = null;
+          let iterTasks: { completed: number; inProgression: number; late: number } | null = null;
           if (currentIter) {
             const currentIterTasks = tasks.filter((t: any) => t.iteration_id === currentIter.id);
             const deadline = new Date(currentIter.date_fin);
             iterTasks = {
               completed: currentIterTasks.filter((t: any) => t.etat === 'TERMINE').length,
-              inProgress: currentIterTasks.filter((t: any) => t.etat === 'EN_COURS' || t.etat === 'A_FAIRE').length,
+              inProgression: currentIterTasks.filter((t: any) => t.etat === 'EN_COURS' || t.etat === 'A_FAIRE').length,
               late: currentIterTasks.filter((t: any) => t.etat !== 'TERMINE' && new Date() > deadline).length,
             };
           }
@@ -224,7 +265,7 @@ const Dashboard: React.FC = () => {
           return {
             id: p.id,
             name: p.titre || 'Project',
-            timeProgress,
+            timeProgression,
             taskCompletion,
             tasks: iterTasks,
             recentCompleted: pRecentDone,
@@ -261,7 +302,7 @@ const Dashboard: React.FC = () => {
       // Title
       summarySheet.mergeCells('A1:B2');
       const titleCell = summarySheet.getCell('A1');
-      titleCell.value = 'DASHBOARD REPORT';
+      titleCell.value = 'TABLEAU DE BORD REPORT';
       titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
       titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -269,7 +310,7 @@ const Dashboard: React.FC = () => {
       // Generation Date
       summarySheet.mergeCells('A3:B3');
       const dateCell = summarySheet.getCell('A3');
-      dateCell.value = `Generated on ${new Date().toLocaleDateString()}`;
+      dateCell.value = `Généré le ${new Date().toLocaleDateString()}`;
       dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF7F7664' } };
       dateCell.alignment = { vertical: 'middle', horizontal: 'right' };
       
@@ -294,10 +335,10 @@ const Dashboard: React.FC = () => {
 
       // Summary Data
       const summaryData = [
-        ['Total Students', totalStudents],
-        ['Active Projects', activeProjects],
-        ['Completion Rate', `${completionRate}%`],
-        ['Avg. Delay', avgDelay > 0 ? `${avgDelay} days late` : 'On time'],
+        ['Total étudiants', totalStudents],
+        ['Projets actifs', activeProjects],
+        ["Taux d'achèvement", `${completionRate}%`],
+        ['Retard moy.', avgDelay > 0 ? `${avgDelay} jours de retard` : 'À temps'],
       ];
 
       summaryData.forEach((row, index) => {
@@ -323,19 +364,19 @@ const Dashboard: React.FC = () => {
         { width: 25 },
       ];
 
-      // --- SHEET 2: PROJECTS ---
+      // --- SHEET 2: PROJETS ---
       const projectSheet = workbook.addWorksheet('Projects', { views: [{ showGridLines: false }] });
       
       projectSheet.mergeCells('A1:F2');
       const pTitleCell = projectSheet.getCell('A1');
-      pTitleCell.value = 'PROJECTS PROGRESS';
+      pTitleCell.value = 'PROJETS PROGRESS';
       pTitleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
       pTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1C1A' } };
       pTitleCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
       projectSheet.addRow([]);
 
-      const projectHeader = projectSheet.addRow(['Project Name', 'Task Completion (%)', 'Time Progress (%)', 'Done', 'In Progress', 'Late']);
+      const projectHeader = projectSheet.addRow(['Project Name', 'Task Completion (%)', 'Time Progression (%)', 'Done', 'In Progress', 'Late']);
       projectHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
       projectHeader.height = 25;
       projectHeader.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
@@ -355,9 +396,9 @@ const Dashboard: React.FC = () => {
         const row = projectSheet.addRow([
           p.name,
           p.taskCompletion / 100,
-          p.timeProgress / 100,
+          p.timeProgression / 100,
           p.tasks?.completed ?? '-',
-          p.tasks?.inProgress ?? '-',
+          p.tasks?.inProgression ?? '-',
           p.tasks?.late ?? '-',
         ]);
         row.height = 20;
@@ -390,7 +431,7 @@ const Dashboard: React.FC = () => {
       ];
 
       // --- SHEET 3: STUDENTS ---
-      const studentSheet = workbook.addWorksheet('Students List', { views: [{ showGridLines: false }] });
+      const studentSheet = workbook.addWorksheet('Étudiants List', { views: [{ showGridLines: false }] });
       
       studentSheet.mergeCells('A1:E2');
       const stTitleCell = studentSheet.getCell('A1');
@@ -449,8 +490,8 @@ const Dashboard: React.FC = () => {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       saveAs(blob, `Professor_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (err) {
-      console.error('Export failed:', err);
-      alert('Failed to generate the Excel report.');
+      console.error("Échec de l'export :", err);
+      alert('Impossible de générer le rapport Excel.');
     }
   };
 
@@ -459,7 +500,7 @@ const Dashboard: React.FC = () => {
   const dashOffset = circ - (completionRate / 100) * circ;
 
   const stats = [
-    { label: 'ETUDIANTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: <GraduationCap size={20} /> },
+    { label: 'ÉTUDIANTS', value: totalStudents, badge: `${totalStudents > 0 ? '+' : ''}${totalStudents}`, badgeGreen: true, icon: <GraduationCap size={20} /> },
     { label: 'PROJETS ACTIFS', value: activeProjects, badge: 'Stable', badgeGreen: false, icon: <Rocket size={20} /> },
     { label: 'TAUX COMPLETE', value: `${completionRate}%`, badge: `${completionRate}%`, badgeGreen: true, icon: <CheckCircle size={20} /> },
     { label: 'RETARD MOYEN', value: `${avgDelay} j`, badge: avgDelay > 0 ? `+${avgDelay}j` : 'A temps', badgeGreen: avgDelay === 0, icon: <Clock size={20} /> },
@@ -470,7 +511,7 @@ const Dashboard: React.FC = () => {
       <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#1a1c1a]">Tableau de bord professeur</h1>
-          <p className="mt-1 text-sm text-[#64748B]">Suivez les projets, les taches et l'activite de vos groupes.</p>
+          <p className="mt-1 text-sm text-[#64748B]">Suivez les projets, les tâches et l'activité de vos groupes.</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={exportReport} className="flex h-11 items-center gap-2 rounded-xl bg-[#1E3A5F] px-4 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(30,58,95,0.20)] transition hover:bg-[#172D49]">
@@ -489,7 +530,7 @@ const Dashboard: React.FC = () => {
               <span className={`text-[11px] font-bold ${s.badgeGreen ? 'text-green-500' : 'text-[#1E3A5F]'}`}>{s.badge}</span>
             </div>
             <p className="text-[9px] font-bold uppercase tracking-widest text-[#64748B]">{s.label}</p>
-            <p className="mt-0.5 text-2xl font-bold text-[#1a1c1a]">{loading ? '—' : s.value}</p>
+            <p className="mt-0.5 text-2xl font-bold text-[#1a1c1a]">{loading ? '-' : s.value}</p>
           </div>
         ))}
       </div>
@@ -499,8 +540,8 @@ const Dashboard: React.FC = () => {
           <div className="mb-2 flex shrink-0 items-center gap-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#334155]">Progression des projets</p>
             <div className="ml-auto flex items-center gap-3 flex-wrap">
-              <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#1E3A5F]" />≥75% done</span>
-              <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#DCEBFA]" />40–74%</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#1E3A5F]" />≥75 % terminé</span>
+              <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#DCEBFA]" />40-74 %</span>
               <span className="flex items-center gap-1 text-[9px] text-[#64748B]"><span className="h-2 w-2 rounded-full bg-[#8FB4D9]" />&lt;40%</span>
             </div>
           </div>
@@ -515,7 +556,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex h-full items-end justify-center gap-10 border-r border-[#EEF3F8] pb-2 pr-8">
                     {projectBars.map((p, i) => {
                       const taskPct = Math.max(p.taskCompletion, 0);
-                      const timePct = Math.max(p.timeProgress, 0);
+                      const timePct = Math.max(p.timeProgression, 0);
                       const barColors = taskPct >= 75
                         ? { from: '#1E3A5F', to: '#172D49', glow: 'rgba(30,58,95,0.26)' }
                         : taskPct >= 40
@@ -552,7 +593,7 @@ const Dashboard: React.FC = () => {
                             <p className="mb-2 border-b border-[#EEF3F8] pb-1 text-[10px] font-bold text-[#1a1c1a]">{p.name}</p>
                             <div className="space-y-1.5">
                               <div className="flex justify-between text-[9px]"><span className="text-[#64748B]">Tasks Done</span><span className="font-bold text-green-600">{p.tasks?.completed || 0}</span></div>
-                              <div className="flex justify-between text-[9px]"><span className="text-[#64748B]">In Progress</span><span className="font-bold text-[#DCEBFA]">{p.tasks?.inProgress || 0}</span></div>
+                              <div className="flex justify-between text-[9px]"><span className="text-[#64748B]">In Progress</span><span className="font-bold text-[#DCEBFA]">{p.tasks?.inProgression || 0}</span></div>
                               {p.tasks && p.tasks.late > 0 && (<div className="flex justify-between text-[9px]"><span className="text-[#64748B]">Late Tasks</span><span className="font-bold text-red-500">{p.tasks.late}</span></div>)}
                               <div className="mt-2 flex justify-between border-t border-[#EEF3F8] pt-1 text-[9px]"><span className="text-[#64748B]">Time Spent</span><span className="font-bold text-[#1a1c1a]">{timePct}%</span></div>
                             </div>
@@ -565,12 +606,12 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="flex w-72 flex-col min-w-0">
-                  <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Dernieres taches terminees</p>
+                  <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Dernieres tâches terminees</p>
                   <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                     {allRecentCompleted.length === 0 ? (
                       <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                         <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#EEF3F8]"><span className="text-lg">🎉</span></div>
-                        <p className="text-xs font-medium text-[#64748B]">Aucune tache terminee.</p>
+                        <p className="text-xs font-medium text-[#64748B]">Aucune tâche terminee.</p>
                       </div>
                     ) : (
                       allRecentCompleted.map((task, idx) => (
@@ -597,12 +638,12 @@ const Dashboard: React.FC = () => {
 
         <div className="flex min-h-0 flex-col gap-3">
           <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#DCEBFA] bg-white px-5 py-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
-            <p className="mb-4 self-start text-[10px] font-bold uppercase tracking-widest text-[#334155]">Historique des iterations</p>
+            <p className="mb-4 self-start text-[10px] font-bold uppercase tracking-widest text-[#334155]">Historique des itérations</p>
             <div className="flex-1 overflow-y-auto max-h-[240px] pr-2 custom-scrollbar space-y-3">
               {loading ? (
                 <p className="text-xs text-[#64748B]">Loading...</p>
               ) : iterationsHistory.length === 0 ? (
-                <p className="text-xs text-[#64748B]">No iteration.</p>
+                <p className="text-xs text-[#64748B]">No itération.</p>
               ) : (
                 iterationsHistory.map((it) => (
                   <div key={it.id} className="flex flex-col border-b border-[#EEF3F8] pb-2 last:border-0 last:pb-0">
@@ -614,7 +655,7 @@ const Dashboard: React.FC = () => {
                         it.statut === 'EN_COURS' ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {it.statut === 'VALIDE' ? 'Terminee' : it.statut === 'EN_COURS' ? 'En cours' : 'A faire'}
+                        {it.statut === 'VALIDE' ? 'Terminee' : it.statut === 'EN_COURS' ? 'En cours' : 'À faire'}
                       </span>
                     </div>
                   </div>
@@ -663,3 +704,11 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+
+
+
+
+
+
+

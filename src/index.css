@@ -81,6 +81,11 @@ html.dark [class*="text-[#1E3A5F]"] { color: #8FB4D9 !important; }
 html.dark [class*="border-transparent"] { border-color: rgba(255,255,255,0.07) !important; }
 html.dark [class*="border-[#C8D6E5]"] { border-color: rgba(143,180,217,0.18) !important; }
 
+/* Keep component spacing but remove visible border colors across the app. */
+[class*="border"] {
+  border-color: transparent !important;
+}
+
 /* Shadows */
 html.dark [class*="shadow-[0_4px_16px_rgba(15"] {
   box-shadow: 0 4px 16px rgba(0,0,0,0.45) !important;

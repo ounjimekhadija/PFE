@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Bell,
   CheckSquare,
@@ -27,6 +27,7 @@ interface Notification {
   message: string;
   created_at: string;
   is_read: boolean;
+  sender_id?: string;
 }
 
 interface AdminProfile {
@@ -57,7 +58,7 @@ const resolveAvatar = (value: string | null | undefined, name: string) => {
 
 const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(true);
   const [hoverOpen, setHoverOpen] = React.useState(false);
   const [showNotif, setShowNotif] = React.useState(false);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
@@ -72,9 +73,14 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const fetchNotifications = React.useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
+      .eq('user_id', user.id)
+      .neq('sender_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -104,10 +110,12 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
       }
 
       await fetchNotifications();
+      if (!user) return;
+
       channel = supabase
-        .channel('admin_notifications_changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, fetchNotifications)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, fetchNotifications)
+        .channel(`admin_notifications_${user.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchNotifications)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchNotifications)
         .subscribe();
     };
 
@@ -120,9 +128,13 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
 
   const markAllRead = async () => {
     if (unreadCount === 0) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
+      .eq('user_id', user.id)
       .eq('is_read', false);
     if (!error) setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
@@ -140,10 +152,18 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
       className={`flex h-dvh shrink-0 flex-col border-r border-[#DCEBFA] bg-white py-4 shadow-[2px_0_18px_rgba(15,23,42,0.04)] transition-[width,padding] duration-300 ${
         compact ? 'w-20 px-3' : 'w-64 px-4'
       }`}
-      onMouseEnter={() => collapsed && setHoverOpen(true)}
+      onMouseEnter={(event) => {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const isInsideSidebar =
+          event.clientX >= bounds.left &&
+          event.clientX <= bounds.right &&
+          event.clientY >= bounds.top &&
+          event.clientY <= bounds.bottom;
+
+        if (collapsed && isInsideSidebar) setHoverOpen(true);
+      }}
       onMouseLeave={() => {
         setHoverOpen(false);
-        setShowNotif(false);
       }}
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
@@ -195,27 +215,27 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
         })}
       </nav>
 
-      <div className="mt-4 space-y-3">
-        <div className="relative">
+      <div className="mt-4 flex flex-col gap-3">
+        <div
+          className="fixed bottom-6 right-6 z-50"
+          onMouseEnter={(event) => event.stopPropagation()}
+        >
           <button
             type="button"
-            className={`relative flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[#172D49] transition hover:bg-[#EEF3F8] ${
-              compact ? 'justify-center' : 'justify-start'
-            }`}
+            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[#DCEBFA] bg-white text-[#172D49] shadow-[0_10px_28px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC]"
             aria-label="Notifications"
             onClick={() => setShowNotif((value) => !value)}
           >
             <Bell size={18} />
-            {!compact && <span className="truncate text-sm font-bold">Notifications</span>}
             {unreadCount > 0 && (
-              <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1D71F2] px-1 text-[9px] font-bold text-white ring-2 ring-white">
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1D71F2] px-1 text-[9px] font-bold text-white ring-2 ring-white">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {showNotif && (
-            <div className="absolute bottom-0 left-[calc(100%+0.75rem)] z-50 w-[calc(100vw-6rem)] max-w-96 rounded-2xl border border-[#DCEBFA] bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.16)]">
+            <div className="absolute bottom-full right-0 z-50 mb-3 w-[calc(100vw-2rem)] max-w-96 rounded-2xl border border-[#DCEBFA] bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.16)]">
               <div className="mb-3 flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold text-[#1a1c1a]">Notifications</h3>
                 {unreadCount > 0 && (
@@ -315,3 +335,5 @@ const AdminTopNav: React.FC<AdminTopNavProps> = ({ onLogout }) => {
 };
 
 export default AdminTopNav;
+
+

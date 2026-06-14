@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, CheckCircle, Clock3, FolderPlus, MoreVertical, Plus, Search, Trash2, TrendingUp, Users, X } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -49,7 +49,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || '';
 
 const toText = (v: string | null | undefined, fallback = 'N/A') => (v?.trim() ? v.trim() : fallback);
 
-const getSupervisorInitials = (name: string): string => {
+const getEncadrantInitials = (name: string): string => {
   if (!name || name === 'N/A') return '?';
   const parts = name.trim().split(' ').filter(Boolean);
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
@@ -80,10 +80,10 @@ const AdminProjects: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmId, setSupprimerConfirmId] = useState<string | null>(null);
+  const [deleteLoading, setSupprimerLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
+  const [showEncadrantDropdown, setShowEncadrantDropdown] = useState(false);
   const [search, setSearch] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -152,7 +152,7 @@ const AdminProjects: React.FC = () => {
         tachesByIteration.set(t.iteration_id, cur);
       });
 
-      const calcProgress = (projectId: string): number => {
+      const calcProgression = (projectId: string): number => {
         const iterIds = itersByProject.get(projectId) || [];
         let total = 0;
         let done = 0;
@@ -177,7 +177,7 @@ const AdminProjects: React.FC = () => {
           supervisor: supervisorName,
           group: toText(p.nom_groupe),
           deadline: p.deadline_globale || '',
-          progress: calcProgress(p.id),
+          progress: calcProgression(p.id),
         };
       });
 
@@ -243,9 +243,9 @@ const AdminProjects: React.FC = () => {
     }
   };
 
-  const handleDeleteProject = async (id: string) => {
+  const handleSupprimerProject = async (id: string) => {
     try {
-      setDeleteLoading(true);
+      setSupprimerLoading(true);
       setFormError(null);
       const token = await getAccessToken();
       const response = await fetch(`${API_BASE_URL}/api/auth/admin/projects/${id}`, {
@@ -255,7 +255,7 @@ const AdminProjects: React.FC = () => {
       const body = await response.json();
       if (!response.ok) throw new Error(body?.error || 'La suppression a échoué.');
       setFormSuccess('Projet supprimé avec succès.');
-      setDeleteConfirmId(null);
+      setSupprimerConfirmId(null);
       await fetchData();
     } catch (err: unknown) {
       const message =
@@ -263,9 +263,9 @@ const AdminProjects: React.FC = () => {
           ? String((err as { message?: string }).message)
           : 'Erreur lors de la suppression du projet.';
       setFormError(message);
-      setDeleteConfirmId(null);
+      setSupprimerConfirmId(null);
     } finally {
-      setDeleteLoading(false);
+      setSupprimerLoading(false);
     }
   };
 
@@ -284,10 +284,10 @@ const AdminProjects: React.FC = () => {
       const diff = new Date(p.deadline).getTime() - Date.now();
       return diff > 0 && diff < 30 * 24 * 60 * 60 * 1000;
     }).length;
-    const avgProgress = projects.length > 0
+    const avgProgression = projects.length > 0
       ? Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)
       : 0;
-    return { completed, nearDeadline, avgProgress };
+    return { completed, nearDeadline, avgProgression };
   }, [projects]);
 
    const inputClass = 'w-full rounded-xl border border-[#D8E2EC] bg-[#F8FAFC] px-4 py-3 text-sm text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#94A3B8] hover:border-[#BFD7EF] focus:border-[#1E3A5F] focus:bg-white focus:ring-4 focus:ring-[#DCEBFA] [&>option]:bg-white [&>option]:text-[#1a1c1a]';
@@ -348,7 +348,7 @@ const AdminProjects: React.FC = () => {
             <span className="rounded-full bg-[#EEF3F8] px-2 py-0.5 text-xs font-semibold text-[#1E3A5F]">80%</span>
           </div>
           <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{stats.completed}</p>
-          <p className="mt-1 text-xs text-[#64748B]">≥ 80% progress</p>
+          <p className="mt-1 text-xs text-[#64748B]">≥ 80% de progression</p>
         </article>
         <article className="rounded-2xl border border-[#DCEBFA] bg-white p-4 shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
           <div className="mb-3 flex items-start justify-between gap-3">
@@ -371,9 +371,9 @@ const AdminProjects: React.FC = () => {
               </div>
               <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-[#64748B]">Progression moy.</p>
             </div>
-            <span className="rounded-full bg-[#DCEBFA] px-2 py-0.5 text-xs font-semibold text-[#1E3A5F]">{stats.avgProgress}%</span>
+            <span className="rounded-full bg-[#DCEBFA] px-2 py-0.5 text-xs font-semibold text-[#1E3A5F]">{stats.avgProgression}%</span>
           </div>
-          <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{stats.avgProgress}%</p>
+          <p className="mt-1 text-[1.6rem] font-bold leading-none text-[#1a1c1a]">{stats.avgProgression}%</p>
         </article>
       </section>
 
@@ -415,7 +415,7 @@ const AdminProjects: React.FC = () => {
                     <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-transparent bg-white shadow-[0_4px_16px_rgba(15,23,42,0.12)]">
                       <button
                         type="button"
-                        onClick={() => { setDeleteConfirmId(project.id); setOpenMenuId(null); }}
+                        onClick={() => { setSupprimerConfirmId(project.id); setOpenMenuId(null); }}
                         className="w-full px-4 py-2.5 text-left text-sm text-[#ba1a1a] transition hover:bg-[#ffdad6]"
                       >
                         Supprimer
@@ -428,7 +428,7 @@ const AdminProjects: React.FC = () => {
               {/* Title */}
               <h3 className="mb-3 text-base font-bold leading-snug text-[#1E3A5F]">{project.title}</h3>
 
-              {/* Supervisor */}
+              {/* Encadrant */}
               <div className="mb-2">
                 <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-[#64748B]">Encadrant</p>
                 <div className="flex items-center gap-2">
@@ -436,7 +436,7 @@ const AdminProjects: React.FC = () => {
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
                     style={{ backgroundColor: getColorFromString(project.supervisor) }}
                   >
-                    {getSupervisorInitials(project.supervisor)}
+                    {getEncadrantInitials(project.supervisor)}
                   </div>
                   <span className="truncate text-sm font-semibold text-[#1a1c1a]">{project.supervisor}</span>
                 </div>
@@ -451,10 +451,10 @@ const AdminProjects: React.FC = () => {
                 </div>
               </div>
 
-              {/* Progress */}
+              {/* Progression */}
               <div className="mb-3">
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-xs font-medium text-[#64748B]">Progress</span>
+                  <span className="text-xs font-medium text-[#64748B]">Progression</span>
                   <span className="text-xs font-bold text-[#1a1c1a]">{project.progress}%</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-[#e8e3da]">
@@ -497,7 +497,7 @@ const AdminProjects: React.FC = () => {
         </div>
       </div>
 
-      {/* Create Modal */}
+      {/* Créer Modal */}
       {showModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#0F172A]/35 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300">
           <div className="relative my-8 w-full max-w-lg overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] animate-in zoom-in-95 duration-300">
@@ -516,7 +516,7 @@ const AdminProjects: React.FC = () => {
                 type="button"
                 className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition-colors hover:text-[#1a1c1a]"
                 onClick={() => setShowModal(false)}
-                aria-label="Close"
+                aria-label="Fermer"
               >
                 <X size={20} />
               </button>
@@ -560,28 +560,28 @@ const AdminProjects: React.FC = () => {
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setShowSupervisorDropdown(!showSupervisorDropdown)}
+                    onClick={() => setShowEncadrantDropdown(!showEncadrantDropdown)}
                     className={inputClass + ' flex items-center justify-between text-left'}
                   >
                     <span className={!form.encadrantId ? 'text-[#64748B]' : 'text-[#1a1c1a]'}>
                       {form.encadrantId 
                         ? encadrantOptions.find(e => e.id === form.encadrantId)?.displayName 
-                        : '-- None --'}
+                        : '-- Aucun --'}
                     </span>
-                    <MoreVertical size={14} className={`rotate-90 text-[#64748B] transition-transform ${showSupervisorDropdown ? 'rotate-[270deg]' : ''}`} />
+                    <MoreVertical size={14} className={`rotate-90 text-[#64748B] transition-transform ${showEncadrantDropdown ? 'rotate-[270deg]' : ''}`} />
                   </button>
 
-                  {showSupervisorDropdown && (
+                  {showEncadrantDropdown && (
                     <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-[#D8E2EC] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-all animate-in fade-in slide-in-from-top-1">
                       <button
                         type="button"
                         onClick={() => {
                           setForm(f => ({ ...f, encadrantId: '' }));
-                          setShowSupervisorDropdown(false);
+                          setShowEncadrantDropdown(false);
                         }}
                         className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${!form.encadrantId ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#1E3A5F]/5'}`}
                       >
-                        -- None --
+                        -- Aucun --
                       </button>
                       {encadrantOptions.map((enc) => (
                         <button
@@ -589,7 +589,7 @@ const AdminProjects: React.FC = () => {
                           type="button"
                           onClick={() => {
                             setForm(f => ({ ...f, encadrantId: enc.id }));
-                            setShowSupervisorDropdown(false);
+                            setShowEncadrantDropdown(false);
                           }}
                           className={`flex w-full items-center px-4 py-2.5 text-sm transition-colors ${form.encadrantId === enc.id ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#1E3A5F]/5'}`}
                         >
@@ -635,7 +635,7 @@ const AdminProjects: React.FC = () => {
         document.body
       )}
 
-      {/* Delete Confirm Modal */}
+      {/* Supprimer Confirm Modal */}
       {deleteConfirmId && createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
           <div className="my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col gap-4 overflow-y-auto rounded-2xl border border-transparent bg-white p-6 shadow-xl sm:p-8">
@@ -643,8 +643,8 @@ const AdminProjects: React.FC = () => {
             <p className="text-sm text-[#64748B]">Cette action supprimera le projet, ses itérations, ses tâches et détachera ses étudiants. Elle est irréversible.</p>
             {formError && <div className="rounded-xl border border-[#fecaca] bg-[#ffdad6] px-3 py-2 text-sm text-[#ba1a1a]">{formError}</div>}
             <div className="mt-2 flex justify-end gap-3">
-              <button type="button" className="rounded-xl bg-[#E5EDF5] px-5 py-2 text-sm font-semibold text-[#334155] hover:bg-[#D5E1ED]" onClick={() => setDeleteConfirmId(null)} disabled={deleteLoading}>Annuler</button>
-              <button type="button" className="rounded-xl bg-[#ba1a1a] px-5 py-2 text-sm font-bold text-white shadow hover:bg-[#93000a] disabled:opacity-50" onClick={() => handleDeleteProject(deleteConfirmId)} disabled={deleteLoading}>
+              <button type="button" className="rounded-xl bg-[#E5EDF5] px-5 py-2 text-sm font-semibold text-[#334155] hover:bg-[#D5E1ED]" onClick={() => setSupprimerConfirmId(null)} disabled={deleteLoading}>Annuler</button>
+              <button type="button" className="rounded-xl bg-[#ba1a1a] px-5 py-2 text-sm font-bold text-white shadow hover:bg-[#93000a] disabled:opacity-50" onClick={() => handleSupprimerProject(deleteConfirmId)} disabled={deleteLoading}>
                 {deleteLoading ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
@@ -657,3 +657,10 @@ const AdminProjects: React.FC = () => {
 };
 
 export default AdminProjects;
+
+
+
+
+
+
+

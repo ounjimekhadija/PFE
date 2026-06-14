@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, CheckCircle2, Mail, Send, X } from 'lucide-react';
 
@@ -12,14 +12,14 @@ interface EmailModalProps {
 const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser }) => {
   const [subject, setSubject] = useState('Objet de votre email');
   const [body, setBody] = useState('');
-  const [status, setStatus] = useState<'sending' | 'sent' | 'failed' | null>(null);
+  const [status, setStatut] = useState<'sending' | 'sent' | 'failed' | null>(null);
 
   const handleSendEmail = async () => {
     if (!body.trim()) {
       alert("Veuillez saisir un message.");
       return;
     }
-    setStatus('sending');
+    setStatut('sending');
 
     try {
       const response = await fetch('/api/mail/send', {
@@ -39,18 +39,18 @@ const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser
         throw new Error("L'envoi de l'email a échoué.");
       }
 
-      setStatus('sent');
+      setStatut('sent');
       setTimeout(() => {
         onClose();
-        setStatus(null);
+        setStatut(null);
         setBody('');
       }, 2000);
     } catch (error: any) {
-      setStatus('failed');
+      setStatut('failed');
       console.error('Full error object:', error);
       setTimeout(() => {
         onClose();
-        setStatus(null);
+        setStatut(null);
       }, 3000);
     }
   };
@@ -156,3 +156,6 @@ const EmailModal: React.FC<EmailModalProps> = ({ isOpen, onClose, user, fromUser
 };
 
 export default EmailModal;
+
+
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertCircle, ChevronDown, Flag, User, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -41,14 +41,14 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const priorityRef = useRef<HTMLDivElement>(null);
-  const assigneeRef = useRef<HTMLDivElement>(null);
+  const assignéeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (priorityRef.current && !priorityRef.current.contains(event.target as Node)) {
         setShowPriorityDropdown(false);
       }
-      if (assigneeRef.current && !assigneeRef.current.contains(event.target as Node)) {
+      if (assignéeRef.current && !assignéeRef.current.contains(event.target as Node)) {
         setShowAssigneeDropdown(false);
       }
     };
@@ -70,7 +70,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
     setErrors(null);
 
     if (!currentIterationId) {
-      alert("Impossible de creer la tache : aucune iteration active ou a faire n'est associee a votre projet.");
+      alert("Impossible de créer la tâche : aucune itération active ou a faire n'est associee a votre projet.");
       setLoading(false);
       return;
     }
@@ -96,7 +96,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
       if (error) {
         console.error('Creation error', error);
-        alert('Erreur lors de la creation de la tache : ' + error.message);
+        alert('Erreur lors de la creation de la tâche : ' + error.message);
         setLoading(false);
         return;
       }
@@ -147,7 +147,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       >
         <div className="mb-6 flex items-start justify-between gap-5">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-[#1a1c1a]">Creer une tache</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-[#1a1c1a]">Creer une tâche</h2>
             <p className="mt-1 text-sm font-medium text-[#64748B]">Ajoutez les details pour votre equipe.</p>
           </div>
           <button
@@ -162,7 +162,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
         <div className="space-y-5">
           <div className="space-y-2">
-            <label className="ml-1 text-sm font-extrabold text-[#334155]">Titre de la tache</label>
+            <label className="ml-1 text-sm font-extrabold text-[#334155]">Titre de la tâche</label>
             <div className="relative">
               <input
                 type="text"
@@ -232,7 +232,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2" ref={assigneeRef}>
+            <div className="space-y-2" ref={assignéeRef}>
               <label className="ml-1 text-sm font-extrabold text-[#334155]">Assigner a</label>
               <div className="relative">
                 <button
@@ -259,7 +259,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                       }}
                       className="w-full rounded-lg px-4 py-3 text-left text-sm font-bold text-[#64748B] transition-colors hover:bg-[#EEF3F8]"
                     >
-                      Non assignee
+                      Non assignée
                     </button>
                     {assigneeOptions.map((option) => (
                       <button
@@ -301,7 +301,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             className="flex h-12 items-center gap-2 rounded-xl bg-[#1a1c1a] px-6 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(26,28,26,0.16)] transition-all hover:bg-[#334155] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading && <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
-            <span>Creer la tache</span>
+            <span>Creer la tâche</span>
           </button>
         </div>
       </div>
@@ -311,3 +311,9 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 };
 
 export default TaskCreateModal;
+
+
+
+
+
+

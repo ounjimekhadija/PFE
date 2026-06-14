@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Home, User, MessageSquare, CheckSquare, Calendar, Settings, Apple, Users, Layers, LogOut } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Page, UserRole } from '../types';
@@ -15,32 +15,32 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
   const isAdmin = role === 'admin';
 
   const professorItems = [
-    { id: 'dashboard', icon: Home, label: 'HOME' },
-    { id: 'members', icon: User, label: 'PROFILE' },
-    { id: 'chat', icon: MessageSquare, label: 'INBOX' },
-    { id: 'tasks', icon: CheckSquare, label: 'TASKS' },
-    { id: 'deliverables', icon: Calendar, label: 'DELIVERABLES' },
-    { id: 'settings', icon: Settings, label: 'SETTINGS' },
-    { id: 'logout', icon: LogOut, label: 'LOG OUT' },
+    { id: 'dashboard', icon: Home, label: 'ACCUEIL' },
+    { id: 'members', icon: User, label: 'PROFIL' },
+    { id: 'chat', icon: MessageSquare, label: 'MESSAGERIE' },
+    { id: 'tasks', icon: CheckSquare, label: 'TÂCHES' },
+    { id: 'deliverables', icon: Calendar, label: 'LIVRABLES' },
+    { id: 'settings', icon: Settings, label: 'PARAMÈTRES' },
+    { id: 'logout', icon: LogOut, label: 'DÉCONNEXION' },
   ];
 
   const studentItems = [
-    { id: 'dashboard', icon: Home, label: 'DASHBOARD' },
-    { id: 'tasks', icon: CheckSquare, label: 'TASKS' },
-    { id: 'groups', icon: Users, label: 'GROUPS' },
-    { id: 'deliverables', icon: Calendar, label: 'DELIVERABLES' },
-    { id: 'chat', icon: MessageSquare, label: 'CHAT' },
-    { id: 'settings', icon: Settings, label: 'SETTINGS' },
-    { id: 'logout', icon: LogOut, label: 'LOG OUT' },
+    { id: 'dashboard', icon: Home, label: 'TABLEAU DE BORD' },
+    { id: 'tasks', icon: CheckSquare, label: 'TÂCHES' },
+    { id: 'groups', icon: Users, label: 'GROUPES' },
+    { id: 'deliverables', icon: Calendar, label: 'LIVRABLES' },
+    { id: 'chat', icon: MessageSquare, label: 'MESSAGES' },
+    { id: 'settings', icon: Settings, label: 'PARAMÈTRES' },
+    { id: 'logout', icon: LogOut, label: 'DÉCONNEXION' },
   ];
 
   const adminItems = [
     { id: 'dashboard', icon: Home, label: 'STATS' },
-    { id: 'users', icon: Users, label: 'USERS' },
-    { id: 'projects', icon: Layers, label: 'PROJECTS' },
-    { id: 'members', icon: User, label: 'MEMBERS' },
-    { id: 'settings', icon: Settings, label: 'SETTINGS' },
-    { id: 'logout', icon: LogOut, label: 'LOG OUT' },
+    { id: 'users', icon: Users, label: 'UTILISATEURS' },
+    { id: 'projects', icon: Layers, label: 'PROJETS' },
+    { id: 'members', icon: User, label: 'MEMBRES' },
+    { id: 'settings', icon: Settings, label: 'PARAMÈTRES' },
+    { id: 'logout', icon: LogOut, label: 'DÉCONNEXION' },
   ];
 
   const getMenuItems = () => {
@@ -77,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
                   style={{ border: 'none', background: 'transparent' }}
                 >
                   <LogOut size={16} />
-                  LOG OUT
+                  DÉCONNEXION
                 </button>
               );
             }
@@ -154,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
                     animate={{ opacity: 1, x: 0 }}
                     className="font-bold text-xs tracking-widest whitespace-nowrap text-[#1E3A5F]"
                   >
-                    LOG OUT
+                    DÉCONNEXION
                   </motion.span>
                 )}
               </button>
@@ -206,3 +206,5 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onLogout }) => {
 };
 
 export default Sidebar;
+
+

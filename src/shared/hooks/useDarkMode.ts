@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+﻿import { useEffect, useLayoutEffect, useState } from 'react';
 
 export const useDarkMode = () => {
   const [isDark, setIsDark] = useState<boolean>(false);
 
-  // Runs synchronously before first paint — guarantees light mode on load
+  // Runs synchronously before first paint - guarantees light mode on load
   useLayoutEffect(() => {
     document.documentElement.classList.remove('dark');
     document.documentElement.style.colorScheme = 'light';
@@ -22,3 +22,4 @@ export const useDarkMode = () => {
 
   return { isDark, toggle: () => setIsDark((d) => !d) };
 };
+

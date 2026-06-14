@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+﻿import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Download, ExternalLink, Send, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../../lib/supabase';
@@ -44,7 +44,7 @@ const STATUS_SELECT_CLASS: Record<string, string> = {
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 
-const Deliverables: React.FC = () => {
+const Livrables: React.FC = () => {
   const [groups, setGroups]   = useState<DeliverableGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -159,7 +159,7 @@ const Deliverables: React.FC = () => {
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load.');
+        setError(err instanceof Error ? err.message : 'Échec du chargement.');
         setGroups([]);
       } finally {
         setLoading(false);
@@ -208,7 +208,7 @@ const Deliverables: React.FC = () => {
           projectId: deliverable.projectId,
           senderId: user.id,
           title: 'Deliverable Validated',
-          message: `Your deliverable "${deliverable.title}" has been ${newStatus.toLowerCase()}.`,
+          message: `Votre livrable "${deliverable.title}" a été ${newStatus.toLowerCase()}.`,
           type: 'VALIDATION_LIVRABLE'
         });
       }
@@ -265,7 +265,7 @@ const Deliverables: React.FC = () => {
         projectId: deliverable.projectId,
         senderId: user.id,
         title: 'New Comment',
-        message: `Professor added a comment on "${deliverable.title}".`,
+        message: `L'encadrant a ajouté un commentaire sur "${deliverable.title}".`,
         type: 'COMMENT_LIVRABLE'
       });
     }
@@ -315,9 +315,9 @@ const Deliverables: React.FC = () => {
         const { data, error: signErr } = await supabase.storage.from(bucket).createSignedUrl(path, 120);
         if (!signErr && data?.signedUrl) { window.open(data.signedUrl, '_blank', 'noopener,noreferrer'); return; }
       }
-      throw new Error('File not found.');
+      throw new Error('Fichier introuvable.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to open this deliverable.');
+      setError(err instanceof Error ? err.message : "Impossible d'ouvrir ce livrable.");
     }
   };
 
@@ -336,7 +336,7 @@ const Deliverables: React.FC = () => {
       className="flex h-full flex-col overflow-hidden bg-[#F8FAFC] px-4 py-4 text-[#1a1c1a] sm:px-6 lg:px-8"
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
-      {/* Header — fixe, ne scroll pas */}
+      {/* Header - fixe, ne scroll pas */}
       <header className="mb-4 flex shrink-0 items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Livrables des groupes</h1>
@@ -350,7 +350,7 @@ const Deliverables: React.FC = () => {
       {loading && <p className="mb-4 shrink-0 text-sm text-[#64748B]">Chargement des livrables...</p>}
       {!loading && error && <p className="mb-4 shrink-0 text-sm text-[#ba1a1a]">Erreur : {error}</p>}
       {!loading && !error && groups.length === 0 && (
-        <p className="mb-4 shrink-0 text-sm text-[#64748B]">Aucun livrable trouve pour les projets assignes.</p>
+        <p className="mb-4 shrink-0 text-sm text-[#64748B]">Aucun livrable trouve pour les projets assignés.</p>
       )}
 
       {/* Liste scrollable */}
@@ -391,7 +391,7 @@ const Deliverables: React.FC = () => {
                             {deliverable.title}
                           </h3>
 
-                          {/* Status dropdown */}
+                          {/* Statut dropdown */}
                           <div className="relative flex-shrink-0" ref={openStatusId === deliverable.id ? statusDropdownRef : null}>
                             <button
                               type="button"
@@ -491,7 +491,7 @@ const Deliverables: React.FC = () => {
                                   <p className="text-[11px] text-[#64748B]">Loading...</p>
                                 )}
                                 {!loadingCmts[deliverable.id] && delivComments.length === 0 && (
-                                  <p className="text-[11px] text-[#C8D6E5] text-center py-1">No comments.</p>
+                                  <p className="text-[11px] text-[#C8D6E5] text-center py-1">Aucun commentaire.</p>
                                 )}
                                 {delivComments.map(c => (
                                   <div key={c.id} className="flex gap-2">
@@ -546,4 +546,7 @@ const Deliverables: React.FC = () => {
   );
 };
 
-export default Deliverables;
+export default Livrables;
+
+
+

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 // Schema for a Student
 export const studentSchema = z.object({
@@ -13,7 +13,7 @@ export const taskSchema = z.object({
   description: z.string().optional(),
   priority: z.enum(['Low', 'Medium', 'High']),
   status: z.enum(['To Do', 'In Progress', 'Done']),
-  assignee: z.string().optional(), // The ID of the assigned student
+  assignee: z.string().optional(), // The ID of the assignéd student
 });
 
 // Schema for an Iteration
@@ -33,15 +33,15 @@ export const meetingSchema = z.object({
 // Schema for login
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must contain at least 6 characters"),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
 });
 
 // Schemas for registration
 const baseUserSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
-  password: z.string().min(6, "Password must contain at least 6 characters"),
-  nom: z.string().trim().min(2, "Last name must contain at least 2 characters"),
-  prenom: z.string().trim().min(2, "First name must contain at least 2 characters"),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  nom: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères"),
+  prenom: z.string().trim().min(2, "Le prénom doit contenir au moins 2 caractères"),
 });
 
 export const registerAdminSchema = baseUserSchema.extend({
@@ -85,3 +85,8 @@ export type Login = z.infer<typeof loginSchema>;
 export type RegisterAdmin = z.infer<typeof registerAdminSchema>;
 export type RegisterEncadrant = z.infer<typeof registerEncadrantSchema>;
 export type RegisterEtudiant = z.infer<typeof registerEtudiantSchema>;
+
+
+
+
+

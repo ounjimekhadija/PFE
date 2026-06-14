@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Paperclip, FileText } from 'lucide-react';
 
 interface Deliverable {
@@ -58,3 +58,7 @@ const DeliverablesCard: React.FC<DeliverablesCardProps> = ({ iterationNumber, de
 };
 
 export default DeliverablesCard;
+
+
+
+

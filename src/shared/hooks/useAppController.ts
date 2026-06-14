@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { UserRole, Page } from '../types';
 import { supabase } from '../../lib/supabase';
 
@@ -80,3 +80,5 @@ export const useAppController = () => {
     navigateTo,
   };
 };
+
+

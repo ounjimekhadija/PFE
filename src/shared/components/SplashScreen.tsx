@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -6,7 +6,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [isVisible, setIsVisible] = useState(true);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgression] = useState(0);
 
   useEffect(() => {
     const duration = 9000; // 9 seconds of active loading
@@ -14,7 +14,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     const step = (interval / duration) * 100;
 
     const timer = setInterval(() => {
-      setProgress((prev) => {
+      setProgression((prev) => {
         if (prev >= 100) {
           clearInterval(timer);
           // Wait for progress to be seen at 100% then start fade out
@@ -44,7 +44,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           <div className="absolute -bottom-2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#1E3A5F] to-transparent animate-expand"></div>
         </div>
 
-        {/* Progress Bar Container */}
+        {/* Progression Bar Container */}
         <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden relative backdrop-blur-sm">
           <div 
             className="h-full bg-gradient-to-r from-[#1E3A5F] to-[#2F5D89] transition-all duration-100 ease-linear"
@@ -54,7 +54,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         
         {/* Subtitle */}
         <p className="mt-4 text-[#64748B] text-sm tracking-[0.2em] uppercase animate-pulse">
-          Initializing your workspace
+          Initialisation de votre espace de travail
         </p>
       </div>
 
@@ -79,3 +79,4 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 };
 
 export default SplashScreen;
+

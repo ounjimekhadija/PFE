@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CheckCircle2,
@@ -254,7 +254,7 @@ const StudentGroups: React.FC = () => {
       if (studentUpdateError) throw studentUpdateError;
 
       if ((updatedRows || []).length !== studentIdsToUpdate.length) {
-        console.warn('Not all students could be updated. Some might have been assigned to a project just now.');
+        console.warn('Not all students could be updated. Some might have been assignéd to a project just now.');
       }
 
       setStudents((previous) => previous.map((student) =>
@@ -268,7 +268,7 @@ const StudentGroups: React.FC = () => {
           senderId: currentUserId,
           projectId,
           title: 'New Group Formed',
-          message: `A group of students has formed for the project "${selectedProject?.titre || 'Unknown'}".`,
+          message: `A group of students has formed for the project "${selectedProject?.titre || 'Inconnu'}".`,
           type: 'GROUP_CREATED',
         });
       }
@@ -696,3 +696,6 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, selected, onToggle, 
 };
 
 export default StudentGroups;
+
+
+

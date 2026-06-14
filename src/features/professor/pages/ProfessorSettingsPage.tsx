@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Save, Shield, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -244,7 +244,7 @@ const ProfessorSettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {[
-                  { label: 'Telephone', key: 'phone', type: 'text' },
+                  { label: 'Téléphone', key: 'phone', type: 'text' },
                   { label: 'Website', key: 'website', type: 'text' },
                   { label: 'GitHub', key: 'github', type: 'text' },
                   { label: 'LinkedIn', key: 'linkedin', type: 'text' },
@@ -311,3 +311,7 @@ const ProfessorSettingsPage: React.FC = () => {
 };
 
 export default ProfessorSettingsPage;
+
+
+
+

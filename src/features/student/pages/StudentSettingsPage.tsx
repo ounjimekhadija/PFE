@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Github, Globe, Linkedin, Lock, Mail, Phone, Save, Shield, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -182,7 +182,7 @@ const StudentSettingsPage: React.FC = () => {
               <ProfileLink icon={<Github size={15} />} label="GitHub" value={profile.github} />
               <ProfileLink icon={<Linkedin size={15} />} label="LinkedIn" value={profile.linkedin} />
               <ProfileLink icon={<Globe size={15} />} label="Portfolio" value={profile.website} />
-              <ProfileLink icon={<Phone size={15} />} label="Telephone" value={profile.phone} />
+              <ProfileLink icon={<Phone size={15} />} label="Téléphone" value={profile.phone} />
             </div>
           </section>
 
@@ -225,7 +225,7 @@ const StudentSettingsPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <SettingsInput icon={<Phone size={16} />} label="Telephone" value={profile.phone} onChange={(value) => setProfile({ ...profile, phone: value })} />
+                <SettingsInput icon={<Phone size={16} />} label="Téléphone" value={profile.phone} onChange={(value) => setProfile({ ...profile, phone: value })} />
                 <SettingsInput icon={<Globe size={16} />} label="Portfolio" value={profile.website} onChange={(value) => setProfile({ ...profile, website: value })} />
                 <SettingsInput icon={<Github size={16} />} label="GitHub" value={profile.github} onChange={(value) => setProfile({ ...profile, github: value })} />
                 <SettingsInput icon={<Linkedin size={16} />} label="LinkedIn" value={profile.linkedin} onChange={(value) => setProfile({ ...profile, linkedin: value })} />
@@ -323,3 +323,8 @@ const SettingsInput: React.FC<SettingsInputProps> = ({ icon, label, value, onCha
 );
 
 export default StudentSettingsPage;
+
+
+
+
+

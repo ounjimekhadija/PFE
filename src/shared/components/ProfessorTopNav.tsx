@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Bell,
   CheckCircle,
@@ -66,7 +66,7 @@ const resolveAvatar = (value: string | null | undefined, name: string) => {
 
 const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(true);
   const [hoverOpen, setHoverOpen] = React.useState(false);
   const [showNotif, setShowNotif] = React.useState(false);
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
@@ -106,6 +106,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
+        .neq('sender_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -114,6 +115,7 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
       channel = supabase
         .channel(`professor_notifications_${user.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
+          if ((payload.new as Notification & { sender_id?: string }).sender_id === user.id) return;
           setNotifications((prev) => [payload.new as Notification, ...prev].slice(0, 20));
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
@@ -185,10 +187,18 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
       className={`flex h-dvh shrink-0 flex-col border-r border-[#DCEBFA] bg-white py-4 shadow-[2px_0_18px_rgba(15,23,42,0.04)] transition-[width,padding] duration-300 ${
         compact ? 'w-20 px-3' : 'w-64 px-4'
       }`}
-      onMouseEnter={() => collapsed && setHoverOpen(true)}
+      onMouseEnter={(event) => {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const isInsideSidebar =
+          event.clientX >= bounds.left &&
+          event.clientX <= bounds.right &&
+          event.clientY >= bounds.top &&
+          event.clientY <= bounds.bottom;
+
+        if (collapsed && isInsideSidebar) setHoverOpen(true);
+      }}
       onMouseLeave={() => {
         setHoverOpen(false);
-        setShowNotif(false);
       }}
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
@@ -240,27 +250,27 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
         })}
       </nav>
 
-      <div className="mt-4 space-y-3">
-        <div className="relative">
+      <div className="mt-4 flex flex-col gap-3">
+        <div
+          className="fixed bottom-6 right-6 z-50"
+          onMouseEnter={(event) => event.stopPropagation()}
+        >
           <button
             type="button"
-            className={`relative flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[#172D49] transition hover:bg-[#EEF3F8] ${
-              compact ? 'justify-center' : 'justify-start'
-            }`}
+            className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[#DCEBFA] bg-white text-[#172D49] shadow-[0_10px_28px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-[#F8FAFC]"
             aria-label="Notifications"
             onClick={() => setShowNotif((value) => !value)}
           >
             <Bell size={18} />
-            {!compact && <span className="truncate text-sm font-bold">Notifications</span>}
             {unreadCount > 0 && (
-              <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1D71F2] px-1 text-[9px] font-bold text-white ring-2 ring-white">
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1D71F2] px-1 text-[9px] font-bold text-white ring-2 ring-white">
                 {unreadCount}
               </span>
             )}
           </button>
 
           {showNotif && (
-            <div className="absolute bottom-0 left-[calc(100%+0.75rem)] z-50 w-[calc(100vw-6rem)] max-w-96 rounded-2xl border border-[#DCEBFA] bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.16)]">
+            <div className="absolute bottom-full right-0 z-50 mb-3 w-[calc(100vw-2rem)] max-w-96 rounded-2xl border border-[#DCEBFA] bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.16)]">
               <div className="mb-3 flex items-center justify-between px-1">
                 <h3 className="text-sm font-bold text-[#1a1c1a]">Notifications</h3>
                 {unreadCount > 0 && (
@@ -360,3 +370,5 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
 };
 
 export default ProfessorTopNav;
+
+

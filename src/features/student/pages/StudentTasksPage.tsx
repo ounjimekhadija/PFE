@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock3, Flag, ListTodo, MessageSquare, Plus, Users } from 'lucide-react';
 import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
 import CommentModal from '../../../shared/components/CommentModal';
@@ -11,7 +11,7 @@ interface TaskS {
   description: string;
   priority: 'High' | 'Medium' | 'Low';
   assignee: string;
-  assigneeStudentId?: string;
+  assignéeStudentId?: string;
   comments: number;
   attachments: number;
   db_id?: string;
@@ -50,7 +50,7 @@ const StudentTasks: React.FC = () => {
   ]);
 
   useEffect(() => {
-    const fetchTasksAndStudents = async () => {
+    const fetchTasksAndÉtudiants = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -121,7 +121,7 @@ const StudentTasks: React.FC = () => {
 
         (tasksData || []).forEach((task: any) => {
           const firstAssignation = task.tache_assignations?.[0] ?? null;
-          const assignedUser = firstAssignation?.etudiants?.utilisateurs;
+          const assignédUser = firstAssignation?.etudiants?.utilisateurs;
           const dbPriority = (task.priorite || 'MEDIUM') as string;
           const uiPriority: TaskS['priority'] = dbPriority === 'HIGH' ? 'High' : dbPriority === 'LOW' ? 'Low' : 'Medium';
 
@@ -131,8 +131,8 @@ const StudentTasks: React.FC = () => {
             title: task.titre,
             description: task.description || 'Aucune description',
             priority: uiPriority,
-            assigneeStudentId: firstAssignation?.etudiant_id ?? undefined,
-            assignee: assignedUser ? `${assignedUser.prenom} ${assignedUser.nom}` : 'Non assigne',
+            assignéeStudentId: firstAssignation?.etudiant_id ?? undefined,
+            assignee: assignédUser ? `${assignédUser.prenom} ${assignédUser.nom}` : 'Non assigné',
             comments: task.tache_commentaires ? task.tache_commentaires.length : 0,
             attachments: 0,
           };
@@ -143,16 +143,16 @@ const StudentTasks: React.FC = () => {
         });
 
         setColumns([
-          { id: 'todo', title: 'A faire', tasks: todo },
+          { id: 'todo', title: 'À faire', tasks: todo },
           { id: 'inprogress', title: 'En cours', tasks: inprogress },
-          { id: 'done', title: 'Terminees', tasks: done },
+          { id: 'done', title: 'Terminées', tasks: done },
         ]);
       } catch (err) {
         console.error('Failed to load tasks', err);
       }
     };
 
-    fetchTasksAndStudents();
+    fetchTasksAndÉtudiants();
   }, []);
 
   const handleTaskCreated = (newDbTask: any, assignedStudentId: string | undefined) => {
@@ -165,9 +165,9 @@ const StudentTasks: React.FC = () => {
       db_id: newDbTask.id,
       title: newDbTask.titre,
       description: newDbTask.description || 'Aucune description',
-      assigneeStudentId: assignedStudentId,
+      assignéeStudentId: assignedStudentId,
       priority: uiPriority,
-      assignee: selectedAssignee?.name || 'Non assigne',
+      assignee: selectedAssignee?.name || 'Non assigné',
       comments: 0,
       attachments: 0,
     };
@@ -214,17 +214,17 @@ const StudentTasks: React.FC = () => {
 
         if (error) throw error;
       } catch (error: any) {
-        console.error('Update task status failed', error);
-        alert('Impossible de deplacer la tache.');
+        console.error('Mettre à jour task status failed', error);
+        alert('Impossible de deplacer la tâche.');
         setColumns(previousColumns);
       }
     }
   };
 
   const todoCount = columns.find((column) => column.id === 'todo')?.tasks.length || 0;
-  const inProgressCount = columns.find((column) => column.id === 'inprogress')?.tasks.length || 0;
+  const inProgressionCount = columns.find((column) => column.id === 'inprogress')?.tasks.length || 0;
   const doneCount = columns.find((column) => column.id === 'done')?.tasks.length || 0;
-  const totalCount = todoCount + inProgressCount + doneCount;
+  const totalCount = todoCount + inProgressionCount + doneCount;
   const completionRate = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const formatSprintDate = (value: string | null) => {
     if (!value) return 'N/A';
@@ -242,9 +242,9 @@ const StudentTasks: React.FC = () => {
       <header className="mb-4 flex flex-shrink-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold text-[#1a1c1a]">Tableau des taches</h1>
+            <h1 className="text-2xl font-semibold text-[#1a1c1a]">Tableau des tâches</h1>
           </div>
-          <p className="mt-1 text-sm text-[#64748B]">Organisez le travail de l'iteration et suivez l'avancement de l'equipe.</p>
+          <p className="mt-1 text-sm text-[#64748B]">Organisez le travail de l'itération et suivez l'avancement de l'equipe.</p>
         </div>
         <button
           className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1E3A5F] px-5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(30,58,95,0.18)] transition-all hover:bg-[#172D49]"
@@ -252,15 +252,15 @@ const StudentTasks: React.FC = () => {
           type="button"
         >
           <Plus size={16} />
-          Nouvelle tache
+          Nouvelle tâche
         </button>
       </header>
 
       <div className="mb-4 grid flex-shrink-0 grid-cols-1 gap-4 md:grid-cols-4">
         <TaskStat title="Total" value={totalCount} icon={<ListTodo size={21} />} tone="blue" />
-        <TaskStat title="A faire" value={todoCount} icon={<Clock3 size={21} />} tone="slate" />
-        <TaskStat title="En cours" value={inProgressCount} icon={<Users size={21} />} tone="amber" />
-        <TaskStat title="Terminees" value={doneCount} icon={<CheckCircle2 size={21} />} tone="green" />
+        <TaskStat title="À faire" value={todoCount} icon={<Clock3 size={21} />} tone="slate" />
+        <TaskStat title="En cours" value={inProgressionCount} icon={<Users size={21} />} tone="amber" />
+        <TaskStat title="Terminées" value={doneCount} icon={<CheckCircle2 size={21} />} tone="green" />
       </div>
 
       <TaskCreateModal
@@ -445,3 +445,10 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ column, setSelectedTaskId, setI
 };
 
 export default StudentTasks;
+
+
+
+
+
+
+

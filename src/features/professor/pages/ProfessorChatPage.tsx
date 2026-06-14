@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Send, Video, Paperclip, Smile, CheckCheck } from 'lucide-react';
 import MessageContent from '../../../shared/components/MessageContent';
 import { supabase } from '../../../lib/supabase';
@@ -45,7 +45,7 @@ const Chat: React.FC = () => {
   const emojiRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😅','😭','🤩','🥳','👍','👎','❤️','🔥','🎉','✅','❌','🙏','💪','🤝','👏','🚀','💡','⭐','💯','🏆','📌','🎯','😊','🤗','😴','🤯'];
+  const EMOJIS = ['😀','😂','😍','🥰','😎','🤔','😅','😭','👍','👎','❤️','🔥','🎉','✅','❌','🙏','💪','🤝','👏','🚀','💡','⭐','💯','🏆','📌','🎯','😊','🤗'];
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -372,7 +372,7 @@ const Chat: React.FC = () => {
       await loadProjectMessages(project.id, currentUserId);
     } catch (err) {
       console.error('Error loading project messages:', err);
-      setError(err instanceof Error ? err.message : 'Error loading messages.');
+      setError(err instanceof Error ? err.message : 'Erreur lors du chargement des messages.');
     }
   };
 
@@ -398,8 +398,8 @@ const Chat: React.FC = () => {
       await notifyProjectStudents({
         projectId: selectedProjectId,
         senderId: currentUserId,
-        title: 'New message',
-        message: `The supervisor sent a message in "${selectedProjectTitle}".`,
+        title: 'Nouveau message',
+        message: `L'encadrant a envoyé un message dans "${selectedProjectTitle}".`,
         type: 'MESSAGE'
       });
     }
@@ -433,11 +433,11 @@ const Chat: React.FC = () => {
         projectId: selectedProjectId,
         senderId: currentUserId,
         title: 'New file',
-        message: `The supervisor shared a file in "${selectedProjectTitle}".`,
+        message: `L'encadrant a partagé un fichier dans "${selectedProjectTitle}".`,
         type: 'MESSAGE'
       });
     } catch (err) {
-      setError('Erreur lors de l’envoi du fichier.');
+      setError("Erreur lors de l'envoi du fichier.");
     } finally {
       setUploading(false);
     }
@@ -709,3 +709,7 @@ const Chat: React.FC = () => {
 };
 
 export default Chat;
+
+
+
+

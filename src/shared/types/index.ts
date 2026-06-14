@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'professor' | 'admin';
+﻿export type UserRole = 'student' | 'professor' | 'admin';
 
 export type Page = 'dashboard' | 'chat' | 'tasks' | 'members' | 'deliverables' | 'settings' | 'groups' | 'users' | 'projects' | 'stats';
 
@@ -11,7 +11,7 @@ export interface Deliverable {
   size?: string;
 }
 
-export interface GroupDeliverables {
+export interface GroupLivrables {
   groupName: string;
   deliverables: Deliverable[];
 }
@@ -62,3 +62,7 @@ export interface TaskColumn {
   subtitle: string;
   tasks: Task[];
 }
+
+
+
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Send, X, MessageSquare, Clock } from 'lucide-react';
@@ -166,3 +166,7 @@ const CommentModal: React.FC<CommentModalProps> = ({ isOpen, onClose, taskId, re
 };
 
 export default CommentModal;
+
+
+
+
