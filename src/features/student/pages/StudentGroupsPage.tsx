@@ -289,78 +289,81 @@ const StudentGroups: React.FC = () => {
       style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
     >
       {showGroupModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center">
-          <div className="my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-y-auto rounded-2xl border border-[#C8D6E5]/60 bg-white p-5 shadow-xl sm:p-7">
-            <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#111827]/45 p-3 backdrop-blur-sm transition-all animate-in fade-in duration-300 sm:items-center sm:p-4">
+          <div className="my-3 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[520px] flex-col overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_28px_70px_rgba(15,23,42,0.22)] sm:my-4">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#EEF3F8] bg-white px-5 py-5 sm:px-6">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Creation du groupe</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#64748B]">Création du groupe</p>
                 <h2 className="mt-1 text-xl font-bold text-[#1a1c1a]">Choisir un projet</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setShowGroupModal(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition hover:text-[#1a1c1a]"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition hover:bg-[#DCEBFA] hover:text-[#172D49]"
                 aria-label="Fermer"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="mb-5 rounded-2xl bg-[#EEF3F8] p-3">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">Membres selectionnes</p>
-              <div className="flex flex-wrap gap-2">
-                {selected.map((student) => (
-                  <span key={student.id} className="rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-[#172D49] shadow-sm">
-                    {student.name}
+            <div className="px-5 py-5 sm:px-6">
+              <div className="mb-5 rounded-2xl border border-[#E5EDF5] bg-[#F3F7FB] p-4">
+                <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#64748B]">Membres sélectionnés</p>
+                <div className="flex flex-wrap gap-2">
+                  {selected.map((student) => (
+                    <span key={student.id} className="rounded-xl border border-[#E5EDF5] bg-white px-3 py-1.5 text-xs font-bold text-[#172D49] shadow-sm">
+                      {student.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative text-left">
+                <label className="mb-2 ml-1 block text-sm font-extrabold text-[#334155]">Projet</label>
+                <button
+                  type="button"
+                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                  className="flex h-12 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-sm font-bold shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-[#1E3A5F]/10"
+                >
+                  <span className={`truncate ${!projectName ? 'text-[#9AA6B8]' : 'text-[#1a1c1a]'}`}>
+                    {projectName ? selectedProjectTitle : 'Sélectionner un projet'}
                   </span>
-                ))}
+                  <ChevronDown className={`h-4 w-4 shrink-0 text-[#64748B] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showProjectDropdown && (
+                  <div className="mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-[#C8D6E5] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all animate-in fade-in slide-in-from-top-1">
+                    {projects.map((project) => (
+                      <button
+                        key={project.id}
+                        type="button"
+                        onClick={() => {
+                          setProjectName(project.id);
+                          setShowProjectDropdown(false);
+                        }}
+                        className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors ${
+                          projectName === project.id ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#EEF3F8]'
+                        }`}
+                      >
+                        <span className="truncate">{project.titre}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="relative mb-6 text-left">
+            <div className="sticky bottom-0 flex gap-3 border-t border-[#EEF3F8] bg-white px-5 py-4 sm:px-6">
               <button
-                type="button"
-                onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                className="flex w-full items-center justify-between rounded-xl border border-[#C8D6E5]/70 bg-white px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20"
-              >
-                <span className={!projectName ? 'text-gray-400' : 'text-[#1a1c1a]'}>
-                  {projectName ? selectedProjectTitle : 'Selectionner un projet'}
-                </span>
-                <ChevronDown className={`h-4 w-4 text-[#64748B] transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showProjectDropdown && (
-                <div className="absolute z-50 mt-2 max-h-48 w-full overflow-y-auto rounded-xl border border-[#C8D6E5]/60 bg-white p-1 shadow-xl transition-all animate-in fade-in slide-in-from-top-1">
-                  {projects.map((project) => (
-                    <button
-                      key={project.id}
-                      type="button"
-                      onClick={() => {
-                        setProjectName(project.id);
-                        setShowProjectDropdown(false);
-                      }}
-                      className={`flex w-full items-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                        projectName === project.id ? 'bg-[#1E3A5F] text-white' : 'text-[#1a1c1a] hover:bg-[#EEF3F8]'
-                      }`}
-                    >
-                      {project.titre}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                className="flex-1 rounded-xl bg-[#1E3A5F] py-2.5 text-sm font-bold text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:bg-[#BFD7EF]"
+                className="h-11 flex-1 rounded-xl bg-[#1E3A5F] text-sm font-bold text-white transition-all hover:bg-[#172D49] disabled:cursor-not-allowed disabled:bg-[#BFD7EF]"
                 onClick={handleCreateGroup}
                 disabled={!projectName}
                 type="button"
               >
-                Creer le groupe
+                Créer le groupe
               </button>
               <button
-                className="flex-1 rounded-xl bg-[#E5EDF5] py-2.5 text-sm font-bold text-[#334155] transition-all hover:bg-[#D5E1ED]"
+                className="h-11 flex-1 rounded-xl bg-[#E5EDF5] text-sm font-bold text-[#334155] transition-all hover:bg-[#D5E1ED]"
                 onClick={() => setShowGroupModal(false)}
                 type="button"
               >

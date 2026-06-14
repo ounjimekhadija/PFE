@@ -137,22 +137,23 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#111827]/45 p-4 backdrop-blur-sm transition-all animate-in fade-in duration-300 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#111827]/50 p-3 backdrop-blur-sm transition-all animate-in fade-in duration-300 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="relative my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-[520px] flex-col overflow-y-auto rounded-2xl border border-[#C8D6E5] bg-[#F8FAFC] px-5 py-5 shadow-[0_24px_56px_rgba(15,23,42,0.20)] sm:px-7 sm:py-6"
+        className="relative my-3 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[620px] flex-col overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_28px_70px_rgba(15,23,42,0.24)] sm:my-4"
         onClick={(event) => event.stopPropagation()}
         style={{ fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif' }}
       >
-        <div className="mb-6 flex items-start justify-between gap-5">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-5 border-b border-[#EEF3F8] bg-white px-5 py-5 sm:px-7">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-[#1a1c1a]">Creer une tâche</h2>
-            <p className="mt-1 text-sm font-medium text-[#64748B]">Ajoutez les details pour votre equipe.</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#64748B]">Nouvelle tâche</p>
+            <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1a1c1a]">Créer une tâche</h2>
+            <p className="mt-1 text-sm font-medium text-[#64748B]">Ajoutez les détails pour votre équipe.</p>
           </div>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#64748B] transition-colors hover:bg-[#EEF3F8] hover:text-[#172D49]"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition-colors hover:bg-[#DCEBFA] hover:text-[#172D49]"
             type="button"
             aria-label="Fermer"
           >
@@ -160,14 +161,14 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
           </button>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-5 px-5 py-5 sm:px-7">
           <div className="space-y-2">
             <label className="ml-1 text-sm font-extrabold text-[#334155]">Titre de la tâche</label>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Ex : Conception de la base de donnees"
-                className={`h-14 w-full rounded-xl border px-4 text-base font-medium ${
+                placeholder="Ex : Conception de la base de données"
+                className={`h-12 w-full rounded-xl border px-4 text-sm font-semibold ${
                   errors?.title ? 'border-red-500' : 'border-[#C8D6E5]'
                 } bg-white text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#9AA6B8] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10`}
                 value={newTask.title || ''}
@@ -185,9 +186,9 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
           <div className="space-y-2">
             <label className="ml-1 text-sm font-extrabold text-[#334155]">Description</label>
             <textarea
-              placeholder="Decrivez ce qui doit etre fait..."
+              placeholder="Décrivez ce qui doit être fait..."
               rows={4}
-              className="min-h-[96px] w-full resize-none rounded-xl border border-[#C8D6E5] bg-white px-4 py-4 text-base font-medium text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#9AA6B8] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
+              className="min-h-[104px] w-full resize-none rounded-xl border border-[#C8D6E5] bg-white px-4 py-3 text-sm font-semibold text-[#1a1c1a] shadow-sm outline-none transition-all placeholder:text-[#9AA6B8] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
               value={newTask.description || ''}
               onChange={(event) => setNewTask({ ...newTask, description: event.target.value })}
             />
@@ -195,22 +196,22 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2" ref={priorityRef}>
-              <label className="ml-1 text-sm font-extrabold text-[#334155]">Priorite</label>
+              <label className="ml-1 text-sm font-extrabold text-[#334155]">Priorité</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-                  className="flex h-14 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-[#1a1c1a] shadow-sm outline-none transition-all hover:border-[#1E3A5F]/50 focus:ring-4 focus:ring-[#1E3A5F]/10"
+                  className="flex h-12 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-[#1a1c1a] shadow-sm outline-none transition-all hover:border-[#1E3A5F]/50 focus:ring-4 focus:ring-[#1E3A5F]/10"
                 >
                   <div className="flex items-center gap-3">
                     <Flag size={16} className={selectedPriority.color} />
-                    <span className="text-base font-medium">{selectedPriority.label}</span>
+                    <span className="text-sm font-bold">{selectedPriority.label}</span>
                   </div>
                   <ChevronDown size={16} className={`text-[#64748B] transition-transform duration-300 ${showPriorityDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showPriorityDropdown && (
-                  <div className="absolute z-[60] mt-2 w-full overflow-hidden rounded-xl border border-[#C8D6E5] bg-white p-1 shadow-[0_14px_32px_rgba(15,23,42,0.14)] animate-in fade-in slide-in-from-top-2">
+                  <div className="mt-2 w-full overflow-hidden rounded-xl border border-[#C8D6E5] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] animate-in fade-in slide-in-from-top-2">
                     {priorities.map((priority) => (
                       <button
                         key={priority.value}
@@ -219,7 +220,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                           setNewTask({ ...newTask, priority: priority.value as any });
                           setShowPriorityDropdown(false);
                         }}
-                        className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold transition-colors hover:bg-[#EEF3F8] ${
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-[#EEF3F8] ${
                           newTask.priority === priority.value ? `${priority.bg} ${priority.color}` : 'text-[#334155]'
                         }`}
                       >
@@ -233,31 +234,31 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             </div>
 
             <div className="space-y-2" ref={assignéeRef}>
-              <label className="ml-1 text-sm font-extrabold text-[#334155]">Assigner a</label>
+              <label className="ml-1 text-sm font-extrabold text-[#334155]">Assigner à</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                  className="flex h-14 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-[#1a1c1a] shadow-sm outline-none transition-all hover:border-[#1E3A5F]/50 focus:ring-4 focus:ring-[#1E3A5F]/10"
+                  className="flex h-12 w-full items-center justify-between rounded-xl border border-[#C8D6E5] bg-white px-4 text-[#1a1c1a] shadow-sm outline-none transition-all hover:border-[#1E3A5F]/50 focus:ring-4 focus:ring-[#1E3A5F]/10"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <User size={16} className="shrink-0 text-[#64748B]" />
-                    <span className="truncate text-base font-medium">
-                      {selectedAssignee ? selectedAssignee.name : 'Selectionner un membre'}
+                    <span className="truncate text-sm font-bold">
+                      {selectedAssignee ? selectedAssignee.name : 'Sélectionner un membre'}
                     </span>
                   </div>
                   <ChevronDown size={16} className={`shrink-0 text-[#64748B] transition-transform duration-300 ${showAssigneeDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showAssigneeDropdown && (
-                  <div className="absolute z-[60] mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-[#C8D6E5] bg-white p-1 shadow-[0_14px_32px_rgba(15,23,42,0.14)] animate-in fade-in slide-in-from-top-2">
+                  <div className="mt-2 max-h-44 w-full overflow-y-auto rounded-xl border border-[#C8D6E5] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] animate-in fade-in slide-in-from-top-2">
                     <button
                       type="button"
                       onClick={() => {
                         setNewTask({ ...newTask, assignee: '' });
                         setShowAssigneeDropdown(false);
                       }}
-                      className="w-full rounded-lg px-4 py-3 text-left text-sm font-bold text-[#64748B] transition-colors hover:bg-[#EEF3F8]"
+                      className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold text-[#64748B] transition-colors hover:bg-[#EEF3F8]"
                     >
                       Non assignée
                     </button>
@@ -269,7 +270,7 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                           setNewTask({ ...newTask, assignee: option.id });
                           setShowAssigneeDropdown(false);
                         }}
-                        className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-bold text-[#334155] transition-colors hover:bg-[#EEF3F8]"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-bold text-[#334155] transition-colors hover:bg-[#EEF3F8]"
                       >
                         <img
                           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(option.name)}&background=random`}
@@ -286,11 +287,11 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
           </div>
         </div>
 
-        <div className="mt-7 flex items-center justify-end gap-3">
+        <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-[#EEF3F8] bg-white px-5 py-4 sm:px-7">
           <button
             onClick={onClose}
             type="button"
-            className="h-12 rounded-xl bg-[#EEF3F8] px-6 text-sm font-extrabold text-[#334155] transition-all hover:bg-[#E5EDF5]"
+            className="h-11 rounded-xl bg-[#EEF3F8] px-5 text-sm font-extrabold text-[#334155] transition-all hover:bg-[#E5EDF5]"
           >
             Annuler
           </button>
@@ -298,10 +299,10 @@ const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             onClick={handleCreateTask}
             disabled={loading}
             type="button"
-            className="flex h-12 items-center gap-2 rounded-xl bg-[#1a1c1a] px-6 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(26,28,26,0.16)] transition-all hover:bg-[#334155] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 items-center gap-2 rounded-xl bg-[#1a1c1a] px-5 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(26,28,26,0.16)] transition-all hover:bg-[#334155] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading && <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
-            <span>Creer la tâche</span>
+            <span>Créer la tâche</span>
           </button>
         </div>
       </div>

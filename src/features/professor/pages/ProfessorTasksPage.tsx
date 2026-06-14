@@ -595,35 +595,45 @@ const Tasks: React.FC = () => {
 
       {/* Créer l'itération Modal */}
       {showIterModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-md transition-all animate-in fade-in duration-300 sm:items-center" onClick={() => setShowIterModal(false)}>
-          <div className="my-4 max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-transparent bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,0.15)] sm:p-6" onClick={e => e.stopPropagation()}>
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-[#1a1c1a]">New Iteration</h2>
-              <button onClick={() => setShowIterModal(false)} className="text-[#64748B] hover:text-[#1a1c1a]"><X size={18} /></button>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#111827]/45 p-3 backdrop-blur-sm transition-all animate-in fade-in duration-300 sm:items-center sm:p-4" onClick={() => setShowIterModal(false)}>
+          <div className="my-3 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[500px] flex-col overflow-y-auto rounded-2xl border border-[#DCEBFA] bg-white shadow-[0_28px_70px_rgba(15,23,42,0.22)] sm:my-4" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#EEF3F8] bg-white px-5 py-5 sm:px-6">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#64748B]">Nouvelle itération</p>
+                <h2 className="mt-1 text-xl font-bold text-[#1a1c1a]">Créer une itération</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowIterModal(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF3F8] text-[#64748B] transition hover:bg-[#DCEBFA] hover:text-[#172D49]"
+                aria-label="Fermer"
+              >
+                <X size={18} />
+              </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 px-5 py-5 sm:px-6">
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Group / Project</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Groupe / projet</label>
                 <div className="relative" ref={iterProjectDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setOpenIterProjectDropdown(!openIterProjectDropdown)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#334155] outline-none transition hover:border-[#1E3A5F]"
+                    className="flex h-12 w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] pl-4 pr-3 text-sm font-semibold text-[#334155] outline-none transition hover:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
                   >
                     <span className="truncate">
-                      {projects.find(p => p.id === iterForm.projectId)?.title || 'Select Project'}
+                      {projects.find(p => p.id === iterForm.projectId)?.title || 'Sélectionner un projet'}
                     </span>
                     <ChevronDown size={14} className={`text-[#64748B] transition-transform ${openIterProjectDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {openIterProjectDropdown && (
-                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#EEF3F8] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="mt-2 max-h-52 w-full origin-top overflow-y-auto rounded-xl border border-[#C8D6E5] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] animate-in fade-in zoom-in-95 duration-200">
                       {projects.map(p => (
                         <button
                           key={p.id}
                           type="button"
                           onClick={() => { setIterForm(f => ({ ...f, projectId: p.id })); setOpenIterProjectDropdown(false); }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.projectId === p.id ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors ${iterForm.projectId === p.id ? 'bg-[#DCEBFA]/40 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
                         >
                           <div className={`h-1.5 w-1.5 rounded-full ${iterForm.projectId === p.id ? 'bg-[#1E3A5F]' : 'bg-transparent'}`} />
                           <span className="truncate">{p.title}</span>
@@ -635,74 +645,74 @@ const Tasks: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Number</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Numéro</label>
                 <input
                   type="number"
                   min={1}
                   placeholder="Ex: 1"
                   value={iterForm.numero}
                   onChange={e => setIterForm(f => ({ ...f, numero: parseInt(e.target.value) || 1 }))}
-                  className="w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-4 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F] placeholder:text-[#C8D6E5]"
+                  className="h-12 w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#334155] outline-none placeholder:text-[#C8D6E5] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Objectif</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Objectif</label>
                 <textarea
-                  placeholder="Describe the sprint objective..."
+                  placeholder="Décrivez l'objectif du sprint..."
                   value={iterForm.objectif}
                   onChange={e => setIterForm(f => ({ ...f, objectif: e.target.value }))}
                   rows={2}
-                  className="w-full resize-none rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-4 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F] placeholder:text-[#C8D6E5]"
+                  className="min-h-[80px] w-full resize-none rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-4 py-3 text-sm font-semibold text-[#334155] outline-none placeholder:text-[#C8D6E5] focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Date de début</label>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Date de début</label>
                   <input
                     type="date"
                     value={iterForm.dateDebut}
                     onChange={e => setIterForm(f => ({ ...f, dateDebut: e.target.value }))}
-                    className="w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F]"
+                    className="h-12 w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 text-sm font-semibold text-[#334155] outline-none focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Date de fin</label>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Date de fin</label>
                   <input
                     type="date"
                     value={iterForm.dateFin}
                     onChange={e => setIterForm(f => ({ ...f, dateFin: e.target.value }))}
-                    className="w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#334155] outline-none focus:border-[#1E3A5F]"
+                    className="h-12 w-full rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] px-3 text-sm font-semibold text-[#334155] outline-none focus:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Statut</label>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-[#64748B]">Statut</label>
                 <div className="relative" ref={iterStatusDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setOpenIterStatusDropdown(!openIterStatusDropdown)}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] py-2.5 pl-4 pr-3 text-sm font-semibold text-[#334155] outline-none transition hover:border-[#1E3A5F]"
+                    className="flex h-12 w-full items-center justify-between gap-3 rounded-xl border border-[#C8D6E5] bg-[#F8FAFC] pl-4 pr-3 text-sm font-semibold text-[#334155] outline-none transition hover:border-[#1E3A5F] focus:ring-4 focus:ring-[#1E3A5F]/10"
                   >
                     <span className="truncate">
-                      {iterForm.statut === 'A_FAIRE' ? 'To Do' : iterForm.statut === 'EN_COURS' ? 'In Progress' : 'Validated'}
+                      {iterForm.statut === 'A_FAIRE' ? 'À faire' : iterForm.statut === 'EN_COURS' ? 'En cours' : 'Validée'}
                     </span>
                     <ChevronDown size={14} className={`text-[#64748B] transition-transform ${openIterStatusDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {openIterStatusDropdown && (
-                    <div className="absolute left-0 top-full z-50 mt-1 w-full origin-top rounded-xl border border-[#EEF3F8] bg-white p-1 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="mt-2 w-full origin-top rounded-xl border border-[#C8D6E5] bg-white p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.16)] animate-in fade-in zoom-in-95 duration-200">
                       {[
-                        { v: 'A_FAIRE', l: 'To Do' },
-                        { v: 'EN_COURS', l: 'In Progress' },
-                        { v: 'VALIDE', l: 'Validated' }
+                        { v: 'A_FAIRE', l: 'À faire' },
+                        { v: 'EN_COURS', l: 'En cours' },
+                        { v: 'VALIDE', l: 'Validée' }
                       ].map(o => (
                         <button
                           key={o.v}
                           type="button"
                           onClick={() => { setIterForm(f => ({ ...f, statut: o.v })); setOpenIterStatusDropdown(false); }}
-                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${iterForm.statut === o.v ? 'bg-[#DCEBFA]/20 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
+                          className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors ${iterForm.statut === o.v ? 'bg-[#DCEBFA]/40 text-[#1E3A5F]' : 'text-[#334155] hover:bg-[#EEF3F8]'}`}
                         >
                           <div className={`h-1.5 w-1.5 rounded-full ${iterForm.statut === o.v ? 'bg-[#1E3A5F]' : 'bg-transparent'}`} />
                           {o.l}
@@ -715,11 +725,14 @@ const Tasks: React.FC = () => {
 
               {iterError && <p className="text-xs text-[#ba1a1a]">{iterError}</p>}
 
+            </div>
+
+            <div className="sticky bottom-0 border-t border-[#EEF3F8] bg-white px-5 py-4 sm:px-6">
               <button
                 type="button"
                 onClick={handleCreateIteration}
                 disabled={iterSaving}
-                className="w-full rounded-xl bg-[#1E3A5F] py-2.5 text-sm font-bold text-white transition hover:bg-[#172D49] disabled:opacity-50"
+                className="h-11 w-full rounded-xl bg-[#1E3A5F] text-sm font-bold text-white transition hover:bg-[#172D49] disabled:opacity-50"
               >
                 {iterSaving ? 'Création...' : "Créer l'itération"}
               </button>
