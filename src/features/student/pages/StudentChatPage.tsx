@@ -413,6 +413,8 @@ const StudentChat: React.FC = () => {
     if (!projectId || !currentUserId || !activeMeetingUrl || creatingMeeting) return;
 
     setCreatingMeeting(true);
+    window.open(activeMeetingUrl, '_blank');
+
     try {
       const { error: meetingError } = await supabase.from('reunions').insert({
         projet_id: projectId,
@@ -426,15 +428,23 @@ const StudentChat: React.FC = () => {
 
       if (meetingError) throw meetingError;
 
-      await notifyProjectProfessor({
-        projectId,
-        senderId: currentUserId,
-        title: 'Nouvel appel vidéo',
-        message: `Un étudiant a lancé un appel vidéo pour "${projectTitle}". Lien: ${activeMeetingUrl}`,
-        type: 'MEETING_REQUEST'
-      });
+      await Promise.all([
+        notifyProjectProfessor({
+          projectId,
+          senderId: currentUserId,
+          title: 'Nouvel appel vidéo',
+          message: `Un étudiant a lancé un appel vidéo pour "${projectTitle}". Lien: ${activeMeetingUrl}`,
+          type: 'MEETING_REQUEST'
+        }),
+        notifyProjectStudents({
+          projectId,
+          senderId: currentUserId,
+          title: 'Nouvel appel vidéo',
+          message: `Un membre du groupe a lancé un appel vidéo pour "${projectTitle}". Lien: ${activeMeetingUrl}`,
+          type: 'MEETING_REQUEST'
+        })
+      ]);
 
-      window.open(activeMeetingUrl, '_blank');
       await loadProjectMeetings(projectId);
     } catch (err: any) {
       console.error('Erreur création appel vidéo:', err);

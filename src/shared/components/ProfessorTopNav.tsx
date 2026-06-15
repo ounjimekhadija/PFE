@@ -162,10 +162,20 @@ const ProfessorTopNav: React.FC<ProfessorTopNavProps> = ({ onLogout }) => {
   };
 
   const handleNotificationClick = async (notification: Notification) => {
+    const meetingWindow =
+      notification.type === 'MEETING_REQUEST' && notification.projet_id
+        ? window.open('about:blank', '_blank')
+        : null;
+
     if (!notification.is_read) await markAsRead(notification.id);
 
     if (notification.type === 'MEETING_REQUEST' && notification.projet_id) {
-      window.open(`https://meet.jit.si/PFEspace_Project_${notification.projet_id}`, '_blank');
+      const meetingUrl = `https://meet.jit.si/PFEspace_Project_${notification.projet_id}`;
+      if (meetingWindow) {
+        meetingWindow.location.href = meetingUrl;
+      } else {
+        window.open(meetingUrl, '_blank');
+      }
     }
   };
 
